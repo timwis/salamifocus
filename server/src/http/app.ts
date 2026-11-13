@@ -3,6 +3,7 @@ import { createMiddleware } from 'hono/factory';
 import type { Application } from '../application/index.ts';
 import type { Actor } from '../application/types.ts';
 import { verifyPassword } from '../auth/password.ts';
+import { FailedSignIns } from '../auth/rate-limit.ts';
 import { createSession, findSession, revokeSession, type Session } from '../auth/sessions.ts';
 import type { Signer } from '../auth/signing.ts';
 import type { Sql } from '../db.ts';
@@ -22,6 +23,7 @@ export interface HttpOptions {
   webRoot?: string | null;
   clock?: () => Date;
   failedSignInDelayMs?: number;
+  signInLimit?: { failures: number; windowMs: number };
 }
 
 type Env = { Variables: { session: Session } };
@@ -29,11 +31,18 @@ type Env = { Variables: { session: Session } };
 export function createHttpApp(options: HttpOptions) {
   const { application, sql, signer, clock = () => new Date() } = options;
   const http = new Hono<Env>();
+  const { failures, windowMs } = options.signInLimit ?? { failures: 10, windowMs: 15 * 60 * 1000 };
+  const failedSignIns = new FailedSignIns(failures, windowMs);
 
   http.get('/api/health', (c) => c.json({ ok: true }));
   http.get('/.well-known/jwks.json', (c) => c.json(signer.jwks));
 
   http.post('/api/auth/sign-in', async (c) => {
+    const attempt = failedSignIns.attempt(clock());
+    if ('retryAfterMs' in attempt) {
+      c.header('Retry-After', String(Math.ceil(attempt.retryAfterMs / 1000)));
+      return c.json({ error: 'Too many wrong passwords. Try again in a few minutes.' }, 429);
+    }
     const body = await c.req.json().catch(() => null);
     const password = typeof body?.password === 'string' ? body.password : '';
     const client = typeof body?.client === 'string' && body.client.trim() ? body.client.trim().slice(0, 40) : 'unknown';
@@ -41,6 +50,7 @@ export function createHttpApp(options: HttpOptions) {
       await new Promise((resolve) => setTimeout(resolve, options.failedSignInDelayMs ?? 1000));
       return c.json({ error: 'That password is not right.' }, 401);
     }
+    attempt.succeeded();
     const { token } = await createSession(sql, client, clock());
     return c.json({ token });
   });

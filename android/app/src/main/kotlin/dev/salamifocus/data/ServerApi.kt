@@ -17,7 +17,8 @@ import java.util.concurrent.TimeUnit
 
 class SessionEndedException : IOException("The server no longer accepts this session.")
 
-class WrongPasswordException : IOException("That password is not right.")
+/** The server turned the sign-in down, for example for a wrong password; the message says why. */
+class SignInRefusedException(message: String) : IOException(message)
 
 /** The app server's HTTP endpoints. Sync itself goes through the PowerSync SDK. */
 class ServerApi(
@@ -60,11 +61,15 @@ class ServerApi(
                 .build()
             http.newCall(request).execute().use { response ->
                 when {
-                    response.code == 401 && token == null -> throw WrongPasswordException()
+                    response.code in setOf(401, 429) && token == null -> throw SignInRefusedException(errorMessage(response.body.string()))
                     response.code == 401 -> throw SessionEndedException()
                     !response.isSuccessful -> throw IOException("$path failed with ${response.code}")
                     else -> response.body.string()
                 }
             }
         }
+
+    private fun errorMessage(body: String): String =
+        runCatching { Json.parseToJsonElement(body).jsonObject["error"]!!.jsonPrimitive.content }
+            .getOrDefault("That password is not right.")
 }

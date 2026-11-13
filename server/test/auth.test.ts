@@ -39,6 +39,38 @@ describe('signing in', () => {
   });
 });
 
+describe('repeated wrong passwords', () => {
+  const limit = { failures: 3, windowMs: 15 * 60 * 1000 };
+  const signIn = (limited: typeof api, password: string) =>
+    limited.request('/api/auth/sign-in', { body: { password, client: 'web' } });
+
+  it('stop all sign-ins for a while, then let the owner back in', async () => {
+    const limited = await createHttpHarness(h, { signInLimit: limit });
+    for (let i = 0; i < 3; i++) assert.equal((await signIn(limited, 'guess')).status, 401);
+
+    const refused = await signIn(limited, testPassword);
+    assert.equal(refused.status, 429);
+    assert.equal(refused.headers.get('retry-after'), String(15 * 60));
+    assert.match(((await refused.json()) as { error: string }).error, /Too many wrong passwords/);
+
+    h.clock.advance(limit.windowMs + 1);
+    assert.equal((await signIn(limited, testPassword)).status, 200);
+  });
+
+  it('do not count successful sign-ins against the limit', async () => {
+    const limited = await createHttpHarness(h, { signInLimit: limit });
+    for (let i = 0; i < 5; i++) assert.equal((await signIn(limited, testPassword)).status, 200);
+    assert.equal((await signIn(limited, 'guess')).status, 401);
+  });
+
+  it('are limited even when sent all at once', async () => {
+    const limited = await createHttpHarness(h, { signInLimit: limit });
+    const statuses = (await Promise.all(Array.from({ length: 10 }, () => signIn(limited, 'guess')))).map((r) => r.status);
+    assert.equal(statuses.filter((s) => s === 401).length, 3);
+    assert.equal(statuses.filter((s) => s === 429).length, 7);
+  });
+});
+
 describe('sync credentials', () => {
   it('are short-lived tokens the sync service can verify from the published keys', async () => {
     const token = await api.signIn();

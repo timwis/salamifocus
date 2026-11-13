@@ -25,7 +25,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.salamifocus.BuildConfig
 import dev.salamifocus.SalamifocusApp
-import dev.salamifocus.data.WrongPasswordException
+import dev.salamifocus.data.SignInRefusedException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -66,7 +66,7 @@ fun SignInScreen(app: SalamifocusApp) {
                 scope.launch {
                     try {
                         app.sessions.signedIn(app.api.signIn(serverUrl.trim(), password))
-                    } catch (e: WrongPasswordException) {
+                    } catch (e: SignInRefusedException) {
                         problem = e.message
                     } catch (e: Exception) {
                         problem = "Could not reach the server."

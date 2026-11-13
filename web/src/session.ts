@@ -29,7 +29,10 @@ export async function signIn(password: string): Promise<string | null> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ password, client: 'web' }),
   });
-  if (response.status === 401) return 'That password is not right.';
+  if (response.status === 401 || response.status === 429) {
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    return body?.error ?? 'That password is not right.';
+  }
   if (!response.ok) return 'Could not reach the server.';
   set(((await response.json()) as { token: string }).token);
   return null;

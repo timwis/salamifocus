@@ -65,7 +65,7 @@ export function renameRequest(taskId: string, title: string): OperationRequest {
 export const testPassword = 'correct horse battery staple';
 
 /** The HTTP adapter over the harness's application, as the clients see it. */
-export async function createHttpHarness(h: Harness) {
+export async function createHttpHarness(h: Harness, overrides: { signInLimit?: { failures: number; windowMs: number } } = {}) {
   const { createHttpApp } = await import('../src/http/app.ts');
   const { createSigner, generateSigningKeyPem } = await import('../src/auth/signing.ts');
   const { hashPassword } = await import('../src/auth/password.ts');
@@ -78,6 +78,7 @@ export async function createHttpHarness(h: Harness) {
     powersyncUrl: 'http://127.0.0.1:9',
     clock: h.clock.now,
     failedSignInDelayMs: 0,
+    ...overrides,
   });
 
   const request = (path: string, init: { method?: string; body?: unknown; token?: string } = {}) =>
