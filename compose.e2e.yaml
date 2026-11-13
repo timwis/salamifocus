@@ -1,0 +1,17 @@
+# Layered over compose.yaml for end-to-end tests (see e2e/support/stack.ts):
+# a separate project whose Postgres keeps nothing on disk, on ports that do
+# not clash with the development stack.
+services:
+  postgres:
+    ports: !override
+      - "54339:5432"
+    volumes: !override
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    tmpfs:
+      - /var/lib/postgresql
+
+  powersync:
+    ports: !override
+      - "8090:8080"
+    environment:
+      PS_JWKS_URL: http://host.docker.internal:3101/.well-known/jwks.json

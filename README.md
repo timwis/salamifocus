@@ -38,19 +38,13 @@ pnpm dev:infra
 pnpm test
 ```
 
-`pnpm test:e2e:web` starts the app server and web client itself (Postgres and PowerSync must be up) and drives the web client in Chromium, with a simulated phone uploading through the real sync endpoint. A small proxy in front of the web client (`e2e/support/network-switch.ts`) cuts it off from the server to test offline behaviour.
+The server tests create a throwaway database per test file on the Postgres from `compose.yaml` (`TEST_DATABASE_URL`) and drive the application's public operations and queries, or its HTTP endpoints as a client would.
 
-The Android end-to-end tests run on an emulator against the app server, through a network switch so they can take the phone offline:
+The end-to-end tests drive the real clients. Each run starts its own throwaway stack (a second Compose project, `salamifocus-e2e`, from `compose.e2e.yaml`) with an in-memory Postgres, its own PowerSync and its own app server on port 3101. It removes the stack afterwards, so development data is never touched. Docker must be running; the development stack need not be.
 
 ```sh
-node --env-file=.env server/src/main.ts &
-node e2e/support/network-switch.ts --listen 3199 --control 3198 --target http://127.0.0.1:3100 &
-cd android && ./gradlew connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.serverUrl=http://10.0.2.2:3199 \
-  -Pandroid.testInstrumentationRunnerArguments.directServerUrl=http://10.0.2.2:3100 \
-  -Pandroid.testInstrumentationRunnerArguments.networkControl=http://10.0.2.2:3198
+pnpm test:e2e:web       # web client in Chromium; extra arguments go to Playwright
+pnpm test:e2e:android   # Android app on the running emulator; needs JDK 17+
 ```
 
-Without `networkControl` the offline test is skipped.
-
-The server tests create a throwaway database per test file on the Postgres from `compose.yaml` (`TEST_DATABASE_URL`) and drive the application's public operations and queries, or its HTTP endpoints as a client would.
+A simulated other client uploads through the real sync endpoint. A small proxy (`e2e/support/network-switch.ts`) stands between each client and the server so the tests can take that client offline.

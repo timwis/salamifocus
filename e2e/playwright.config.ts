@@ -1,12 +1,9 @@
-import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+import { ports, serverUrl } from './support/env.ts';
 
-if (existsSync('../.env')) process.loadEnvFile('../.env');
-const { ports } = await import('./support/env.ts');
-
-// Expects Postgres and PowerSync to be running already (`pnpm dev:infra`).
-// Starts the app server, the web dev server, and the network switch in front
-// of the web dev server that the browser talks to.
+// Run through `pnpm test:e2e:web`, which first starts a throwaway stack with
+// its own app server. This starts the web dev server pointed at that server,
+// and the network switch in front of it that the browser talks to.
 export default defineConfig({
   testDir: 'tests',
   timeout: 60_000,
@@ -22,20 +19,14 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'node ../server/src/main.ts',
-      url: `http://127.0.0.1:${ports.server}/api/health`,
-      env: { PORT: String(ports.server), HOST: process.env.HOST ?? '0.0.0.0' },
-      reuseExistingServer: !process.env.CI,
-    },
-    {
       command: 'pnpm --filter @salamifocus/web exec vite',
       url: `http://127.0.0.1:${ports.webDev}`,
-      env: { WEB_PORT: String(ports.webDev), WEB_HMR: 'false', SALAMIFOCUS_SERVER_URL: `http://127.0.0.1:${ports.server}` },
+      env: { WEB_PORT: String(ports.webDev), WEB_HMR: 'false', SALAMIFOCUS_SERVER_URL: serverUrl },
       reuseExistingServer: false,
     },
     {
-      command: `node support/network-switch.ts --listen ${ports.web} --control ${ports.switchControl} --target http://127.0.0.1:${ports.webDev} --only /api,/powersync`,
-      url: `http://127.0.0.1:${ports.switchControl}/`,
+      command: `node support/network-switch.ts --listen ${ports.web} --control ${ports.webSwitchControl} --target http://127.0.0.1:${ports.webDev} --only /api,/powersync`,
+      url: `http://127.0.0.1:${ports.webSwitchControl}/`,
       reuseExistingServer: false,
     },
   ],

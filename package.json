@@ -12,6 +12,7 @@
     "dev:web": "pnpm --filter @salamifocus/web dev",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --filter '!@salamifocus/e2e' test",
-    "test:e2e:web": "pnpm --filter @salamifocus/e2e test"
+    "test:e2e:web": "pnpm --filter @salamifocus/e2e test",
+    "test:e2e:android": "pnpm --filter @salamifocus/e2e test:android"
   }
 }

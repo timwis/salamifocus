@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "playwright test",
+    "test": "node run-web.ts",
+    "test:android": "node run-android.ts",
     "typecheck": "tsc -p ."
   },
   "devDependencies": {
