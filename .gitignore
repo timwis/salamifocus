@@ -9,3 +9,8 @@ dist/
 !docs/adr/0001-evidence/*.log
 test-results/
 playwright-report/
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
