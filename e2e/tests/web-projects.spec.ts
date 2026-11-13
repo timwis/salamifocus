@@ -103,7 +103,7 @@ test('selecting several projects or a folder shows each of their projects', asyn
   await expect(sidebar(page)).toBeHidden();
 });
 
-test('tasks are added to a project and retitled from the keyboard, and stay out of the Inbox', async ({ page }) => {
+test('tasks are added to a project, retitled and reordered from the keyboard, and stay out of the Inbox', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const kitchen = `Kitchen ${run}`;
   const { projectId } = await phone.createProject(kitchen, { position: 'a3' });
@@ -140,12 +140,22 @@ test('tasks are added to a project and retitled from the keyboard, and stay out 
   await page.keyboard.press('Enter');
   await expect(task(`Measure the walls and ceiling ${run}`)).toBeFocused();
 
+  // Alt+↑ moves the task up within its project, and no further than the top.
+  await page.keyboard.press('Alt+ArrowUp');
+  await expect(tasks).toHaveText([`Measure the walls and ceiling ${run}`, `Choose a colour ${run}`, `Buy dust sheets ${run}`]);
+  await expect(task(`Measure the walls and ceiling ${run}`)).toBeFocused();
+  await page.keyboard.press('Alt+ArrowUp');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Alt+ArrowUp');
+  await expect(tasks).toHaveText([`Measure the walls and ceiling ${run}`, `Buy dust sheets ${run}`, `Choose a colour ${run}`]);
+
   await expect(status(page)).toContainText('All changes uploaded');
   const [outline] = await server.projects([projectId]);
   expect(outline?.tasks.map((t) => t.title)).toEqual([
-    `Choose a colour ${run}`,
     `Measure the walls and ceiling ${run}`,
     `Buy dust sheets ${run}`,
+    `Choose a colour ${run}`,
   ]);
 
   await page.keyboard.press('1');

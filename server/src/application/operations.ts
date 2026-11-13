@@ -125,7 +125,26 @@ export const completeTask: OperationDefinition<CompleteTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, ...organisationOperations] as OperationDefinition<unknown>[];
+export interface ReorderTaskArgs {
+  taskId: string;
+  position: string;
+}
+
+/** Moves a task among its siblings. The order is presentation only and implies no sequence. */
+export const reorderTask: OperationDefinition<ReorderTaskArgs> = {
+  name: OperationName.reorderTask,
+  parse(input) {
+    const a = args.record(input);
+    return { taskId: args.uuid(a, 'taskId'), position: args.text(a, 'position') };
+  },
+  async apply(mutations, { taskId, position }) {
+    const problem = positionProblem(position);
+    if (problem) throw new Rejection('invalid_position', problem);
+    await mutations.update('task', taskId, { position });
+  },
+};
+
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reorderTask, ...organisationOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

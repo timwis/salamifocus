@@ -132,6 +132,11 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     return { taskId: id, completedAt: data.completed_at };
   },
 
+  [OperationName.reorderTask](entries) {
+    const { id, data } = onlyUpdate(entries, 'tasks', ['position']);
+    return { taskId: id, position: data.position };
+  },
+
   [OperationName.createFolder](entries) {
     const { id, data } = onlyInsert(entries, 'folders', ['name', 'parent_id', 'position']);
     return { folderId: id, name: data.name, parentId: data.parent_id ?? null, position: data.position };

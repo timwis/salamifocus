@@ -157,6 +157,20 @@ describe('tasks in projects', () => {
     assert.ok(!(await h.application.inbox()).some((entry) => entry.id === capture.taskId));
   });
 
+  it('reorders a task by changing only that task', async () => {
+    const id = await project('Move house');
+    await addTask(id, 'Get quotes from movers', 'a0');
+    await addTask(id, 'Order boxes', 'a1');
+    const last = await addTask(id, 'Redirect post', 'a2');
+
+    assert.equal(await perform(OperationName.reorderTask, { taskId: last, position: 'a0V' }), 'applied');
+    assert.equal(await perform(OperationName.reorderTask, { taskId: last, position: 'oops' }), 'invalid_position');
+
+    assert.deepEqual(await outline([id]), [{ 'Move house': ['Get quotes from movers', 'Redirect post', 'Order boxes'] }]);
+    const history = await h.application.history(last);
+    assert.deepEqual(history.at(-1)?.changes, [{ entity: 'task', entityId: last, kind: 'update', before: { position: 'a2' }, after: { position: 'a0V' } }]);
+  });
+
   it('records the new task in its history', async () => {
     const id = await project('Holiday');
     const taskId = await addTask(id, 'Book flights', 'a0');

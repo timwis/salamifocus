@@ -1,7 +1,7 @@
-import { normaliseTitle, positionBetween, titleProblem } from '@salamifocus/domain';
+import { normaliseTitle, positionAt, positionBetween, titleProblem } from '@salamifocus/domain';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
-import { completeTask, createTask } from '../writes.ts';
+import { completeTask, createTask, reorderTask } from '../writes.ts';
 import { TaskEditor } from './TaskEditor.tsx';
 
 export interface OutlineTask {
@@ -83,9 +83,24 @@ export function Outline({ label, groups, empty }: { label: string; groups: Outli
     await createTask(id, group.projectId, title, position);
   }
 
+  /** Moves the current task up or down within its project; it never crosses into another group. */
+  function reorder(by: -1 | 1) {
+    if (focused?.kind !== 'task' || !focused.group.projectId) return;
+    const { group, task, index } = focused;
+    const target = index + by;
+    if (target < 0 || target >= group.tasks.length) return;
+    void reorderTask(task.id, positionAt(group.tasks.filter((t) => t.id !== task.id), target));
+  }
+
   function onKeyDown(event: KeyboardEvent) {
-    if (isTyping(event) || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (isTyping(event)) return;
     const handled = () => event.preventDefault();
+    if (event.altKey && !event.ctrlKey && !event.metaKey) {
+      if (event.key === 'ArrowUp') return handled(), reorder(-1);
+      if (event.key === 'ArrowDown') return handled(), reorder(1);
+      return;
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     switch (event.key) {
       case 'ArrowDown':
         return handled(), focusRow(current.index + 1);

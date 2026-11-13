@@ -25,6 +25,10 @@ export function completeTask(taskId: string) {
   ]);
 }
 
+export function reorderTask(taskId: string, position: string) {
+  return write(OperationName.reorderTask, 'UPDATE tasks SET position = ?, _metadata = ? WHERE id = ?', (m) => [position, m, taskId]);
+}
+
 export function createTask(taskId: string, projectId: string, title: string, position: string) {
   return write(
     OperationName.createTask,
