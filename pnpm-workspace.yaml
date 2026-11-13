@@ -1,3 +1,5 @@
 packages:
   - domain
   - server
+  - web
+  - e2e
