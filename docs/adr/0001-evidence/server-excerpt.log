@@ -1,0 +1,29 @@
+{"t":"2026-11-13T13:54:38.860Z","event":"ack_dropped_after_commit","client_id":"9ad18b55-117a-4bb9-b56e-bb0fb8be4ad9","n":1}
+{"t":"2026-11-13T13:54:38.863Z","event":"duplicate_op_ignored","opId":"3efd0965-0361-4c57-ad0c-8e4ae28480f2","op":"capture","task":"cc6bfa2d-3c1b-43df-9209-07897819c5ad"}
+{"t":"2026-11-13T13:54:39.924Z","event":"ack_dropped_after_commit","client_id":"9ad18b55-117a-4bb9-b56e-bb0fb8be4ad9","n":1}
+{"t":"2026-11-13T13:54:41.875Z","event":"duplicate_op_ignored","opId":"2c149198-edc5-4f84-ae70-8e4dda452fdc","op":"edit_notes","task":"cc6bfa2d-3c1b-43df-9209-07897819c5ad"}
+{"t":"2026-11-13T13:55:03.559Z","event":"conflict_detected","task":"b4324955-1b28-4287-a245-7ee5396e5761","field":"title","base":"W3 title from A","server":"W4 title from A","incoming":"W4 title from B"}
+{"t":"2026-11-13T13:55:07.027Z","event":"op_rejected","opId":"e3a6a213-df21-4110-aa2e-900ec8ebec22","op":"rename","task":"523f88d3-07b6-43ca-8dc7-7cba2f846a1d","reason":"test rule: titles containing REJECTME are refused"}
+{"t":"2026-11-13T13:55:08.121Z","event":"fault_throw_before_commit","client_id":"fca43373-d9c0-4464-9e0e-1e5d9499394e","n":1}
+{"t":"2026-11-13T13:55:32.042Z","event":"ack_dropped_after_commit","client_id":"7662dcbe-d4cf-4676-b5ee-356ecd7dbfc4","n":1}
+{"t":"2026-11-13T13:55:32.050Z","event":"duplicate_op_ignored","opId":"597c02c7-6974-4345-86d5-47a4d6e86369","op":"capture","task":"0e341007-2409-443f-b19d-caf5d072329a"}
+{"t":"2026-11-13T13:55:33.065Z","event":"ack_dropped_after_commit","client_id":"7662dcbe-d4cf-4676-b5ee-356ecd7dbfc4","n":1}
+{"t":"2026-11-13T13:55:35.750Z","event":"duplicate_op_ignored","opId":"c3480373-1157-40b6-9145-2d622d80ef31","op":"edit_notes","task":"0e341007-2409-443f-b19d-caf5d072329a"}
+{"t":"2026-11-13T13:55:52.822Z","event":"conflict_detected","task":"b0058afc-1b64-439c-b8d4-20926f0a3178","field":"title","base":"A3 title from Android","server":"A4 title from web","incoming":"A4 title from Android"}
+{"t":"2026-11-13T13:55:55.884Z","event":"op_rejected","opId":"27c84de6-9115-4148-9d33-5fea7450239b","op":"rename","task":"c0ea2577-4be4-4df4-934e-24c24fe42f98","reason":"test rule: titles containing REJECTME are refused"}
+{"t":"2026-11-13T13:55:56.883Z","event":"fault_throw_before_commit","client_id":"7662dcbe-d4cf-4676-b5ee-356ecd7dbfc4","n":1}
+{"t":"2026-11-13T13:56:15.837Z","event":"file_offset_query","id":"919cfa81-b685-448b-b4fa-d58815418fbb","offset":0,"complete":false}
+{"t":"2026-11-13T13:56:16.168Z","event":"file_offset_query","id":"f5149773-a8a9-4368-ac24-309360cc6bef","offset":0,"complete":false}
+{"t":"2026-11-13T13:56:27.368Z","event":"file_offset_query","id":"d60382cb-83e5-4630-b315-af5768bc26dc","offset":0,"complete":false}
+{"t":"2026-11-13T13:57:01.367Z","event":"ack_dropped_after_commit","client_id":"7662dcbe-d4cf-4676-b5ee-356ecd7dbfc4","n":1}
+{"t":"2026-11-13T13:57:01.375Z","event":"duplicate_op_ignored","opId":"474e85f9-9d1c-4b51-870f-9e172eeeebf1","op":"capture","task":"5ea64d63-e03f-4417-9969-700d0fc621b3"}
+{"t":"2026-11-13T13:57:02.376Z","event":"ack_dropped_after_commit","client_id":"7662dcbe-d4cf-4676-b5ee-356ecd7dbfc4","n":1}
+{"t":"2026-11-13T13:57:04.688Z","event":"duplicate_op_ignored","opId":"7f2a89d9-d4f4-4267-bf8e-d7d743f1d484","op":"edit_notes","task":"5ea64d63-e03f-4417-9969-700d0fc621b3"}
+{"t":"2026-11-13T13:57:17.873Z","event":"conflict_detected","task":"2cecb5cb-a5d8-4b37-a6e2-3e32bfd85ae5","field":"title","base":"A3 title from Android","server":"A4 title from web","incoming":"A4 title from Android"}
+{"t":"2026-11-13T13:57:21.088Z","event":"op_rejected","opId":"9cfae4f7-e024-4021-a8ef-7e89a42e19af","op":"rename","task":"86865adc-491f-4027-9754-40e52e81c747","reason":"test rule: titles containing REJECTME are refused"}
+{"t":"2026-11-13T13:57:22.092Z","event":"fault_throw_before_commit","client_id":"7662dcbe-d4cf-4676-b5ee-356ecd7dbfc4","n":1}
+{"t":"2026-11-13T13:57:43.605Z","event":"file_offset_query","id":"6de876bb-27d3-411f-a7a3-bedd8456fed7","offset":0,"complete":false}
+{"t":"2026-11-13T13:58:26.546Z","event":"file_offset_query","id":"6de876bb-27d3-411f-a7a3-bedd8456fed7","offset":1515726,"complete":false}
+{"t":"2026-11-13T13:58:28.270Z","event":"file_offset_query","id":"b18cb0a6-8b0c-4977-b87a-085c1b021d83","offset":0,"complete":false}
+{"t":"2026-11-13T13:58:32.723Z","event":"file_offset_query","id":"b18cb0a6-8b0c-4977-b87a-085c1b021d83","offset":1266722,"complete":false}
+{"t":"2026-11-13T13:58:37.264Z","event":"file_offset_query","id":"b18cb0a6-8b0c-4977-b87a-085c1b021d83","offset":1780710,"complete":false}

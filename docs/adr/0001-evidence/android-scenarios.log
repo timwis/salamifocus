@@ -1,0 +1,85 @@
+13:56:48.687 === persistence
+13:56:50.901 android: airplane mode ON
+13:56:52.669 android: process 9683 killed with SIGKILL
+13:56:53.731 after restart (offline): pending 2 | t1 A1 renamed offline | t2 A1 captured offline | connected false
+13:56:53.732 PASS android: offline capture survives process kill
+13:56:53.732 PASS android: offline edit survives process kill
+13:56:53.732 PASS android: pending upload queue survives process kill — 2 -> 2
+13:56:53.775 PASS android: server has not seen offline writes yet
+13:56:53.913 android: am force-stop
+13:56:54.772 PASS android: pending queue survives force-stop
+13:56:54.814 android: airplane mode OFF
+13:57:00.734 PASS android: queued writes upload after reconnect
+13:57:00.760 network a -> online
+13:57:00.761 network b -> online
+13:57:00.762 network c -> online
+13:57:00.798 === lostAck
+13:57:01.712 PASS android: lost-ack capture -> one task row
+13:57:01.712 PASS android: lost-ack capture -> one change record, retry counted — [{"upload_attempts":2}]
+13:57:03.714 PASS android: client still holds the write after losing the ack — pending 1
+13:57:03.814 android: process 9908 killed with SIGKILL
+13:57:05.003 PASS android: lost ack + process kill + retry after restart -> one change record — [{"upload_attempts":2}]
+13:57:05.004 PASS android: version incremented once — version 2
+13:57:05.006 network a -> online
+13:57:05.007 network b -> online
+13:57:05.008 network c -> online
+13:57:05.035 === conflicts
+13:57:06.916 network a -> offline
+13:57:06.919 network c -> offline
+13:57:07.087 network c -> online
+13:57:12.116 network a -> online
+13:57:12.752 PASS android+web: different-field offline edits both survive — {"title":"A3 title from Android","notes":"A3 notes from web","defer_until":null,"version":3,"recording_id":null}
+13:57:12.753 network a -> offline
+13:57:12.754 network c -> offline
+13:57:12.869 network a -> online
+13:57:13.639 network c -> online
+13:57:18.338 PASS android+web: same-field conflict detected, losing value kept — [{"field":"title","losing_value":"A4 title from web","winning_value":"A4 title from Android"}]
+13:57:18.435 PASS android: conflict record visible locally
+13:57:19.336 PASS android: losing edit recoverable via restore operation
+13:57:19.347 network a -> online
+13:57:19.358 network b -> online
+13:57:19.361 network c -> online
+13:57:19.390 === writePath
+13:57:21.378 PASS android: invalid operation rejected, optimistic write reverted
+13:57:21.378 PASS android: rejection visible on the client — test rule: titles containing REJECTME are refused
+13:57:27.460 PASS android: crash before commit leaves nothing; retry applies once
+13:57:27.464 network a -> online
+13:57:27.464 network b -> online
+13:57:27.465 network c -> online
+13:57:27.493 === timeQuery
+13:57:29.524 android: airplane mode ON
+13:57:41.734 android UI: deferred -> available, still offline: true
+13:57:41.735 PASS android: time-dependent availability flips locally while offline (UI)
+13:57:41.763 android: airplane mode OFF
+13:57:41.770 network a -> online
+13:57:41.770 network b -> online
+13:57:41.771 network c -> online
+13:57:41.804 === background
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
+13:57:45.143 android: pressed HOME during upload
+13:58:25.264 server .part size every 5s after HOME: 1310720, 1515726, 1515726, 1515726, 1515726, 1515726, 1515726, 1515726
+13:58:25.265 ActivityManager: (no freeze logged)
+13:58:25.265 OBSERVED android: after HOME the in-process upload STALLED (process frozen/cached) — production needs WorkManager / foreground service
+Warning: Activity not started, its current task has been brought to the front
+13:58:27.364 PASS android: background-stalled upload completes once the app is reopened
+13:58:27.367 network a -> online
+13:58:27.367 network b -> online
+13:58:27.367 network c -> online
+13:58:27.409 === attachments
+13:58:28.359 voice capture saved locally: task 6902f55e-80d7-4226-baaa-002c7b8f7323 recording b18cb0a6-8b0c-4977-b87a-085c1b021d83 attachment {"id":"b18cb0a6-8b0c-4977-b87a-085c1b021d83","state":1,"size":8388608,"local_uri":"/data/data/dev.salamifocus.spike/files/attachments/b18cb0a6-8b0c-4977-b87a-085c1b021d83.m4a"}
+13:58:28.364 PASS android: record reaches the server before (and independently of) its audio — row synced, file still uploading
+13:58:31.226 android: process 10310 killed with SIGKILL
+13:58:31.226 server has 1201186 bytes after kill
+13:58:34.071 network c -> offline
+13:58:34.071 server has 1780710 bytes after network cut
+13:58:37.077 network c -> online
+13:58:38.533 upload attempts resumed from offsets: 0, 1266722, 1780710
+13:58:38.533 PASS android: interrupted upload resumed from a non-zero offset — 0,1266722,1780710
+13:58:38.533 PASS android: assembled server file matches the device file — 9a740409ae2d vs 9a740409ae2d
+13:58:38.536 PASS android: one inbox entry for the recording
+13:58:38.537 PASS android: device keeps its local copy after upload
+13:58:40.155 PASS web: recording downloaded via AttachmentQueue and playable element rendered — {"id":"b18cb0a6-8b0c-4977-b87a-085c1b021d83","state":3,"size":null,"local_uri":"indexeddb://spike-attachments/files/b18cb0a6-8b0c-4977-b87a-085c1b021d83.m4a"}
+13:58:40.170 network a -> online
+13:58:40.173 network b -> online
+13:58:40.177 network c -> online
+13:58:40.266 26/26 checks passed

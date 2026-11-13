@@ -1,0 +1,69 @@
+13:54:28.257 reset server tables
+13:54:28.264 === persistence
+13:54:30.591 network a -> offline
+13:54:30.625 pending uploads before kill: 2 | persisted(): false | estimate: {"quota":10737618944,"usage":200704,"usageDetails":{"indexedDB":200704}}
+13:54:30.651 w1: browser process SIGKILLed
+13:54:32.706 after relaunch (offline): pending 2 | t1 W1 renamed offline | t2 W1 captured offline | connected false
+13:54:32.706 PASS web: offline capture survives browser kill
+13:54:32.706 PASS web: offline edit survives browser kill
+13:54:32.706 PASS web: pending upload queue survives browser kill — 2 -> 2
+13:54:32.713 PASS web: server has not seen offline writes yet
+13:54:32.715 network a -> online
+13:54:36.792 PASS web: queued writes upload after reconnect
+13:54:36.836 network a -> online
+13:54:36.841 network b -> online
+13:54:36.843 network c -> online
+13:54:36.843 === lostAck
+13:54:39.115 PASS web: lost-ack capture -> one task row
+13:54:39.115 PASS web: lost-ack capture -> one change record, retry counted — [{"upload_attempts":2}]
+13:54:41.137 pending after lost ack (client never saw success): 1
+13:54:41.137 PASS web: client still holds the write after losing the ack
+13:54:41.157 w2: browser process SIGKILLed
+13:54:42.072 PASS web: lost ack + browser kill + retry after relaunch -> one change record — [{"upload_attempts":2}]
+13:54:42.074 PASS web: version incremented once — version 2
+13:54:42.102 network a -> online
+13:54:42.103 network b -> online
+13:54:42.103 network c -> online
+13:54:42.103 === conflicts
+13:54:43.590 network a -> offline
+13:54:43.591 network b -> offline
+13:54:43.641 network a -> online
+13:54:49.030 network b -> online
+13:54:53.919 different fields -> server {
+  title: 'W3 title from A',
+  notes: 'W3 notes from B',
+  defer_until: null,
+  version: 3
+} | A W3 title from A W3 notes from B | B W3 title from A W3 notes from B
+13:54:53.919 PASS web: different-field offline edits both survive (server)
+13:54:53.919 PASS web: different-field offline edits both survive (both clients)
+13:54:53.923 PASS web: no conflict recorded for different fields
+13:54:53.925 network a -> offline
+13:54:53.926 network b -> offline
+13:54:53.941 network a -> online
+13:54:58.807 network b -> online
+13:55:03.697 same field -> conflicts row: [{"field":"title","base_value":"W3 title from A","winning_value":"W4 title from B","losing_value":"W4 title from A","winning_op_id":"d4779a3b-a5af-4fb9-b0b1-38efa3f44b85","losing_op_id":"78e87c46-4585-4e3c-8f7f-ff29a1518fa6"}]
+13:55:03.704 PASS web: same-field edits converge to one value on both clients
+13:55:03.704 PASS web: same-field conflict detected and losing value kept
+13:55:03.707 PASS web: conflict record visible locally on the losing device
+13:55:03.975 PASS web: losing edit recoverable via a new restore operation
+13:55:03.991 network a -> online
+13:55:03.993 network b -> online
+13:55:03.994 network c -> online
+13:55:03.994 === writePath
+13:55:06.249 local optimistic title: REJECTME invalid
+13:55:07.274 PASS web: invalid operation rejected by server, local optimistic write reverted
+13:55:07.274 PASS web: rejection recorded and visible on the client — test rule: titles containing REJECTME are refused
+13:55:13.158 PASS web: crash before commit leaves neither mutation nor change record; retry applies once — [{"upload_attempts":1}]
+13:55:13.165 network a -> online
+13:55:13.166 network b -> online
+13:55:13.166 network c -> online
+13:55:13.167 === timeQuery
+13:55:14.608 network a -> offline
+13:55:19.972 available cell: no -> yes at 2026-11-13T13:55:19.971Z (defer_until 2026-11-13T13:55:19.863Z); still offline: true
+13:55:19.972 PASS web: time-dependent availability flips locally while offline
+13:55:19.974 network a -> online
+13:55:19.983 network a -> online
+13:55:19.984 network b -> online
+13:55:19.986 network c -> online
+13:55:19.986 21/21 checks passed

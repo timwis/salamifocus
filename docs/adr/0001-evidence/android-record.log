@@ -1,0 +1,8 @@
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
+13:56:20.710 tapped "Record"
+13:56:27.119 tapped "Stop &amp; save"
+13:56:27.743 voice capture saved locally: {"task":"3a9d5163-81fd-48bb-b420-ffb6cb4a9f8a","recording":"d60382cb-83e5-4630-b315-af5768bc26dc","size":12666,"event":"voice_capture_saved","t":"2026-11-13T13:56:27.161658Z"}
+13:56:27.775 server recording: 12666 bytes, sha 843494025483
+13:56:27.783 server file type: ../server/files/d60382cb-83e5-4630-b315-af5768bc26dc: ISO Media, MP4 v2 [ISO 14496-14]
+13:56:29.472 web <audio> loaded the recording: duration 6.14 s
+PASS real recording -> upload -> web playback
