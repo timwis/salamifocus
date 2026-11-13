@@ -10,6 +10,8 @@ export interface Config {
   powersyncAudience: string;
   signingKeyPem: string | null;
   signingKeyFile: string;
+  /** The built web client, served at the root when set. */
+  webRoot: string | null;
   production: boolean;
 }
 
@@ -28,6 +30,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     powersyncAudience: env.POWERSYNC_AUDIENCE ?? 'powersync',
     signingKeyPem: env.SIGNING_KEY ?? null,
     signingKeyFile: resolve(env.SIGNING_KEY_FILE ?? new URL('../../.data/signing-key.pem', import.meta.url).pathname),
+    webRoot: env.WEB_ROOT ? resolve(env.WEB_ROOT) : null,
     production: env.NODE_ENV === 'production',
   };
 }

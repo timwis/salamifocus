@@ -8,6 +8,7 @@ import type { Signer } from '../auth/signing.ts';
 import type { Sql } from '../db.ts';
 import { operationsFromCrud, type CrudEntry } from '../sync/crud.ts';
 import { proxyTo } from './proxy.ts';
+import { serveWebClient } from './web.ts';
 
 export const owner: Actor = { type: 'user', id: 'owner' };
 
@@ -17,6 +18,8 @@ export interface HttpOptions {
   signer: Signer;
   ownerPasswordHash: string;
   powersyncUrl: string;
+  /** The built web client to serve, if any. */
+  webRoot?: string | null;
   clock?: () => Date;
   failedSignInDelayMs?: number;
 }
@@ -77,6 +80,8 @@ export function createHttpApp(options: HttpOptions) {
   });
 
   http.all('/powersync/*', proxyTo(options.powersyncUrl, '/powersync'));
+  http.all('/api/*', (c) => c.json({ error: 'Not found.' }, 404));
+  if (options.webRoot) serveWebClient(http, options.webRoot);
 
   return http;
 }

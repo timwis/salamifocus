@@ -17,6 +17,7 @@ const http = createHttpApp({
   signer,
   ownerPasswordHash: config.ownerPasswordHash,
   powersyncUrl: config.powersyncUrl,
+  webRoot: config.webRoot,
 });
 
 const server = serve({ fetch: http.fetch, port: config.port, hostname: config.host }, (info) => {
