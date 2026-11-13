@@ -93,7 +93,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
 
   async function inbox(): Promise<InboxEntry[]> {
     return sql<InboxEntry[]>`
-      SELECT id, title, created_at AS "createdAt" FROM tasks WHERE project_id IS NULL ORDER BY created_at, id`;
+      SELECT id, title, created_at AS "createdAt" FROM tasks WHERE project_id IS NULL AND completed_at IS NULL ORDER BY created_at, id`;
   }
 
   /** Folders, projects and single-action lists as the Projects sidebar nests them. */
@@ -111,14 +111,14 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   /**
    * What the Projects perspective shows for a sidebar selection: each selected
    * project (every project inside a selected folder), in sidebar order, with
-   * its tasks in outline order.
+   * its unfinished tasks in outline order.
    */
   async function projects(selection: string[]): Promise<ProjectOutline[]> {
     const selected = projectsInSelection(await organisation(), selection);
     if (selected.length === 0) return [];
     const rows = await sql<{ id: string; title: string; note: string; projectId: string; position: string | null }[]>`
       SELECT id, title, note, project_id AS "projectId", position FROM tasks
-      WHERE project_id IN ${sql(selected.map((p) => p.id))}`;
+      WHERE project_id IN ${sql(selected.map((p) => p.id))} AND completed_at IS NULL`;
     return selected.map((project) => ({
       project: { id: project.id, name: project.name, kind: project.kind },
       tasks: rows
@@ -130,7 +130,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
 
   async function task(id: string): Promise<TaskView | null> {
     const [row] = await sql`
-      SELECT t.id, t.title, t.note, t.created_at, t.project_id, c.id AS capture_id, c.text, c.captured_at
+      SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.completed_at, c.id AS capture_id, c.text, c.captured_at
       FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
       WHERE t.id = ${id}::uuid`;
     if (!row) return null;
@@ -140,6 +140,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       note: row.note,
       createdAt: row.created_at,
       projectId: row.project_id,
+      completedAt: row.completed_at,
       capture: row.capture_id ? { id: row.capture_id, text: row.text, capturedAt: row.captured_at } : null,
     };
   }

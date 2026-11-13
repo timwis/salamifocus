@@ -55,6 +55,7 @@ The task rows of the current perspective. In Projects, each selected project has
 |---|---|
 | ↑ / ↓, Home / End | Previous / next row, first / last row |
 | Enter | Edit the task, starting in its title |
+| Space | Complete the task. It leaves the outline and the row now in its place becomes current |
 | N | New task straight after the current row (on a project heading: at the top of that project). Enter saves it and starts another; Enter on an empty row or Escape stops |
 
 ### Editing a task

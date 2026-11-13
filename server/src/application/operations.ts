@@ -105,7 +105,27 @@ export const editTaskNote: OperationDefinition<EditTaskNoteArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, ...organisationOperations] as OperationDefinition<unknown>[];
+export interface CompleteTaskArgs {
+  taskId: string;
+  completedAt: string;
+}
+
+export const completeTask: OperationDefinition<CompleteTaskArgs> = {
+  name: OperationName.completeTask,
+  parse(input, now) {
+    const a = args.record(input);
+    return { taskId: args.uuid(a, 'taskId'), completedAt: args.timestamp(a, 'completedAt', now) };
+  },
+  async apply(mutations, { taskId, completedAt }) {
+    const task = await mutations.read('task', taskId);
+    if (!task) throw new Rejection('not_found', 'That task no longer exists.');
+    // Completed on two devices: the first completion stands.
+    if (task.completed_at !== null) return;
+    await mutations.update('task', taskId, { completed_at: completedAt });
+  },
+};
+
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, ...organisationOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

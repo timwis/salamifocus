@@ -27,7 +27,12 @@ val AppSchema = Schema(
     listOf(
         Table(
             name = "tasks",
-            columns = listOf(Column.text("title"), Column.text("created_at"), Column.text("project_id")),
+            columns = listOf(
+                Column.text("title"),
+                Column.text("created_at"),
+                Column.text("project_id"),
+                Column.text("completed_at"),
+            ),
             options = synced,
         ),
         Table(
@@ -75,7 +80,7 @@ class Tasks(private val db: PowerSyncDatabase) {
     }
 
     fun inbox(): Flow<List<InboxTask>> =
-        db.watch("SELECT id, title FROM tasks WHERE project_id IS NULL ORDER BY created_at, id") { cursor ->
+        db.watch("SELECT id, title FROM tasks WHERE project_id IS NULL AND completed_at IS NULL ORDER BY created_at, id") { cursor ->
             InboxTask(id = cursor.getString("id"), title = cursor.getString("title"))
         }
 

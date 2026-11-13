@@ -17,6 +17,14 @@ export function editTaskNote(taskId: string, note: string) {
   return write(OperationName.editTaskNote, 'UPDATE tasks SET note = ?, _metadata = ? WHERE id = ?', (m) => [note, m, taskId]);
 }
 
+export function completeTask(taskId: string) {
+  return write(OperationName.completeTask, 'UPDATE tasks SET completed_at = ?, _metadata = ? WHERE id = ?', (m) => [
+    new Date().toISOString(),
+    m,
+    taskId,
+  ]);
+}
+
 export function createTask(taskId: string, projectId: string, title: string, position: string) {
   return write(
     OperationName.createTask,

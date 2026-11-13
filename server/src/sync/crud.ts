@@ -126,6 +126,12 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     return { taskId: id, note: data.note ?? '' };
   },
 
+  [OperationName.completeTask](entries) {
+    const { id, data } = onlyUpdate(entries, 'tasks', ['completed_at']);
+    if (typeof data.completed_at !== 'string') throw new Malformed('A completion must set when the task was completed.');
+    return { taskId: id, completedAt: data.completed_at };
+  },
+
   [OperationName.createFolder](entries) {
     const { id, data } = onlyInsert(entries, 'folders', ['name', 'parent_id', 'position']);
     return { folderId: id, name: data.name, parentId: data.parent_id ?? null, position: data.position };

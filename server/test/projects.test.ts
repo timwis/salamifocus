@@ -109,6 +109,54 @@ describe('tasks in projects', () => {
     assert.equal(await perform(OperationName.editTaskNote, { taskId: crypto.randomUUID(), note: 'Lost' }), 'not_found');
   });
 
+  it('drops a completed task from its project’s outline but keeps when it was completed', async () => {
+    const id = await project('Bathroom');
+    const done = await addTask(id, 'Order tiles', 'a0');
+    await addTask(id, 'Book a plumber', 'a1');
+
+    assert.equal(await perform(OperationName.completeTask, { taskId: done, completedAt: '2026-11-14T08:00:00.000Z' }), 'applied');
+
+    assert.deepEqual(await outline([id]), [{ Bathroom: ['Book a plumber'] }]);
+    assert.equal((await h.application.task(done))?.completedAt, '2026-11-14T08:00:00.000Z');
+  });
+
+  it('keeps the first completion when a task is completed twice', async () => {
+    const id = await project('Admin');
+    const taskId = await addTask(id, 'File receipts', 'a0');
+
+    const [first, second] = await Promise.all([
+      perform(OperationName.completeTask, { taskId, completedAt: '2026-11-14T08:00:00.000Z' }),
+      perform(OperationName.completeTask, { taskId, completedAt: '2026-11-14T09:30:00.000Z' }),
+    ]);
+
+    assert.deepEqual([first, second], ['applied', 'applied']);
+    const history = await h.application.history(taskId);
+    assert.equal(history.filter((entry) => entry.operation === 'complete_task').length, 1);
+    assert.equal((await h.application.task(taskId))?.completedAt, history.at(-1)?.changes[0]?.after.completed_at);
+  });
+
+  it('never treats a single-action list as complete because it is empty', async () => {
+    const id = await project('Miscellaneous', { kind: 'single_actions' });
+    const only = await addTask(id, 'Post the parcel', 'a0');
+
+    await perform(OperationName.completeTask, { taskId: only });
+
+    const [list] = await h.application.projects([id]);
+    assert.deepEqual([list?.project.kind, list?.tasks], ['single_actions', []]);
+    assert.ok(JSON.stringify(await h.application.organisation()).includes(id));
+    await addTask(id, 'Buy stamps', 'a1');
+    assert.deepEqual(await outline([id]), [{ Miscellaneous: ['Buy stamps'] }]);
+  });
+
+  it('keeps completed captures out of the Inbox', async () => {
+    const capture = captureRequest('book eye test');
+    await h.application.execute(capture);
+
+    await perform(OperationName.completeTask, { taskId: capture.taskId });
+
+    assert.ok(!(await h.application.inbox()).some((entry) => entry.id === capture.taskId));
+  });
+
   it('records the new task in its history', async () => {
     const id = await project('Holiday');
     const taskId = await addTask(id, 'Book flights', 'a0');

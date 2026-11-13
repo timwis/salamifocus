@@ -9,7 +9,7 @@ interface InboxRow {
 }
 
 export function Inbox() {
-  const { data: tasks } = useQuery<InboxRow>('SELECT id, title, note, position FROM tasks WHERE project_id IS NULL ORDER BY created_at, id');
+  const { data: tasks } = useQuery<InboxRow>('SELECT id, title, note, position FROM tasks WHERE project_id IS NULL AND completed_at IS NULL ORDER BY created_at, id');
 
   return (
     <main data-region="outline" aria-labelledby="inbox-heading">

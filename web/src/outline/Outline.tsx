@@ -1,7 +1,7 @@
 import { normaliseTitle, positionBetween, titleProblem } from '@salamifocus/domain';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
-import { createTask } from '../writes.ts';
+import { completeTask, createTask } from '../writes.ts';
 import { TaskEditor } from './TaskEditor.tsx';
 
 export interface OutlineTask {
@@ -97,6 +97,9 @@ export function Outline({ label, groups, empty }: { label: string; groups: Outli
         return handled(), focusRow(rows.length - 1);
       case 'n':
         return handled(), startDraft();
+      case ' ':
+        if (focused?.kind !== 'task') return;
+        return handled(), void completeTask(focused.task.id);
       case 'Enter':
         if (focused?.kind !== 'task') return;
         return handled(), setEditing({ mode: 'task', taskId: focused.task.id });
@@ -133,7 +136,16 @@ export function Outline({ label, groups, empty }: { label: string; groups: Outli
               onFocus={(event) => event.target === event.currentTarget && current.set(task.id)}
               onClick={() => current.set(task.id)}
             >
-              <span className="check" aria-hidden />
+              <button
+                type="button"
+                tabIndex={-1}
+                className="check"
+                aria-label={`Complete ${task.title}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void completeTask(task.id);
+                }}
+              />
               {editing?.mode === 'task' && editing.taskId === task.id ? (
                 <TaskEditor task={task} onClose={() => setEditing(null)} />
               ) : (

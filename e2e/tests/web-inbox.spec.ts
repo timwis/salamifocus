@@ -20,12 +20,12 @@ test('a capture from the phone appears in the Inbox, and renaming it reaches the
 
   const captured = `call sam re boiler ${run}`;
   const { taskId } = await phone.capture(captured);
-  await expect(inbox(page).getByRole('button', { name: captured })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: captured, exact: true })).toBeVisible();
 
   const renamed = `Call Sam about the boiler service ${run}`;
   await rename(page, captured, renamed);
 
-  await expect(inbox(page).getByRole('button', { name: renamed })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: renamed, exact: true })).toBeVisible();
   await expect.poll(async () => (await server.task(taskId))?.title).toBe(renamed);
   const task = await server.task(taskId);
   expect(task?.capture?.text).toBe(captured);
@@ -42,7 +42,7 @@ test('edits made offline survive a reload and converge with the phone on reconne
   await signIn(page);
   const first = await phone.capture(`buy milk ${run}`);
   const second = await phone.capture(`book dentist ${run}`);
-  await expect(inbox(page).getByRole('button', { name: `book dentist ${run}` })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: `book dentist ${run}`, exact: true })).toBeVisible();
 
   await network.offline();
   await expect(status(page)).toContainText('Offline');
@@ -51,7 +51,7 @@ test('edits made offline survive a reload and converge with the phone on reconne
 
   // The tab is closed and reopened while still offline.
   await page.reload();
-  await expect(inbox(page).getByRole('button', { name: `Buy oat milk ${run}` })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: `Buy oat milk ${run}`, exact: true })).toBeVisible();
   await expect(status(page)).toContainText('1 change waiting to upload');
 
   // Meanwhile the phone, still online, rewords the other capture.
@@ -60,7 +60,7 @@ test('edits made offline survive a reload and converge with the phone on reconne
 
   await network.online();
   await expect(status(page)).toContainText('All changes uploaded');
-  await expect(inbox(page).getByRole('button', { name: `Book dentist check-up ${run}` })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: `Book dentist check-up ${run}`, exact: true })).toBeVisible();
   await expect.poll(async () => (await server.task(first.taskId))?.title).toBe(`Buy oat milk ${run}`);
   expect(await server.history(first.taskId)).toHaveLength(2);
 });
@@ -70,12 +70,12 @@ test('a blank title is refused without changing anything', async ({ page }) => {
   await signIn(page);
   const { taskId } = await phone.capture(`water plants ${run}`);
 
-  await inbox(page).getByRole('button', { name: `water plants ${run}` }).click();
+  await inbox(page).getByRole('button', { name: `water plants ${run}`, exact: true }).click();
   await page.getByLabel('Title').fill('   ');
   await page.getByLabel('Title').press('Enter');
 
   await expect(page.getByRole('alert')).toHaveText('A task needs a title.');
   await page.getByLabel('Title').press('Escape');
-  await expect(inbox(page).getByRole('button', { name: `water plants ${run}` })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: `water plants ${run}`, exact: true })).toBeVisible();
   expect(await server.history(taskId)).toHaveLength(1);
 });

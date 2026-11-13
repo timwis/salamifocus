@@ -192,6 +192,44 @@ test('a task’s title and note are edited together; Tab keeps a change and Esca
   expect((await server.history(taskId)).map((entry) => entry.operation)).toEqual(['create_task', 'edit_task_note', 'rename_task']);
 });
 
+test('Space completes a task, focus moves to the next row, and an emptied single-action list stays usable', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const errands = `Errands list ${run}`;
+  const { projectId } = await phone.createProject(errands, { position: 'a5', kind: 'single_actions' });
+  const { taskId: first } = await phone.createTask(projectId, `Post the parcel ${run}`, 'a0');
+  await phone.createTask(projectId, `Collect prescription ${run}`, 'a1');
+  await phone.createTask(projectId, `Return library books ${run}`, 'a2');
+  await signIn(page);
+  await openProjectsAt(page, projectId, errands);
+  const tasks = page.getByRole('list', { name: errands }).getByRole('listitem');
+  const heading = page.getByRole('heading', { name: errands, level: 3 });
+
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Space');
+  await expect(tasks).toHaveText([`Collect prescription ${run}`, `Return library books ${run}`]);
+  await expect(tasks.first()).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Space');
+  await expect(tasks).toHaveText([`Collect prescription ${run}`]);
+  await expect(tasks.first()).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(tasks).toHaveCount(0);
+  await expect(heading).toBeFocused();
+
+  // The empty list is still there and still takes new tasks.
+  await expect(treeItem(page, errands)).toBeVisible();
+  await page.keyboard.press('n');
+  await page.keyboard.type(`Buy stamps ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(tasks).toHaveText([`Buy stamps ${run}`]);
+
+  await expect(status(page)).toContainText('All changes uploaded');
+  expect((await server.projects([projectId]))[0]?.tasks.map((t) => t.title)).toEqual([`Buy stamps ${run}`]);
+  expect((await server.task(first))?.completedAt).toBeTruthy();
+});
+
 test('a project created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const { folderId } = await phone.createFolder(`Errands ${run}`, { position: 'a2' });

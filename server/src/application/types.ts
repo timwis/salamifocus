@@ -33,6 +33,7 @@ export interface TaskView {
   note: string;
   createdAt: string;
   projectId: string | null;
+  completedAt: string | null;
   capture: { id: string; text: string; capturedAt: string } | null;
 }
 

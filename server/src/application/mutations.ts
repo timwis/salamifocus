@@ -44,8 +44,9 @@ export class Mutations {
     return rows.length > 0;
   }
 
+  /** The current row, locked until the operation finishes so concurrent operations see each other's effects. */
   async read(entity: Entity, id: string): Promise<Row | null> {
-    const [row] = await this.#tx<Row[]>`SELECT * FROM ${this.#tx(tables[entity])} WHERE id = ${id}`;
+    const [row] = await this.#tx<Row[]>`SELECT * FROM ${this.#tx(tables[entity])} WHERE id = ${id} FOR UPDATE`;
     return row ?? null;
   }
 

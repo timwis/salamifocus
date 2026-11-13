@@ -217,6 +217,13 @@ h2 {
   border: 1.5px solid #8e8e93;
   border-radius: 50%;
   box-sizing: border-box;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+button.check:hover {
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 30%, transparent 35%);
 }
 .project-heading {
   font-size: 1rem;

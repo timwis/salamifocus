@@ -6,6 +6,7 @@ export const OperationName = {
   renameTask: 'rename_task',
   createTask: 'create_task',
   editTaskNote: 'edit_task_note',
+  completeTask: 'complete_task',
   createFolder: 'create_folder',
   renameFolder: 'rename_folder',
   moveFolder: 'move_folder',
