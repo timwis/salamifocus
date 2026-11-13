@@ -1,0 +1,49 @@
+# Local development and CI infrastructure: Postgres (source data and
+# PowerSync's bucket storage, in separate databases) and the PowerSync
+# service. The app server runs on the host and is reached from the
+# PowerSync container at host.docker.internal.
+name: salamifocus
+
+services:
+  postgres:
+    image: postgres:18
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${POSTGRES_PORT:-54329}:5432"
+    volumes:
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d salamifocus"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  powersync:
+    image: journeyapps/powersync-service:1.28.3
+    command: ["start", "-r", "unified"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/service.yaml
+      NODE_OPTIONS: --max-old-space-size=512
+      PS_DATA_SOURCE_URI: postgresql://powersync_role:powersync@postgres:5432/salamifocus
+      PS_STORAGE_SOURCE_URI: postgresql://powersync_storage:powersync@postgres:5432/powersync_storage
+      PS_JWKS_URL: ${PS_JWKS_URL:-http://host.docker.internal:3100/.well-known/jwks.json}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${POWERSYNC_PORT:-8080}:8080"
+    volumes:
+      - ./infra/powersync:/config:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/probes/liveness').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+
+volumes:
+  postgres_data:

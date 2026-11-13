@@ -1,0 +1,10 @@
+config:
+  edition: 3
+
+# salamifocus has a single user, so everything syncs to every signed-in client.
+streams:
+  everything:
+    auto_subscribe: true
+    queries:
+      - SELECT * FROM tasks
+      - SELECT * FROM captures

@@ -1,0 +1,24 @@
+{
+  "name": "@salamifocus/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../.env --watch src/main.ts",
+    "start": "node src/main.ts",
+    "migrate": "node --env-file-if-exists=../.env src/cli/migrate.ts",
+    "hash-password": "node src/cli/hash-password.ts",
+    "typecheck": "tsc -p .",
+    "test": "node --env-file-if-exists=../.env --test --test-concurrency=1 'test/**/*.test.ts'"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.8",
+    "@salamifocus/domain": "workspace:*",
+    "hono": "^4.13.18",
+    "jose": "^6.2.17",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "^6.0.3"
+  }
+}
