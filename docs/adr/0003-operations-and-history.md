@@ -1,4 +1,4 @@
-# ADR 0002: Operations, identity and history
+# ADR 0003: Operations, identity and history
 
 - **Status:** Proposed (ticket 03)
 - **Date:** 13 November 2026

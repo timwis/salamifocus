@@ -1,6 +1,6 @@
 # salamifocus
 
-A personal GTD application: a native Android client for capture, a desktop web client for processing, local-first storage on both, and a Postgres server they sync through. See [ADR 0001](docs/adr/0001-sync-stack.md) for the stack and [ADR 0002](docs/adr/0002-operations-and-history.md) for how changes are written.
+A personal GTD application: a native Android client for capture, a desktop web client for processing, local-first storage on both, and a Postgres server they sync through. See [ADR 0001](docs/adr/0001-sync-stack.md) for the stack and [ADR 0003](docs/adr/0003-operations-and-history.md) for how changes are written.
 
 ## Layout
 
