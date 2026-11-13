@@ -103,6 +103,56 @@ test('selecting several projects or a folder shows each of their projects', asyn
   await expect(sidebar(page)).toBeHidden();
 });
 
+test('tasks are added to a project and retitled from the keyboard, and stay out of the Inbox', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const kitchen = `Kitchen ${run}`;
+  const { projectId } = await phone.createProject(kitchen, { position: 'a3' });
+  await signIn(page);
+  await openProjectsAt(page, projectId, kitchen);
+  const tasks = page.getByRole('list', { name: kitchen }).getByRole('listitem');
+  const task = (title: string) => tasks.filter({ hasText: title });
+
+  // Tab moves from the sidebar to the outline, starting on the project's heading.
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('heading', { name: kitchen, level: 3 })).toBeFocused();
+
+  // N adds a task; Enter saves it and starts the next; Escape stops.
+  await page.keyboard.press('n');
+  await page.keyboard.type(`Choose a colour ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(`Buy dust sheets ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(tasks).toHaveText([`Choose a colour ${run}`, `Buy dust sheets ${run}`]);
+  await expect(task(`Buy dust sheets ${run}`)).toBeFocused();
+
+  // A task added from a row goes straight after it.
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('n');
+  await page.keyboard.type(`Measure the walls ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(tasks).toHaveText([`Choose a colour ${run}`, `Measure the walls ${run}`, `Buy dust sheets ${run}`]);
+
+  await expect(task(`Measure the walls ${run}`)).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.getByLabel('Title').fill(`Measure the walls and ceiling ${run}`);
+  await page.keyboard.press('Enter');
+  await expect(task(`Measure the walls and ceiling ${run}`)).toBeFocused();
+
+  await expect(status(page)).toContainText('All changes uploaded');
+  const [outline] = await server.projects([projectId]);
+  expect(outline?.tasks.map((t) => t.title)).toEqual([
+    `Choose a colour ${run}`,
+    `Measure the walls and ceiling ${run}`,
+    `Buy dust sheets ${run}`,
+  ]);
+
+  await page.keyboard.press('1');
+  await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
+  for (const title of outline!.tasks.map((t) => t.title)) await expect(page.getByRole('main')).not.toContainText(title);
+});
+
 test('a project created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const { folderId } = await phone.createFolder(`Errands ${run}`, { position: 'a2' });

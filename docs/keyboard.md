@@ -46,3 +46,13 @@ Folders, projects and single-action lists. Selecting a folder shows every projec
 A new item goes at the end of the focused folder, or just after the focused project or list.
 
 With the mouse, click selects, Cmd/Ctrl+click adds or removes an item, and Shift+click selects a range. Double-click renames.
+
+## Outline
+
+The task rows of the current perspective. In Projects, each selected project has a heading row.
+
+| Key | Action |
+|---|---|
+| ↑ / ↓, Home / End | Previous / next row, first / last row |
+| Enter | Edit the task's title (Enter saves, Escape abandons) |
+| N | New task straight after the current row (on a project heading: at the top of that project). Enter saves it and starts another; Enter on an empty row or Escape stops |

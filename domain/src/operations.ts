@@ -4,6 +4,7 @@
 export const OperationName = {
   captureText: 'capture_text',
   renameTask: 'rename_task',
+  createTask: 'create_task',
   createFolder: 'create_folder',
   renameFolder: 'rename_folder',
   moveFolder: 'move_folder',

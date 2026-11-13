@@ -1,7 +1,8 @@
 import { useQuery } from '@powersync/react';
-import { buildTree, isProjectKind, projectsInSelection, ProjectKind } from '@salamifocus/domain';
+import { buildTree, comparePositions, isProjectKind, projectsInSelection, ProjectKind } from '@salamifocus/domain';
 import { useMemo } from 'react';
 import { go, type Place } from '../navigation.ts';
+import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
 import { Sidebar } from './Sidebar.tsx';
 
 interface FolderRow {
@@ -38,9 +39,28 @@ export function useOrganisation() {
   );
 }
 
+interface TaskRow {
+  id: string;
+  title: string;
+  project_id: string;
+  position: string | null;
+}
+
 export function ProjectsPerspective({ place }: { place: Place }) {
   const tree = useOrganisation();
   const selected = projectsInSelection(tree, place.selection);
+  const ids = selected.map((p) => p.id);
+  const { data: tasks } = useQuery<TaskRow>(
+    `SELECT id, title, project_id, position FROM tasks WHERE project_id IN (${ids.map(() => '?').join(', ')})`,
+    ids,
+  );
+  const groups: OutlineGroup[] = selected.map((project) => ({
+    id: project.id,
+    heading: project.name,
+    projectId: project.id,
+    tasks: tasks.filter((t) => t.project_id === project.id).sort(comparePositions),
+  }));
+  const taskCount = groups.reduce((sum, g) => sum + g.tasks.length, 0);
 
   return (
     <>
@@ -48,13 +68,11 @@ export function ProjectsPerspective({ place }: { place: Place }) {
       <main data-region="outline" aria-labelledby="perspective-heading">
         <h2 id="perspective-heading">Projects</h2>
         <p className="summary">
-          {selected.length === 0 ? 'Select a project in the sidebar' : `${selected.length} ${selected.length === 1 ? 'project' : 'projects'} selected`}
+          {selected.length === 0
+            ? 'Select a project in the sidebar'
+            : `${taskCount} ${taskCount === 1 ? 'task' : 'tasks'}, ${selected.length} ${selected.length === 1 ? 'project' : 'projects'} selected`}
         </p>
-        {selected.map((project) => (
-          <section key={project.id} aria-label={project.name}>
-            <h3 className="project-heading">{project.name}</h3>
-          </section>
-        ))}
+        <Outline label="Projects" groups={groups} empty="Nothing selected." />
       </main>
     </>
   );

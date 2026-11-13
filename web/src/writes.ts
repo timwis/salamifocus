@@ -13,6 +13,14 @@ export function renameTask(taskId: string, title: string) {
   return write(OperationName.renameTask, 'UPDATE tasks SET title = ?, _metadata = ? WHERE id = ?', (m) => [title, m, taskId]);
 }
 
+export function createTask(taskId: string, projectId: string, title: string, position: string) {
+  return write(
+    OperationName.createTask,
+    'INSERT INTO tasks (id, title, project_id, position, created_at, _metadata) VALUES (?, ?, ?, ?, ?, ?)',
+    (m) => [taskId, title, projectId, position, new Date().toISOString(), m],
+  );
+}
+
 export function createFolder(folderId: string, name: string, parentId: string | null, position: string) {
   return write(
     OperationName.createFolder,

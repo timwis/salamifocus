@@ -1,6 +1,6 @@
 import { nameProblem, normaliseName, positionAt, ProjectKind, type OrganisationNode } from '@salamifocus/domain';
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
-import { isTyping, useRovingFocus } from '../focus.ts';
+import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
 import { createFolder, createProject, moveFolder, moveProject, renameFolder, renameProject } from '../writes.ts';
 
 interface Row {
@@ -63,20 +63,15 @@ export function Sidebar({
 }) {
   const [collapsed, setCollapsed] = useCollapsed();
   const rows = flatten(tree, collapsed);
-  const [focusedId, setFocusedId] = useState<string | null>(selection[0] ?? null);
+  const current = useCurrentRow(
+    rows.map((r) => r.node.id),
+    selection[0] ?? null,
+  );
   const [editing, setEditing] = useState<Editing | null>(null);
-  const lastIndex = useRef(0);
-  // An item just created here, which the sidebar will show once the local write lands.
-  const awaiting = useRef<string | null>(null);
-
-  // Keep focus on a row that still exists, near where it was.
-  let focusIndex = rows.findIndex((r) => r.node.id === focusedId);
-  if (focusIndex !== -1 && awaiting.current === focusedId) awaiting.current = null;
-  const waiting = focusIndex === -1 && awaiting.current !== null && awaiting.current === focusedId;
-  if (focusIndex === -1 && rows.length > 0 && editing?.mode !== 'create' && !waiting) focusIndex = Math.min(lastIndex.current, rows.length - 1);
-  lastIndex.current = Math.max(focusIndex, 0);
+  const focusIndex = current.index;
   const focused = rows[focusIndex] ?? null;
-  const focusKey = editing?.mode === 'create' ? 'draft' : waiting ? focusedId : (focused?.node.id ?? EMPTY);
+  const setFocusedId = current.set;
+  const focusKey = editing?.mode === 'create' ? 'draft' : (current.key ?? EMPTY);
   const roving = useRovingFocus<HTMLUListElement>(focusKey);
 
   const selected = new Set(selection);
@@ -110,24 +105,23 @@ export function Sidebar({
   }
 
   async function finishEditing(name: string | null) {
-    const current = editing;
+    const finished = editing;
     setEditing(null);
-    if (!current || name === null) {
-      if (current?.mode === 'create') setFocusedId(current.returnTo);
+    if (!finished || name === null) {
+      if (finished?.mode === 'create') setFocusedId(finished.returnTo);
       return;
     }
-    if (current.mode === 'rename') {
-      const node = rows.find((r) => r.node.id === current.id)?.node;
+    if (finished.mode === 'rename') {
+      const node = rows.find((r) => r.node.id === finished.id)?.node;
       if (!node || node.name === name) return;
       await (node.type === 'folder' ? renameFolder(node.id, name) : renameProject(node.id, name));
       return;
     }
     const id = crypto.randomUUID();
-    awaiting.current = id;
-    setFocusedId(id);
+    current.await(id);
     onSelect([id]);
-    if (current.kind === 'folder') await createFolder(id, name, current.parentId, current.position);
-    else await createProject(id, name, current.kind, current.parentId, current.position);
+    if (finished.kind === 'folder') await createFolder(id, name, finished.parentId, finished.position);
+    else await createProject(id, name, finished.kind, finished.parentId, finished.position);
   }
 
   function reorder(row: Row, by: -1 | 1) {

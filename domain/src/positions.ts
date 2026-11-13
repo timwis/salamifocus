@@ -31,6 +31,11 @@ export function positionProblem(position: string): string | null {
   }
 }
 
+/** A position after `before` and, where possible, before `after` (either may be null for "no bound"). */
+export function positionBetween(before: string | null, after: string | null): string {
+  return generateKeyBetween(before, after !== null && before !== null && after <= before ? null : after);
+}
+
 /**
  * A position that puts an item at `index` among `siblings`, which must be in
  * sibling order and must not include the item being placed.
@@ -42,5 +47,5 @@ export function positionAt(siblings: readonly Positioned[], index: number): stri
   // Two devices can create siblings with the same key while offline; skip
   // past equal keys so there is always room between the bounds.
   const after = positions.slice(clamped).find((p) => before === null || p > before) ?? null;
-  return generateKeyBetween(before, after);
+  return positionBetween(before, after);
 }

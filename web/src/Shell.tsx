@@ -48,7 +48,7 @@ export function Shell() {
           Sign out
         </button>
       </header>
-      <div className={`regions perspective-${place.perspective}`}>
+      <div className="regions" data-perspective={place.perspective}>
         <PerspectiveNav current={place.perspective} onSelect={goToPerspective} />
         {place.perspective === 'projects' ? <ProjectsPerspective place={place} /> : <Inbox />}
       </div>

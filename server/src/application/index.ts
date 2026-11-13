@@ -1,4 +1,4 @@
-import { buildTree, type OrganisationNode } from '@salamifocus/domain';
+import { buildTree, comparePositions, projectsInSelection, type OrganisationNode } from '@salamifocus/domain';
 import type { Sql } from '../db.ts';
 import { Mutations } from './mutations.ts';
 import { findOperation } from './operations.ts';
@@ -10,6 +10,7 @@ import type {
   OperationRecord,
   OperationRequest,
   OperationResult,
+  ProjectOutline,
   TaskView,
 } from './types.ts';
 
@@ -92,7 +93,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
 
   async function inbox(): Promise<InboxEntry[]> {
     return sql<InboxEntry[]>`
-      SELECT id, title, created_at AS "createdAt" FROM tasks ORDER BY created_at, id`;
+      SELECT id, title, created_at AS "createdAt" FROM tasks WHERE project_id IS NULL ORDER BY created_at, id`;
   }
 
   /** Folders, projects and single-action lists as the Projects sidebar nests them. */
@@ -107,9 +108,29 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     );
   }
 
+  /**
+   * What the Projects perspective shows for a sidebar selection: each selected
+   * project (every project inside a selected folder), in sidebar order, with
+   * its tasks in outline order.
+   */
+  async function projects(selection: string[]): Promise<ProjectOutline[]> {
+    const selected = projectsInSelection(await organisation(), selection);
+    if (selected.length === 0) return [];
+    const rows = await sql<{ id: string; title: string; projectId: string; position: string | null }[]>`
+      SELECT id, title, project_id AS "projectId", position FROM tasks
+      WHERE project_id IN ${sql(selected.map((p) => p.id))}`;
+    return selected.map((project) => ({
+      project: { id: project.id, name: project.name, kind: project.kind },
+      tasks: rows
+        .filter((row) => row.projectId === project.id)
+        .sort(comparePositions)
+        .map(({ id, title }) => ({ id, title })),
+    }));
+  }
+
   async function task(id: string): Promise<TaskView | null> {
     const [row] = await sql`
-      SELECT t.id, t.title, t.created_at, c.id AS capture_id, c.text, c.captured_at
+      SELECT t.id, t.title, t.created_at, t.project_id, c.id AS capture_id, c.text, c.captured_at
       FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
       WHERE t.id = ${id}::uuid`;
     if (!row) return null;
@@ -117,6 +138,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       id: row.id,
       title: row.title,
       createdAt: row.created_at,
+      projectId: row.project_id,
       capture: row.capture_id ? { id: row.capture_id, text: row.text, capturedAt: row.captured_at } : null,
     };
   }
@@ -166,5 +188,5 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     };
   }
 
-  return { execute, inbox, organisation, task, history, operation };
+  return { execute, inbox, organisation, projects, task, history, operation };
 }

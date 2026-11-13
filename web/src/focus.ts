@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type FocusEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type FocusEvent } from 'react';
 
 /**
  * Keeps keyboard focus on the current row of a region (a roving tab stop:
@@ -35,6 +35,36 @@ export function useRovingFocus<T extends HTMLElement>(focusedKey: string | null)
         // A null target means the element was removed or moved, not that the user left.
         if (next && !container.current?.contains(next)) owns.current = false;
       },
+    },
+  };
+}
+
+/**
+ * Which row of a region is current. When that row disappears (completed,
+ * moved away, or removed by sync) the row now at its place becomes current,
+ * so focus is never lost. A row just created locally can be awaited until the
+ * write shows up.
+ */
+export function useCurrentRow(keys: readonly string[], initial: string | null = null) {
+  const [chosen, setChosen] = useState<string | null>(initial);
+  const lastIndex = useRef(0);
+  const awaiting = useRef<string | null>(null);
+
+  let index = chosen === null ? -1 : keys.indexOf(chosen);
+  if (index !== -1 && awaiting.current === chosen) awaiting.current = null;
+  const waiting = index === -1 && chosen !== null && awaiting.current === chosen;
+  if (index === -1 && !waiting && keys.length > 0) index = Math.min(lastIndex.current, keys.length - 1);
+  if (index !== -1) lastIndex.current = index;
+
+  return {
+    index,
+    /** The key focus should be on: the current row, or the awaited one. */
+    key: waiting ? chosen : (keys[index] ?? null),
+    set: setChosen,
+    /** Makes a row that does not exist yet current, keeping focus for it until it appears. */
+    await(key: string) {
+      awaiting.current = key;
+      setChosen(key);
     },
   };
 }

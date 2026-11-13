@@ -1,4 +1,4 @@
-import { captureProblem, normaliseTitle, OperationName, titleFromCapture, titleProblem } from '@salamifocus/domain';
+import { captureProblem, normaliseTitle, OperationName, positionProblem, titleFromCapture, titleProblem } from '@salamifocus/domain';
 import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import { organisationOperations } from './organisation.ts';
@@ -57,7 +57,39 @@ export const renameTask: OperationDefinition<RenameTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, ...organisationOperations] as OperationDefinition<unknown>[];
+export interface CreateTaskArgs {
+  taskId: string;
+  projectId: string;
+  title: string;
+  position: string;
+  createdAt: string;
+}
+
+/** Adds a task directly to a project or single-action list, so it never passes through the Inbox. */
+export const createTask: OperationDefinition<CreateTaskArgs> = {
+  name: OperationName.createTask,
+  parse(input, now) {
+    const a = args.record(input);
+    return {
+      taskId: args.uuid(a, 'taskId'),
+      projectId: args.uuid(a, 'projectId'),
+      title: args.text(a, 'title'),
+      position: args.text(a, 'position'),
+      createdAt: args.timestamp(a, 'createdAt', now),
+    };
+  },
+  async apply(mutations, { taskId, projectId, title, position, createdAt }) {
+    const badTitle = titleProblem(title);
+    if (badTitle) throw new Rejection('invalid_title', badTitle);
+    const badPosition = positionProblem(position);
+    if (badPosition) throw new Rejection('invalid_position', badPosition);
+    if (await mutations.exists('task', taskId)) throw new Rejection('already_exists', 'Something with that id already exists.');
+    if (!(await mutations.exists('project', projectId))) throw new Rejection('not_found', 'That project no longer exists.');
+    await mutations.create('task', taskId, { title: normaliseTitle(title), project_id: projectId, position, created_at: createdAt });
+  },
+};
+
+const definitions = [captureText, renameTask, createTask, ...organisationOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

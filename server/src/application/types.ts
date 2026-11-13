@@ -31,7 +31,13 @@ export interface TaskView {
   id: string;
   title: string;
   createdAt: string;
+  projectId: string | null;
   capture: { id: string; text: string; capturedAt: string } | null;
+}
+
+export interface ProjectOutline {
+  project: { id: string; name: string; kind: string };
+  tasks: { id: string; title: string }[];
 }
 
 export interface ChangeView {
