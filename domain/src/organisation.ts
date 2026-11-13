@@ -1,0 +1,136 @@
+import { comparePositions } from './positions.ts';
+
+// Folders hold projects, single-action lists and other folders, nested to any
+// depth. Everything refers to its container by id, never by name.
+
+export const ProjectKind = {
+  project: 'project',
+  singleActions: 'single_actions',
+} as const;
+
+export type ProjectKind = (typeof ProjectKind)[keyof typeof ProjectKind];
+
+export function isProjectKind(value: unknown): value is ProjectKind {
+  return value === ProjectKind.project || value === ProjectKind.singleActions;
+}
+
+export interface FolderRecord {
+  id: string;
+  name: string;
+  parentId: string | null;
+  position: string;
+}
+
+export interface ProjectRecord {
+  id: string;
+  name: string;
+  folderId: string | null;
+  position: string;
+  kind: ProjectKind;
+}
+
+export interface FolderNode {
+  type: 'folder';
+  id: string;
+  name: string;
+  position: string;
+  children: OrganisationNode[];
+}
+
+export interface ProjectNode {
+  type: 'project';
+  id: string;
+  name: string;
+  position: string;
+  kind: ProjectKind;
+}
+
+export type OrganisationNode = FolderNode | ProjectNode;
+
+/** Returns a user-facing reason a folder or project name is unacceptable, or null if it is fine. */
+export function nameProblem(name: string): string | null {
+  if (name.trim() === '') return 'A name cannot be blank.';
+  return null;
+}
+
+export function normaliseName(name: string): string {
+  return name.trim();
+}
+
+/**
+ * Nests folders and projects into the sidebar hierarchy, each level in
+ * sibling order with folders and projects interleaved. Anything whose folder
+ * is missing (or that is caught in a cycle) is shown at the top level rather
+ * than hidden.
+ */
+export function buildTree(folders: readonly FolderRecord[], projects: readonly ProjectRecord[]): OrganisationNode[] {
+  const folderIds = new Set(folders.map((f) => f.id));
+  const children = new Map<string | null, (FolderRecord | ProjectRecord)[]>();
+  const add = (parent: string | null, item: FolderRecord | ProjectRecord) => {
+    const key = parent !== null && folderIds.has(parent) ? parent : null;
+    children.set(key, [...(children.get(key) ?? []), item]);
+  };
+  for (const folder of folders) add(folder.parentId, folder);
+  for (const project of projects) add(project.folderId, project);
+
+  const visited = new Set<string>();
+  const nodesUnder = (parent: string | null): OrganisationNode[] =>
+    (children.get(parent) ?? [])
+      .filter((item) => !visited.has(item.id))
+      .sort(comparePositions)
+      .map((item) => {
+        visited.add(item.id);
+        if ('kind' in item) return { type: 'project', id: item.id, name: item.name, position: item.position, kind: item.kind };
+        return { type: 'folder', id: item.id, name: item.name, position: item.position, children: nodesUnder(item.id) };
+      });
+
+  const roots = nodesUnder(null);
+  const stranded = folders.filter((f) => !visited.has(f.id));
+  for (const folder of stranded) {
+    if (visited.has(folder.id)) continue;
+    visited.add(folder.id);
+    roots.push({ type: 'folder', id: folder.id, name: folder.name, position: folder.position, children: nodesUnder(folder.id) });
+  }
+  return roots;
+}
+
+/** Every project in the tree, in sidebar order. */
+export function allProjects(tree: readonly OrganisationNode[]): ProjectNode[] {
+  return tree.flatMap((node) => (node.type === 'project' ? [node] : allProjects(node.children)));
+}
+
+/**
+ * The projects a sidebar selection covers, in sidebar order and without
+ * repeats. Selecting a folder covers every project nested inside it.
+ */
+export function projectsInSelection(tree: readonly OrganisationNode[], selected: Iterable<string>): ProjectNode[] {
+  const ids = new Set(selected);
+  const found: ProjectNode[] = [];
+  const walk = (nodes: readonly OrganisationNode[], inSelectedFolder: boolean) => {
+    for (const node of nodes) {
+      const covered = inSelectedFolder || ids.has(node.id);
+      if (node.type === 'project') {
+        if (covered) found.push(node);
+      } else {
+        walk(node.children, covered);
+      }
+    }
+  };
+  walk(tree, false);
+  return found;
+}
+
+/** Whether putting `folderId` inside `parentId` would make a folder contain itself. */
+export function wouldNestInItself(
+  folderId: string,
+  parentId: string | null,
+  parentOf: (id: string) => string | null | undefined,
+): boolean {
+  const seen = new Set<string>();
+  for (let current: string | null | undefined = parentId; current !== null && current !== undefined; current = parentOf(current)) {
+    if (current === folderId) return true;
+    if (seen.has(current)) return true;
+    seen.add(current);
+  }
+  return false;
+}

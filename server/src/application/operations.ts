@@ -1,6 +1,7 @@
 import { captureProblem, normaliseTitle, OperationName, titleFromCapture, titleProblem } from '@salamifocus/domain';
 import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
+import { organisationOperations } from './organisation.ts';
 import { Rejection } from './rejection.ts';
 
 export interface OperationDefinition<A> {
@@ -56,7 +57,7 @@ export const renameTask: OperationDefinition<RenameTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask] as OperationDefinition<unknown>[];
+const definitions = [captureText, renameTask, ...organisationOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

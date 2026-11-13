@@ -8,3 +8,5 @@ streams:
     queries:
       - SELECT * FROM tasks
       - SELECT * FROM captures
+      - SELECT * FROM folders
+      - SELECT * FROM projects

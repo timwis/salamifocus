@@ -17,6 +17,8 @@ const synced = { trackMetadata: true, trackPrevious: { onlyWhenChanged: true }, 
 export const schema = new Schema({
   tasks: new Table({ title: column.text, created_at: column.text }, synced),
   captures: new Table({ task_id: column.text, text: column.text, captured_at: column.text }, synced),
+  folders: new Table({ name: column.text, parent_id: column.text, position: column.text }, synced),
+  projects: new Table({ name: column.text, kind: column.text, folder_id: column.text, position: column.text }, synced),
 });
 
 export const db = new PowerSyncDatabase({

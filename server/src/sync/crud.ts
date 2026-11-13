@@ -72,10 +72,30 @@ function single(entries: CrudEntry[], op: CrudEntry['op'], table: string): CrudE
 
 function onlyColumns(entry: CrudEntry, allowed: string[]): Record<string, unknown> {
   const data = entry.data ?? {};
-  const unexpected = Object.keys(data).filter((key) => !allowed.includes(key));
+  // An insert may list columns the operation does not set as null.
+  const unexpected = Object.keys(data).filter((key) => !allowed.includes(key) && !(entry.op === 'PUT' && data[key] === null));
   if (unexpected.length > 0) throw new Malformed(`Unexpected change to ${unexpected.join(', ')} on ${entry.table}.`);
   return data;
 }
+
+/** The single row an operation inserts, limited to the columns it may set. */
+function onlyInsert(entries: CrudEntry[], table: string, allowed: string[]): { id: string; data: Record<string, unknown> } {
+  if (entries.length !== 1) throw new Malformed(`Expected a single insert into ${table}.`);
+  const entry = single(entries, 'PUT', table);
+  return { id: entry.id, data: onlyColumns(entry, allowed) };
+}
+
+/** The single row an operation updates, limited to the columns it may change, at least one of them changed. */
+function onlyUpdate(entries: CrudEntry[], table: string, allowed: string[]): { id: string; data: Record<string, unknown> } {
+  if (entries.length !== 1) throw new Malformed(`Expected a single update to ${table}.`);
+  const entry = single(entries, 'PATCH', table);
+  const data = onlyColumns(entry, allowed);
+  if (!allowed.some((column) => column in data)) throw new Malformed(`Expected a change to ${allowed.join(' or ')}.`);
+  return { id: entry.id, data };
+}
+
+/** A column's new value, or undefined when the update leaves it alone. */
+const changed = (data: Record<string, unknown>, column: string) => (column in data ? data[column] : undefined);
 
 const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
   [OperationName.captureText](entries) {
@@ -94,5 +114,35 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     const data = onlyColumns(task, ['title']);
     if (!('title' in data)) throw new Malformed('A rename must change the title.');
     return { taskId: task.id, title: data.title };
+  },
+
+  [OperationName.createFolder](entries) {
+    const { id, data } = onlyInsert(entries, 'folders', ['name', 'parent_id', 'position']);
+    return { folderId: id, name: data.name, parentId: data.parent_id ?? null, position: data.position };
+  },
+
+  [OperationName.renameFolder](entries) {
+    const { id, data } = onlyUpdate(entries, 'folders', ['name']);
+    return { folderId: id, name: data.name };
+  },
+
+  [OperationName.moveFolder](entries) {
+    const { id, data } = onlyUpdate(entries, 'folders', ['parent_id', 'position']);
+    return { folderId: id, parentId: changed(data, 'parent_id'), position: changed(data, 'position') };
+  },
+
+  [OperationName.createProject](entries) {
+    const { id, data } = onlyInsert(entries, 'projects', ['name', 'kind', 'folder_id', 'position']);
+    return { projectId: id, name: data.name, kind: data.kind, folderId: data.folder_id ?? null, position: data.position };
+  },
+
+  [OperationName.renameProject](entries) {
+    const { id, data } = onlyUpdate(entries, 'projects', ['name']);
+    return { projectId: id, name: data.name };
+  },
+
+  [OperationName.moveProject](entries) {
+    const { id, data } = onlyUpdate(entries, 'projects', ['folder_id', 'position']);
+    return { projectId: id, folderId: changed(data, 'folder_id'), position: changed(data, 'position') };
   },
 };

@@ -26,7 +26,9 @@ pnpm dev:server               # app server on :3100
 pnpm dev:web                  # web client on http://127.0.0.1:5173
 ```
 
-The web client talks only to the app server, which proxies sync traffic to PowerSync under `/powersync`.
+The web client talks only to the app server, which proxies sync traffic to PowerSync under `/powersync`. It is driven from the keyboard; see [docs/keyboard.md](docs/keyboard.md) for the bindings.
+
+After pulling changes that touch `infra/powersync/sync-config.yaml`, restart PowerSync (`docker compose restart powersync`) so it syncs the new tables.
 
 For Android, open `android/` in Android Studio, or run `./gradlew installDebug` with an emulator running (needs JDK 17 and `ANDROID_HOME`). The debug build signs in to `http://10.0.2.2:3100` by default, which is the development machine as seen from the emulator; override it with `-Psalamifocus.serverUrl=…` or on the sign-in screen. Debug builds allow plain HTTP; release builds require HTTPS and have no default address (see [docs/deploy.md](docs/deploy.md#installing-the-android-app)).
 

@@ -1,6 +1,6 @@
-import { useQuery, useStatus } from '@powersync/react';
+import { useQuery } from '@powersync/react';
 import { normaliseTitle, operationMetadata, OperationName, titleProblem } from '@salamifocus/domain';
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { db } from './powersync.ts';
 
 interface InboxRow {
@@ -13,9 +13,8 @@ export function Inbox() {
   const [editing, setEditing] = useState<string | null>(null);
 
   return (
-    <main>
+    <main data-region="outline" aria-labelledby="inbox-heading">
       <h2 id="inbox-heading">Inbox</h2>
-      <SyncState />
       {tasks.length === 0 ? (
         <p className="empty">Nothing in the Inbox.</p>
       ) : (
@@ -86,31 +85,4 @@ function TitleEditor({ task, onDone }: { task: InboxRow; onDone: () => void }) {
       {problem && <span role="alert">{problem}</span>}
     </span>
   );
-}
-
-function SyncState() {
-  const status = useStatus();
-  const { data } = useQuery<{ pending: number }>('SELECT count(DISTINCT tx_id) AS pending FROM ps_crud');
-  const pending = data[0]?.pending ?? 0;
-  const persisted = usePersistedStorage();
-
-  return (
-    <p role="status" className="sync-state">
-      <span data-connected={status.connected}>{status.connected ? 'Online' : 'Offline'}</span>
-      {' · '}
-      <span>{pending === 0 ? 'All changes uploaded' : `${pending} ${pending === 1 ? 'change' : 'changes'} waiting to upload`}</span>
-      {persisted === false && <span className="warning"> · This browser may clear its copy of your data</span>}
-    </p>
-  );
-}
-
-function usePersistedStorage(): boolean | null {
-  const [persisted, setPersisted] = useState<boolean | null>(null);
-  useEffect(() => {
-    void navigator.storage
-      ?.persist?.()
-      .then(setPersisted)
-      .catch(() => setPersisted(false));
-  }, []);
-  return persisted;
 }

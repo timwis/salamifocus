@@ -1,8 +1,8 @@
 import { PowerSyncContext } from '@powersync/react';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Inbox } from './Inbox.tsx';
 import { connect, db } from './powersync.ts';
-import { signIn, signOut, useSessionToken } from './session.ts';
+import { signIn, useSessionToken } from './session.ts';
+import { Shell } from './Shell.tsx';
 
 export function App() {
   const token = useSessionToken();
@@ -16,13 +16,7 @@ export function App() {
   if (!token) return <SignIn />;
   return (
     <PowerSyncContext.Provider value={db}>
-      <header>
-        <h1>salamifocus</h1>
-        <button type="button" onClick={() => void signOut()}>
-          Sign out
-        </button>
-      </header>
-      <Inbox />
+      <Shell />
     </PowerSyncContext.Provider>
   );
 }

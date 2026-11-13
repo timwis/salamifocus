@@ -39,6 +39,37 @@ export class SimulatedDevice {
     ]);
   }
 
+  async createFolder(name: string, options: { parentId?: string; position?: string } = {}): Promise<{ folderId: string }> {
+    const folderId = crypto.randomUUID();
+    await this.upload([
+      {
+        op: 'PUT',
+        table: 'folders',
+        id: folderId,
+        data: { name, parent_id: options.parentId ?? null, position: options.position ?? 'a0' },
+        metadata: operationMetadata(OperationName.createFolder),
+      },
+    ]);
+    return { folderId };
+  }
+
+  async createProject(
+    name: string,
+    options: { folderId?: string; position?: string; kind?: 'project' | 'single_actions' } = {},
+  ): Promise<{ projectId: string }> {
+    const projectId = crypto.randomUUID();
+    await this.upload([
+      {
+        op: 'PUT',
+        table: 'projects',
+        id: projectId,
+        data: { name, kind: options.kind ?? 'project', folder_id: options.folderId ?? null, position: options.position ?? 'a0' },
+        metadata: operationMetadata(OperationName.createProject),
+      },
+    ]);
+    return { projectId };
+  }
+
   private async upload(entries: unknown[]): Promise<void> {
     const response = await fetch(`${serverUrl}/api/sync/upload`, {
       method: 'POST',

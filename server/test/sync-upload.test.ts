@@ -110,6 +110,37 @@ describe('uploading a client transaction', () => {
     assert.equal((await h.application.operation(result!.opId))?.outcome, 'rejected');
   });
 
+  it('applies folder and project changes, one operation per tagged group of rows', async () => {
+    const folderId = crypto.randomUUID();
+    const projectId = crypto.randomUUID();
+    const createFolder = operationMetadata(OperationName.createFolder);
+    const createProject = operationMetadata(OperationName.createProject);
+    const moveProject = operationMetadata(OperationName.moveProject);
+
+    const results = await upload([
+      { op: 'PUT', table: 'folders', id: folderId, data: { name: 'Home', position: 'a0' }, metadata: createFolder },
+      { op: 'PUT', table: 'projects', id: projectId, data: { name: 'Boiler serviced', kind: 'project', position: 'a0' }, metadata: createProject },
+      { op: 'PATCH', table: 'projects', id: projectId, data: { folder_id: folderId }, metadata: moveProject },
+    ]);
+
+    assert.deepEqual(results.map((r) => r.outcome), ['applied', 'applied', 'applied']);
+    const home = (await h.application.organisation()).find((node) => node.id === folderId);
+    assert.deepEqual(home?.type === 'folder' && home.children.map((child) => child.name), ['Boiler serviced']);
+  });
+
+  it('rejects a move that also renames', async () => {
+    const projectId = crypto.randomUUID();
+    await upload([
+      { op: 'PUT', table: 'projects', id: projectId, data: { name: 'Garden', kind: 'project', position: 'a0' }, metadata: operationMetadata(OperationName.createProject) },
+    ]);
+
+    const [result] = await upload([
+      { op: 'PATCH', table: 'projects', id: projectId, data: { position: 'a1', name: 'Sneaky' }, metadata: operationMetadata(OperationName.moveProject) },
+    ]);
+
+    assert.equal(result?.code, 'malformed_operation');
+  });
+
   it('refuses a body that is not a list of entries', async () => {
     const response = await api.request('/api/sync/upload', { body: { nope: true }, token });
     assert.equal(response.status, 400);

@@ -4,6 +4,8 @@ import { Rejection } from './rejection.ts';
 const tables = {
   task: 'tasks',
   capture: 'captures',
+  folder: 'folders',
+  project: 'projects',
 } as const;
 
 export type Entity = keyof typeof tables;
@@ -40,6 +42,16 @@ export class Mutations {
   async exists(entity: Entity, id: string): Promise<boolean> {
     const rows = await this.#tx`SELECT 1 FROM ${this.#tx(tables[entity])} WHERE id = ${id}`;
     return rows.length > 0;
+  }
+
+  async read(entity: Entity, id: string): Promise<Row | null> {
+    const [row] = await this.#tx<Row[]>`SELECT * FROM ${this.#tx(tables[entity])} WHERE id = ${id}`;
+    return row ?? null;
+  }
+
+  /** Serialises operations that must see each other's effects, such as moves that could form a cycle. */
+  async lock(name: string): Promise<void> {
+    await this.#tx`SELECT pg_advisory_xact_lock(hashtextextended(${`lock:${name}`}, 0))`;
   }
 
   async create(entity: Entity, id: string, values: Row): Promise<void> {

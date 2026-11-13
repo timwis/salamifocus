@@ -31,3 +31,14 @@ export function timestamp(args: Record<string, unknown>, key: string, fallback: 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
 }
+
+/** A UUID or null. Undefined when the key is absent, which operations read as "leave it as it is". */
+export function nullableUuid(args: Record<string, unknown>, key: string): string | null | undefined {
+  if (args[key] === undefined) return undefined;
+  if (args[key] === null) return null;
+  return uuid(args, key);
+}
+
+export function optionalText(args: Record<string, unknown>, key: string): string | undefined {
+  return args[key] === undefined ? undefined : text(args, key);
+}

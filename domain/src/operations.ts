@@ -4,6 +4,12 @@
 export const OperationName = {
   captureText: 'capture_text',
   renameTask: 'rename_task',
+  createFolder: 'create_folder',
+  renameFolder: 'rename_folder',
+  moveFolder: 'move_folder',
+  createProject: 'create_project',
+  renameProject: 'rename_project',
+  moveProject: 'move_project',
 } as const;
 
 export type OperationName = (typeof OperationName)[keyof typeof OperationName];

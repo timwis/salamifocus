@@ -62,6 +62,11 @@ export function renameRequest(taskId: string, title: string): OperationRequest {
   return { opId: crypto.randomUUID(), name: OperationName.renameTask, actor: owner, source: 'test', args: { taskId, title } };
 }
 
+/** Any operation, as the user would perform it from a client. */
+export function request(name: string, args: Record<string, unknown>): OperationRequest {
+  return { opId: crypto.randomUUID(), name, actor: owner, source: 'test', args };
+}
+
 export const testPassword = 'correct horse battery staple';
 
 /** The HTTP adapter over the harness's application, as the clients see it. */

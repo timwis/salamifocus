@@ -1,20 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SimulatedDevice } from '../support/device.ts';
-import { password } from '../support/env.ts';
 import { network } from '../support/network.ts';
 import { server } from '../support/server.ts';
-
-const run = Date.now().toString(36);
-
-async function signIn(page: Page) {
-  await page.goto('/');
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
-}
+import { run, signIn, status } from '../support/web.ts';
 
 const inbox = (page: Page) => page.getByRole('list', { name: 'Inbox' });
-const status = (page: Page) => page.getByRole('status');
 
 async function rename(page: Page, from: string, to: string) {
   await inbox(page).getByRole('button', { name: from, exact: true }).click();

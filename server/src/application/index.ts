@@ -1,3 +1,4 @@
+import { buildTree, type OrganisationNode } from '@salamifocus/domain';
 import type { Sql } from '../db.ts';
 import { Mutations } from './mutations.ts';
 import { findOperation } from './operations.ts';
@@ -94,6 +95,18 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       SELECT id, title, created_at AS "createdAt" FROM tasks ORDER BY created_at, id`;
   }
 
+  /** Folders, projects and single-action lists as the Projects sidebar nests them. */
+  async function organisation(): Promise<OrganisationNode[]> {
+    const [folders, projects] = await Promise.all([
+      sql`SELECT id, name, parent_id, position FROM folders`,
+      sql`SELECT id, name, kind, folder_id, position FROM projects`,
+    ]);
+    return buildTree(
+      folders.map((f) => ({ id: f.id, name: f.name, parentId: f.parent_id, position: f.position })),
+      projects.map((p) => ({ id: p.id, name: p.name, kind: p.kind, folderId: p.folder_id, position: p.position })),
+    );
+  }
+
   async function task(id: string): Promise<TaskView | null> {
     const [row] = await sql`
       SELECT t.id, t.title, t.created_at, c.id AS capture_id, c.text, c.captured_at
@@ -153,5 +166,5 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     };
   }
 
-  return { execute, inbox, task, history, operation };
+  return { execute, inbox, organisation, task, history, operation };
 }
