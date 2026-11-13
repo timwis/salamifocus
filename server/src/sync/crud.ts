@@ -121,6 +121,11 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     return { taskId: id, projectId: data.project_id, title: data.title, position: data.position, createdAt: data.created_at };
   },
 
+  [OperationName.editTaskNote](entries) {
+    const { id, data } = onlyUpdate(entries, 'tasks', ['note']);
+    return { taskId: id, note: data.note ?? '' };
+  },
+
   [OperationName.createFolder](entries) {
     const { id, data } = onlyInsert(entries, 'folders', ['name', 'parent_id', 'position']);
     return { folderId: id, name: data.name, parentId: data.parent_id ?? null, position: data.position };

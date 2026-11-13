@@ -1,4 +1,4 @@
-import { captureProblem, normaliseTitle, OperationName, positionProblem, titleFromCapture, titleProblem } from '@salamifocus/domain';
+import { captureProblem, normaliseNote, normaliseTitle, OperationName, positionProblem, titleFromCapture, titleProblem } from '@salamifocus/domain';
 import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import { organisationOperations } from './organisation.ts';
@@ -89,7 +89,23 @@ export const createTask: OperationDefinition<CreateTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, ...organisationOperations] as OperationDefinition<unknown>[];
+export interface EditTaskNoteArgs {
+  taskId: string;
+  note: string;
+}
+
+export const editTaskNote: OperationDefinition<EditTaskNoteArgs> = {
+  name: OperationName.editTaskNote,
+  parse(input) {
+    const a = args.record(input);
+    return { taskId: args.uuid(a, 'taskId'), note: args.text(a, 'note') };
+  },
+  async apply(mutations, { taskId, note }) {
+    await mutations.update('task', taskId, { note: normaliseNote(note) });
+  },
+};
+
+const definitions = [captureText, renameTask, createTask, editTaskNote, ...organisationOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

@@ -116,27 +116,28 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   async function projects(selection: string[]): Promise<ProjectOutline[]> {
     const selected = projectsInSelection(await organisation(), selection);
     if (selected.length === 0) return [];
-    const rows = await sql<{ id: string; title: string; projectId: string; position: string | null }[]>`
-      SELECT id, title, project_id AS "projectId", position FROM tasks
+    const rows = await sql<{ id: string; title: string; note: string; projectId: string; position: string | null }[]>`
+      SELECT id, title, note, project_id AS "projectId", position FROM tasks
       WHERE project_id IN ${sql(selected.map((p) => p.id))}`;
     return selected.map((project) => ({
       project: { id: project.id, name: project.name, kind: project.kind },
       tasks: rows
         .filter((row) => row.projectId === project.id)
         .sort(comparePositions)
-        .map(({ id, title }) => ({ id, title })),
+        .map(({ id, title, note }) => ({ id, title, note })),
     }));
   }
 
   async function task(id: string): Promise<TaskView | null> {
     const [row] = await sql`
-      SELECT t.id, t.title, t.created_at, t.project_id, c.id AS capture_id, c.text, c.captured_at
+      SELECT t.id, t.title, t.note, t.created_at, t.project_id, c.id AS capture_id, c.text, c.captured_at
       FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
       WHERE t.id = ${id}::uuid`;
     if (!row) return null;
     return {
       id: row.id,
       title: row.title,
+      note: row.note,
       createdAt: row.created_at,
       projectId: row.project_id,
       capture: row.capture_id ? { id: row.capture_id, text: row.text, capturedAt: row.captured_at } : null,

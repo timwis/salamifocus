@@ -268,3 +268,41 @@ h2 {
 .empty {
   color: var(--muted);
 }
+.task-row:has(.task-editor) {
+  align-items: flex-start;
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+  background: var(--selected);
+}
+.task-row:has(.task-editor) .check {
+  margin-top: 0.45rem;
+}
+.task-editor {
+  flex: 1;
+  display: grid;
+  gap: 0.15rem;
+}
+.note-field {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  resize: none;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  padding: 0.2rem 0.4rem;
+  background: transparent;
+  outline: none;
+}
+.note-field:focus {
+  border-color: var(--accent);
+  background: #fff;
+  color: inherit;
+}
+.note-mark {
+  flex: none;
+  width: 0.8rem;
+  height: 0.65rem;
+  border: 1.5px solid #8e8e93;
+  border-radius: 0.15rem;
+  background: repeating-linear-gradient(#8e8e93 0 1px, transparent 1px 3px) center / 60% 60% no-repeat;
+}

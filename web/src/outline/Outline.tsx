@@ -1,11 +1,13 @@
 import { normaliseTitle, positionBetween, titleProblem } from '@salamifocus/domain';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
-import { createTask, renameTask } from '../writes.ts';
+import { createTask } from '../writes.ts';
+import { TaskEditor } from './TaskEditor.tsx';
 
 export interface OutlineTask {
   id: string;
   title: string;
+  note: string | null;
   position: string | null;
 }
 
@@ -20,7 +22,7 @@ export interface OutlineGroup {
 
 type Row = { key: string; group: OutlineGroup } & ({ kind: 'heading' } | { kind: 'task'; task: OutlineTask; index: number });
 
-type Editing = { mode: 'title'; taskId: string } | { mode: 'draft'; groupId: string; after: string | null; before: string | null; returnTo: string | null };
+type Editing = { mode: 'task'; taskId: string } | { mode: 'draft'; groupId: string; after: string | null; before: string | null; returnTo: string | null };
 
 const EMPTY = 'empty';
 const headingKey = (group: OutlineGroup) => `group:${group.id}`;
@@ -81,11 +83,6 @@ export function Outline({ label, groups, empty }: { label: string; groups: Outli
     await createTask(id, group.projectId, title, position);
   }
 
-  async function finishTitle(task: OutlineTask, title: string | null) {
-    setEditing(null);
-    if (title !== null && title !== task.title) await renameTask(task.id, title);
-  }
-
   function onKeyDown(event: KeyboardEvent) {
     if (isTyping(event) || event.altKey || event.ctrlKey || event.metaKey) return;
     const handled = () => event.preventDefault();
@@ -102,7 +99,7 @@ export function Outline({ label, groups, empty }: { label: string; groups: Outli
         return handled(), startDraft();
       case 'Enter':
         if (focused?.kind !== 'task') return;
-        return handled(), setEditing({ mode: 'title', taskId: focused.task.id });
+        return handled(), setEditing({ mode: 'task', taskId: focused.task.id });
     }
   }
 
@@ -137,21 +134,24 @@ export function Outline({ label, groups, empty }: { label: string; groups: Outli
               onClick={() => current.set(task.id)}
             >
               <span className="check" aria-hidden />
-              {editing?.mode === 'title' && editing.taskId === task.id ? (
-                <TitleEditor label="Title" initial={task.title} onDone={(title) => void finishTitle(task, title)} />
+              {editing?.mode === 'task' && editing.taskId === task.id ? (
+                <TaskEditor task={task} onClose={() => setEditing(null)} />
               ) : (
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  className="task-title"
-                  onClick={() => {
-                    roving.claim();
-                    current.set(task.id);
-                    setEditing({ mode: 'title', taskId: task.id });
-                  }}
-                >
-                  {task.title}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    className="task-title"
+                    onClick={() => {
+                      roving.claim();
+                      current.set(task.id);
+                      setEditing({ mode: 'task', taskId: task.id });
+                    }}
+                  >
+                    {task.title}
+                  </button>
+                  {task.note ? <span className="note-mark" role="img" aria-label="Has a note" title={task.note} /> : null}
+                </>
               )}
             </li>
           );

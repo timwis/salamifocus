@@ -42,6 +42,7 @@ export function useOrganisation() {
 interface TaskRow {
   id: string;
   title: string;
+  note: string | null;
   project_id: string;
   position: string | null;
 }
@@ -51,7 +52,7 @@ export function ProjectsPerspective({ place }: { place: Place }) {
   const selected = projectsInSelection(tree, place.selection);
   const ids = selected.map((p) => p.id);
   const { data: tasks } = useQuery<TaskRow>(
-    `SELECT id, title, project_id, position FROM tasks WHERE project_id IN (${ids.map(() => '?').join(', ')})`,
+    `SELECT id, title, note, project_id, position FROM tasks WHERE project_id IN (${ids.map(() => '?').join(', ')})`,
     ids,
   );
   const groups: OutlineGroup[] = selected.map((project) => ({

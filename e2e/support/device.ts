@@ -70,6 +70,20 @@ export class SimulatedDevice {
     return { projectId };
   }
 
+  async createTask(projectId: string, title: string, position = 'a0'): Promise<{ taskId: string }> {
+    const taskId = crypto.randomUUID();
+    await this.upload([
+      {
+        op: 'PUT',
+        table: 'tasks',
+        id: taskId,
+        data: { title, project_id: projectId, position, created_at: new Date().toISOString() },
+        metadata: operationMetadata(OperationName.createTask),
+      },
+    ]);
+    return { taskId };
+  }
+
   private async upload(entries: unknown[]): Promise<void> {
     const response = await fetch(`${serverUrl}/api/sync/upload`, {
       method: 'POST',

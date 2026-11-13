@@ -54,5 +54,17 @@ The task rows of the current perspective. In Projects, each selected project has
 | Key | Action |
 |---|---|
 | ↑ / ↓, Home / End | Previous / next row, first / last row |
-| Enter | Edit the task's title (Enter saves, Escape abandons) |
+| Enter | Edit the task, starting in its title |
 | N | New task straight after the current row (on a project heading: at the top of that project). Enter saves it and starts another; Enter on an empty row or Escape stops |
+
+### Editing a task
+
+The task's fields, in order: title, then note. Later tickets add tags, defer and due dates between them. Each field is saved when you leave it.
+
+| Key | Action |
+|---|---|
+| Tab / Shift+Tab | Next / previous field, keeping the change (wraps round) |
+| Enter in the title | Save and stop editing (a blank title is refused) |
+| Enter in the note | New line |
+| Cmd+Enter on macOS, Ctrl+Enter on Linux, in the note | Save and stop editing |
+| Escape | Abandon the field you are in and stop editing; fields you already left stay saved |

@@ -93,6 +93,22 @@ describe('tasks in projects', () => {
     assert.deepEqual(await outline([id]), [{ Taxes: [] }]);
   });
 
+  it('keeps a note with a task, records its edits, and treats a blank note as none', async () => {
+    const id = await project('Car');
+    const taskId = await addTask(id, 'Renew insurance', 'a0');
+    const note = 'Policy number 12-345\nRenewal quote due in March';
+
+    assert.equal(await perform(OperationName.editTaskNote, { taskId, note }), 'applied');
+    assert.equal((await h.application.task(taskId))?.note, note);
+    assert.equal((await h.application.projects([id]))[0]?.tasks[0]?.note, note);
+
+    assert.equal(await perform(OperationName.editTaskNote, { taskId, note: ' \n ' }), 'applied');
+    assert.equal((await h.application.task(taskId))?.note, '');
+    const history = await h.application.history(taskId);
+    assert.deepEqual(history.at(-1)?.changes[0], { entity: 'task', entityId: taskId, kind: 'update', before: { note }, after: { note: '' } });
+    assert.equal(await perform(OperationName.editTaskNote, { taskId: crypto.randomUUID(), note: 'Lost' }), 'not_found');
+  });
+
   it('records the new task in its history', async () => {
     const id = await project('Holiday');
     const taskId = await addTask(id, 'Book flights', 'a0');

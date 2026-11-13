@@ -153,6 +153,45 @@ test('tasks are added to a project and retitled from the keyboard, and stay out 
   for (const title of outline!.tasks.map((t) => t.title)) await expect(page.getByRole('main')).not.toContainText(title);
 });
 
+test('a task’s title and note are edited together; Tab keeps a change and Escape abandons one', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const car = `Car ${run}`;
+  const { projectId } = await phone.createProject(car, { position: 'a4' });
+  const { taskId } = await phone.createTask(projectId, `renew insurance ${run}`);
+  await signIn(page);
+  await openProjectsAt(page, projectId, car);
+  const row = page.getByRole('list', { name: car }).getByRole('listitem');
+
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await expect(row).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Title')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Note')).toBeFocused();
+  await page.keyboard.type('Policy 12-345');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Quote due in March');
+  await page.keyboard.press('ControlOrMeta+Enter');
+  await expect(row).toBeFocused();
+  await expect(row.getByRole('img', { name: 'Has a note' })).toBeVisible();
+  await expect.poll(async () => (await server.task(taskId))?.note).toBe('Policy 12-345\nQuote due in March');
+
+  // Tab keeps the new title; Escape then abandons only the note being typed.
+  await page.keyboard.press('Enter');
+  await page.getByLabel('Title').fill(`Renew car insurance ${run}`);
+  await page.keyboard.press('Tab');
+  await page.keyboard.type(' (never mind)');
+  await page.keyboard.press('Escape');
+  await expect(row).toBeFocused();
+  await expect(row).toContainText(`Renew car insurance ${run}`);
+
+  await expect(status(page)).toContainText('All changes uploaded');
+  const task = await server.task(taskId);
+  expect([task?.title, task?.note]).toEqual([`Renew car insurance ${run}`, 'Policy 12-345\nQuote due in March']);
+  expect((await server.history(taskId)).map((entry) => entry.operation)).toEqual(['create_task', 'edit_task_note', 'rename_task']);
+});
+
 test('a project created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const { folderId } = await phone.createFolder(`Errands ${run}`, { position: 'a2' });

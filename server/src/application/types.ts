@@ -30,6 +30,7 @@ export interface InboxEntry {
 export interface TaskView {
   id: string;
   title: string;
+  note: string;
   createdAt: string;
   projectId: string | null;
   capture: { id: string; text: string; capturedAt: string } | null;
@@ -37,7 +38,7 @@ export interface TaskView {
 
 export interface ProjectOutline {
   project: { id: string; name: string; kind: string };
-  tasks: { id: string; title: string }[];
+  tasks: { id: string; title: string; note: string }[];
 }
 
 export interface ChangeView {

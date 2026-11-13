@@ -12,6 +12,11 @@ export function titleProblem(title: string): string | null {
   return null;
 }
 
+/** A note that is only whitespace is no note. */
+export function normaliseNote(note: string): string {
+  return note.trim() === '' ? '' : note;
+}
+
 export function captureProblem(text: string): string | null {
   if (text.trim() === '') return 'There is nothing to capture.';
   return null;

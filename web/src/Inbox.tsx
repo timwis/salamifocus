@@ -4,11 +4,12 @@ import { Outline } from './outline/Outline.tsx';
 interface InboxRow {
   id: string;
   title: string;
+  note: string | null;
   position: string | null;
 }
 
 export function Inbox() {
-  const { data: tasks } = useQuery<InboxRow>('SELECT id, title, position FROM tasks WHERE project_id IS NULL ORDER BY created_at, id');
+  const { data: tasks } = useQuery<InboxRow>('SELECT id, title, note, position FROM tasks WHERE project_id IS NULL ORDER BY created_at, id');
 
   return (
     <main data-region="outline" aria-labelledby="inbox-heading">
