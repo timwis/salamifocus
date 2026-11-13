@@ -14,8 +14,20 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // The emulator's address for the development machine.
-        buildConfigField("String", "DEFAULT_SERVER_URL", "\"${project.findProperty("salamifocus.serverUrl") ?: "http://10.0.2.2:3100"}\"")
+    }
+
+    // Release builds are signed only when a keystore is supplied, from outside
+    // the repository (see docs/deploy.md).
+    val keystore = providers.environmentVariable("SALAMIFOCUS_KEYSTORE").orNull
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = providers.environmentVariable("SALAMIFOCUS_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("SALAMIFOCUS_KEY_ALIAS").getOrElse("salamifocus")
+                keyPassword = storePassword
+            }
+        }
     }
 
     buildFeatures {
@@ -23,9 +35,18 @@ android {
         buildConfig = true
     }
 
+    // Each build type has its own property, so a release address kept in
+    // ~/.gradle/gradle.properties does not leak into development builds.
+    fun serverUrl(property: String, default: String) = "\"${project.findProperty(property) ?: default}\""
     buildTypes {
+        debug {
+            // By default, the emulator's address for the development machine.
+            buildConfigField("String", "DEFAULT_SERVER_URL", serverUrl("salamifocus.serverUrl", "http://10.0.2.2:3100"))
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "DEFAULT_SERVER_URL", serverUrl("salamifocus.releaseServerUrl", ""))
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 }

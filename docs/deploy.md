@@ -116,3 +116,32 @@ Clients then re-sync without signing in again.
    ```
 
 4. Restore the media directory with `borgmatic extract` if it was lost too.
+
+## Installing the Android app
+
+The phone runs a release build, signed with your own key and installed over USB. A release build has no default server address, so you type it on the sign-in screen. To build one with the address filled in, set `salamifocus.releaseServerUrl=https://<hostname>` in `~/.gradle/gradle.properties`.
+
+**Once, create a signing key** outside the repository, and keep its password in your secrets manager:
+
+```sh
+keytool -genkeypair -keystore ~/.android/salamifocus-release.p12 -storetype PKCS12 \
+  -alias salamifocus -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=salamifocus"
+```
+
+Keep a copy of the keystore file somewhere safe too. Updates must be signed with the same key. Without it, the app has to be uninstalled first, which discards anything on the phone that has not synced.
+
+**To build**, put the keystore location and a reference to its password in an environment file outside the repository:
+
+```sh
+SALAMIFOCUS_KEYSTORE=/absolute/path/to/salamifocus-release.p12
+SALAMIFOCUS_KEYSTORE_PASSWORD="op://<vault>/<item>/password"
+```
+
+Then, from `android/`:
+
+```sh
+op run --env-file=<that file> -- ./gradlew assembleRelease
+adb install -r app/build/outputs/apk/release/app-release.apk
+```
+
+A debug build of the app is signed with a different key, so remove it first with `adb uninstall dev.salamifocus`. The phone must be connected to the private network to reach the server.

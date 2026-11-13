@@ -45,6 +45,7 @@ fun SignInScreen(app: SalamifocusApp) {
             value = serverUrl,
             onValueChange = { serverUrl = it },
             label = { Text("Server") },
+            placeholder = { Text("https://…") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             modifier = Modifier.fillMaxWidth().testTag("server-url"),
@@ -59,7 +60,7 @@ fun SignInScreen(app: SalamifocusApp) {
             modifier = Modifier.fillMaxWidth().testTag("password"),
         )
         Button(
-            enabled = !busy && password.isNotEmpty(),
+            enabled = !busy && serverUrl.isNotBlank() && password.isNotEmpty(),
             onClick = {
                 busy = true
                 problem = null
