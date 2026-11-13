@@ -17,7 +17,8 @@ sync_config:
 
 client_auth:
   jwks_uri: !env PS_JWKS_URL
-  # The app server is on a private address in development and CI.
+  # The app server is always on a private address: the host in development,
+  # the stack's internal network when deployed.
   block_local_jwks: false
   audience: ["powersync"]
 

@@ -11,7 +11,8 @@ A personal GTD application: a native Android client for capture, a desktop web c
 | `web/` | Desktop web client (React, Vite, PowerSync web SDK) |
 | `android/` | Android client (Kotlin, Jetpack Compose, PowerSync Kotlin SDK) |
 | `e2e/` | End-to-end tests that drive the real web client in Chromium against the real stack |
-| `infra/` | Postgres initialisation and PowerSync service configuration used by `compose.yaml` |
+| `infra/` | Postgres initialisation for `compose.yaml`, and PowerSync's configuration and sync rules (also built into the deployed PowerSync image) |
+| `deploy/` | The deployed stack's Compose file, example environment, and reverse proxy and backup snippets |
 
 ## Running locally
 
@@ -30,6 +31,12 @@ The web client talks only to the app server, which proxies sync traffic to Power
 For Android, open `android/` in Android Studio, or run `./gradlew installDebug` with an emulator running (JDK 17+). The debug build signs in to `http://10.0.2.2:3100` by default, which is the development machine as seen from the emulator; override it with `-Psalamifocus.serverUrl=…` or on the sign-in screen. Debug builds allow plain HTTP; release builds require HTTPS.
 
 To use a different password, put the output of `pnpm --filter @salamifocus/server hash-password` in `OWNER_PASSWORD_HASH`.
+
+## Deploying
+
+CI publishes the app server image (which includes the built web client) and a PowerSync image to GHCR from `main`. [docs/deploy.md](docs/deploy.md) covers deploying, updating, backups and restoring.
+
+To try the production web client locally, build it with `pnpm --filter @salamifocus/web build` and run `WEB_ROOT=../web/dist pnpm dev:server` (the path is relative to `server/`). It is then served at http://127.0.0.1:3100.
 
 ## Tests
 

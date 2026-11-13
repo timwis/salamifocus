@@ -1,0 +1,98 @@
+# The deployed stack: Postgres, PowerSync and the app server, which serves
+# the web client and proxies sync, so it is the only service a reverse proxy
+# needs to reach. See docs/deploy.md. Values come from .env next to this
+# file; secrets are expected to be resolved into the environment at start.
+name: salamifocus
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: salamifocus-postgres
+    restart: unless-stopped
+    # A stalled or abandoned replication slot may hold at most this much WAL;
+    # beyond it the slot is dropped and PowerSync re-replicates.
+    command: ["postgres", "-c", "wal_level=logical", "-c", "max_slot_wal_keep_size=2GB"]
+    environment:
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      SALAMIFOCUS_DB_PASSWORD: $SALAMIFOCUS_DB_PASSWORD
+      POWERSYNC_DB_PASSWORD: $POWERSYNC_DB_PASSWORD
+      POWERSYNC_STORAGE_DB_PASSWORD: $POWERSYNC_STORAGE_DB_PASSWORD
+    configs:
+      - source: postgres-init
+        target: /docker-entrypoint-initdb.d/init.sh
+        mode: 0555
+    volumes:
+      - ${DATA_DIR:?}/postgres:/var/lib/postgresql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d salamifocus"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  app:
+    image: ${APP_IMAGE:?}:${VERSION:-latest}
+    container_name: salamifocus
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://salamifocus:${SALAMIFOCUS_DB_PASSWORD}@postgres:5432/salamifocus
+      POWERSYNC_URL: http://powersync:8080
+      OWNER_PASSWORD_HASH: $OWNER_PASSWORD_HASH
+      SIGNING_KEY: $SIGNING_KEY
+    volumes:
+      - ${MEDIA_DIR:?}:/media
+    networks:
+      - internal
+      - proxy
+
+  powersync:
+    image: ${POWERSYNC_IMAGE:?}:${VERSION:-latest}
+    restart: unless-stopped
+    # The app server creates the publication PowerSync replicates from.
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      NODE_OPTIONS: --max-old-space-size=512
+      PS_DATA_SOURCE_URI: postgresql://powersync_role:${POWERSYNC_DB_PASSWORD}@postgres:5432/salamifocus
+      PS_STORAGE_SOURCE_URI: postgresql://powersync_storage:${POWERSYNC_STORAGE_DB_PASSWORD}@postgres:5432/powersync_storage
+      PS_JWKS_URL: http://app:3100/.well-known/jwks.json
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/probes/liveness').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+
+networks:
+  internal:
+  proxy:
+    name: ${PROXY_NETWORK:?}
+    external: true
+
+# Runs once, when the Postgres data directory is first created. Role
+# passwords come from the environment rather than the repository.
+configs:
+  postgres-init:
+    content: |
+      #!/bin/sh
+      set -eu
+      psql -v ON_ERROR_STOP=1 --username postgres --dbname postgres \
+        -v app_password="$$SALAMIFOCUS_DB_PASSWORD" \
+        -v replication_password="$$POWERSYNC_DB_PASSWORD" \
+        -v storage_password="$$POWERSYNC_STORAGE_DB_PASSWORD" <<'SQL'
+      CREATE ROLE salamifocus WITH LOGIN PASSWORD :'app_password';
+      CREATE DATABASE salamifocus OWNER salamifocus;
+      CREATE ROLE powersync_role WITH REPLICATION LOGIN PASSWORD :'replication_password';
+      CREATE ROLE powersync_storage WITH LOGIN PASSWORD :'storage_password';
+      CREATE DATABASE powersync_storage OWNER powersync_storage;
+      \connect salamifocus
+      GRANT CONNECT ON DATABASE salamifocus TO powersync_role;
+      GRANT USAGE ON SCHEMA public TO powersync_role;
+      ALTER DEFAULT PRIVILEGES FOR ROLE salamifocus IN SCHEMA public GRANT SELECT ON TABLES TO powersync_role;
+      SQL

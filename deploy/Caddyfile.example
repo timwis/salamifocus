@@ -1,0 +1,6 @@
+# Inside the site block that serves the hostname. The app server is the only
+# upstream: it serves the web client and proxies sync under /powersync.
+@salamifocus host salamifocus.example.com
+handle @salamifocus {
+	reverse_proxy http://salamifocus:3100
+}

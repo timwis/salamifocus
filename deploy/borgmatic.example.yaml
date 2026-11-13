@@ -1,0 +1,13 @@
+# Merge into the host's borgmatic configuration. borgmatic runs on the host
+# and reaches Postgres inside its container, so Postgres publishes no port.
+# PowerSync's storage database is derived from this one and is not backed up.
+source_directories:
+  - /path/to/media/salamifocus
+
+postgresql_databases:
+  - name: salamifocus
+    username: postgres
+    format: custom
+    pg_dump_command: docker exec salamifocus-postgres pg_dump
+    pg_restore_command: docker exec -i salamifocus-postgres pg_restore
+    psql_command: docker exec -i salamifocus-postgres psql

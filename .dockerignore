@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+.git
+.github
+.data
+.env
+.planning
+.claude
+android
+investigation
+docs
+**/test-results
+**/playwright-report
