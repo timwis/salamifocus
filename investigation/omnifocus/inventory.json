@@ -1,0 +1,125 @@
+{
+  "capturedAt": "2026-11-13T14:05:34.960Z",
+  "version": "190.2",
+  "folders": 48,
+  "projects": 41,
+  "tags": 196,
+  "taskObjectsIncludingProjectRoots": 1005,
+  "tasksExcludingProjectRoots": 964,
+  "remainingTasks": 569,
+  "completedTasks": 318,
+  "droppedTasks": 77,
+  "repeatingTasks": 15,
+  "repeatingProjects": 0,
+  "attachmentsOnTasks": 24,
+  "attachmentsOnProjectRoots": 0,
+  "linkedFiles": 0,
+  "sequentialProjects": 0,
+  "repeatRules": [
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DeferDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=YEARLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=YEARLY",
+      "method": "[object Task.RepetitionMethod: Fixed]",
+      "scheduleType": "[object Task.RepetitionScheduleType: Regularly]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DueDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: DeferUntilDate]",
+      "scheduleType": "[object Task.RepetitionScheduleType: FromCompletion]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DeferDate]",
+      "catchUpAutomatically": false
+    },
+    {
+      "rule": "FREQ=MONTHLY",
+      "method": "[object Task.RepetitionMethod: DeferUntilDate]",
+      "scheduleType": "[object Task.RepetitionScheduleType: FromCompletion]",
+      "anchorDateKey": "[object Task.AnchorDateKey: DeferDate]",
+      "catchUpAutomatically": false
+    }
+  ]
+}

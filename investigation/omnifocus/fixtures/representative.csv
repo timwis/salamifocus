@@ -1,0 +1,14 @@
+Task ID,Type,Name,Status,Project,Context,Start Date,Planned Date,Due Date,Completion Date,Duration,Flagged,Notes,Tags
+1,Project,Build a model lighthouse,active,,,,,,,,0,,
+1.1,Action,Assemble the lantern,,Build a model lighthouse,,,,,,,0,,
+1.1.1,Action,Cut the paper windows,,Build a model lighthouse,Home studio,2026-11-15 09:30:00 +0000,,2026-11-20 17:45:00 +0000,,,1,"Fictional note.
+Use blue paper, not glass. Café ☕","Home studio, Tools"
+1.2,Action,Choose a paint colour (date entered without time),,Build a model lighthouse,,2026-11-16 00:00:00 +0000,,2026-11-21 00:00:00 +0000,,,0,,
+2,Project,Workshop errands,active,,,,,,,,0,,
+2.1,Action,Check the studio smoke alarm,,Workshop errands,,,,2026-11-30 18:00:00 +0000,,,0,,
+2.2,Action,Oil the model gears,,Workshop errands,,2026-11-13 09:00:00 +0000,,,,,0,,
+3,Project,Winter sculpture,inactive,,,,,,,,0,,
+3.1,Action,Choose a sculpture base,,Winter sculpture,,,,,,,0,,
+4,Project,Sequential demonstration,active,,,,,,,,0,,
+4.1,Action,Prime the panel,,Sequential demonstration,,,,,,,0,,
+4.2,Action,Paint the panel,,Sequential demonstration,,,,,,,0,,

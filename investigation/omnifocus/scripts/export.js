@@ -1,0 +1,16 @@
+(() => {
+  const id = x => x ? x.id.primaryKey : null;
+  const date = x => x ? x.toISOString() : null;
+  const label = x => x == null ? null : String(x).replace(/^\[object [^:]+: (.*)\]$/, '$1');
+  function attachment(w) {
+    return {name:w.preferredFilename || w.filename,type:label(w.type),base64:w.contents ? w.contents.toBase64() : null,children:w.children.map(attachment),destination:w.destination ? w.destination.string : null};
+  }
+  function repeat(r) {
+    return r ? {ruleString:r.ruleString,method:label(r.method),scheduleType:label(r.scheduleType),anchorDateKey:label(r.anchorDateKey),catchUpAutomatically:r.catchUpAutomatically} : null;
+  }
+  const local = d => d ? {year:d.getFullYear(),month:d.getMonth()+1,day:d.getDate(),hour:d.getHours(),minute:d.getMinutes(),second:d.getSeconds(),millisecond:d.getMilliseconds(),utcOffsetMinutes:d.getTimezoneOffset()} : null;
+  function task(t) {
+    return {id:id(t),name:t.name,parentTaskId:id(t.parent),projectId:id(t.containingProject),projectRootId:id(t.project),assignedContainerId:id(t.assignedContainer),inInbox:t.inInbox,childIds:t.children.map(id),tagIds:t.tags.map(id),added:date(t.added),modified:date(t.modified),completionDate:date(t.completionDate),dropDate:date(t.dropDate),effectiveCompletedDate:date(t.effectiveCompletedDate),effectiveDropDate:date(t.effectiveDropDate),deferDate:date(t.deferDate),dueDate:date(t.dueDate),plannedDate:date(t.plannedDate),effectiveDeferDate:date(t.effectiveDeferDate),effectiveDueDate:date(t.effectiveDueDate),localDates:{defer:local(t.deferDate),due:local(t.dueDate),planned:local(t.plannedDate)},floatingTimeZone:t.shouldUseFloatingTimeZone,flagged:t.flagged,effectiveFlagged:t.effectiveFlagged,sequential:t.sequential,completedByChildren:t.completedByChildren,status:label(t.taskStatus),note:t.note,estimatedMinutes:t.estimatedMinutes,repetitionRule:repeat(t.repetitionRule),attachments:t.attachments.map(attachment),linkedFileURLs:t.linkedFileURLs.map(u=>u.string)};
+  }
+  return JSON.stringify({format:'salamifocus.omnifocus-export',version:1,exportedAt:new Date().toISOString(),source:{document:document.name,appBuild:app.version,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,utcOffsetMinutes:new Date().getTimezoneOffset()},rootFolderIds:folders.map(id),rootTagIds:tags.map(id),inboxIds:inbox.map(id),folders:flattenedFolders.map(f=>({id:id(f),name:f.name,parentFolderId:id(f.parent),status:label(f.status),added:date(f.added),modified:date(f.modified),childIds:f.children.map(id)})),projects:flattenedProjects.map(p=>({id:id(p),rootTaskId:id(p.task),name:p.name,parentFolderId:id(p.parentFolder),status:label(p.status),singleActionList:p.containsSingletonActions,sequential:p.sequential})),tags:flattenedTags.map(t=>({id:id(t),name:t.name,parentTagId:id(t.parent),childIds:t.children.map(id),status:label(t.status),added:date(t.added),modified:date(t.modified)})),tasks:flattenedTasks.map(task),limitations:['No original-edit history; added and modified timestamps are not an event log.','Notes are plain text; rich-text formatting is not represented.','Dates are instants plus floating-zone flags; original date-only input intent is unavailable.','Linked files are references only; external bytes are not embedded.','Custom perspectives, review settings, notifications, and UI preferences are outside this format.']},null,2);
+})()

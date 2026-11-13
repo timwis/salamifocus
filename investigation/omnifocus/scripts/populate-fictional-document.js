@@ -1,0 +1,40 @@
+(() => {
+if(document.name !== "representative" || flattenedTasks.length !== 0) throw Error("Expected empty fictional document");
+const doc = document;
+  var db = doc.windows[0].selection.database;
+  var outer = new Folder('Fictional workshop', db.library.ending);
+  var inner = new Folder('Autumn exhibition', outer.ending);
+  var p = new Project('Build a model lighthouse', inner.ending);
+  p.sequential = false;
+  var contexts = new Tag('Context', db.tags.ending);
+  var home = new Tag('Home studio', contexts.ending);
+  var tools = new Tag('Tools', db.tags.ending);
+  var group = new Task('Assemble the lantern', p.ending);
+  var child = new Task('Cut the paper windows', group.ending);
+  child.addTag(home); child.addTag(tools); child.flagged = true;
+  child.note = 'Fictional note.\nUse blue paper, not glass. Café ☕';
+  child.deferDate = new Date('2026-11-15T09:30:00Z');
+  child.dueDate = new Date('2026-11-20T17:45:00Z');
+  child.addAttachment(FileWrapper.withContents('sample.txt', Data.fromString('Fictional lighthouse attachment.\n')));
+  var day = new Task('Choose a paint colour (date entered without time)', p.ending);
+  var fmt = Formatter.Date.withFormat('yyyy-MM-dd');
+  day.deferDate = fmt.dateFromString('2026-11-16'); day.dueDate = fmt.dateFromString('2026-11-21');
+  var done = new Task('Sketch the lighthouse', p.ending); done.markComplete(new Date('2026-11-10T12:00:00Z'));
+  var dropped = new Task('Order glass windows', p.ending); dropped.drop(false, new Date('2026-11-11T12:00:00Z'));
+  var sal = new Project('Workshop errands', outer.ending); sal.containsSingletonActions = true;
+  var fixed = new Task('Check the studio smoke alarm', sal.ending);
+  fixed.dueDate = new Date('2026-11-30T18:00:00Z');
+  fixed.repetitionRule = new Task.RepetitionRule('FREQ=MONTHLY', null, Task.RepetitionScheduleType.Regularly, Task.AnchorDateKey.DueDate, false);
+  var relative = new Task('Oil the model gears', sal.ending);
+  relative.deferDate = new Date('2026-11-13T09:00:00Z');
+  relative.repetitionRule = new Task.RepetitionRule('FREQ=MONTHLY', null, Task.RepetitionScheduleType.FromCompletion, Task.AnchorDateKey.DeferDate, false);
+  var paused = new Project('Winter sculpture', outer.ending); paused.status = Project.Status.OnHold;
+  new Task('Choose a sculpture base', paused.ending);
+  var seq = new Project('Sequential demonstration', outer.ending); seq.sequential = true;
+  new Task('Prime the panel', seq.ending); new Task('Paint the panel', seq.ending);
+  new Task('Capture a fictional idea', db.inbox.ending);
+  var cp = new Project('Finished exhibition', outer.ending); new Task('Pack spare paper', cp.ending); cp.status = Project.Status.Done;
+  var dp = new Project('Abandoned exhibition', outer.ending); new Task('Reserve a venue', dp.ending); dp.status = Project.Status.Dropped;
+
+return JSON.stringify({projects:flattenedProjects.length,tasks:flattenedTasks.length});
+})()
