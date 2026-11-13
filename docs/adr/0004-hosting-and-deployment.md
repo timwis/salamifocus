@@ -1,6 +1,6 @@
 # ADR 0004: Hosting, reachability and backups
 
-- **Status:** Accepted by the user on 13 November 2026 (ticket 04). One part, rebuilding PowerSync's storage rather than backing it up, stays proposed until a restore has been exercised.
+- **Status:** Accepted by the user on 13 November 2026 (ticket 04). Rebuilding PowerSync's storage rather than backing it up was accepted after a restore drill on the deployed stack the same day.
 - **Date:** 13 November 2026
 
 ## Context
@@ -24,7 +24,7 @@ The ticket's default was one small self-managed server running everything in con
 
 5. **Backups use the host's existing backup tool, nightly and off-site.** The backup tool runs on the host and takes a logical dump of the application database by running `pg_dump` inside the Postgres container, so Postgres publishes no port. It also backs up the host directory where recordings are stored (ticket 21). The Postgres container has a fixed name so that command is stable.
 
-6. **PowerSync's bucket storage is not backed up (proposed).** Its contents are derived from the application database. Logical replication slots are not part of a dump either, so a restored copy of PowerSync's storage would not match the restored source anyway. On restore, PowerSync starts with empty storage and re-replicates from the restored application database, and clients re-sync. The restore drill must confirm this works, including a client that holds changes newer than the backup.
+6. **PowerSync's bucket storage is not backed up.** Its contents are derived from the application database. Logical replication slots are not part of a dump either, so a restored copy of PowerSync's storage would not match the restored source anyway. On restore, PowerSync starts with empty storage and re-replicates from the restored application database, and clients re-sync. The restore drill confirmed this. Clients that held data uploaded after the backup dropped it and matched the restored server. Changes still queued on a client were uploaded and applied after the restore.
 
 7. **Android release builds have no default server address.** The user enters the address on the sign-in screen, or supplies it at build time from outside the repository. Builds are signed with a keystore whose passwords come from the secrets manager, and installed on the user's own device by sideloading. Debug builds keep the emulator default from ADR 0003.
 

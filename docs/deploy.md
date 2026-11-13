@@ -19,7 +19,7 @@ CI publishes both images to GHCR from every push to `main` that passes the check
 
 ## First deploy
 
-1. **Make the packages public.** After CI first publishes the images, open each package's settings on GitHub and set its visibility to public. New packages start private.
+1. **Check the packages are public.** After CI first publishes the images, check they can be pulled without signing in. Packages from a public repository have so far been created public. If one isn't, set its visibility to public in the package's settings on GitHub.
 2. **Create the secrets** in your secrets manager:
    - four database passwords: `POSTGRES_PASSWORD`, `SALAMIFOCUS_DB_PASSWORD`, `POWERSYNC_DB_PASSWORD` and `POWERSYNC_STORAGE_DB_PASSWORD`. They go into connection URLs, so use letters and digits only;
    - `OWNER_PASSWORD_HASH`, from `pnpm --filter @salamifocus/server hash-password`;
@@ -70,7 +70,14 @@ borgmatic list --archive latest | grep postgresql_databases
 
 ## Restoring
 
-Changes uploaded after the backup was taken are lost. In the drill, a client that already held such data dropped it once it reconnected, matching the restored server. Changes a client made while the server was down, and had not yet uploaded, were uploaded after the restore and applied. Only changes to records that are missing from the backup would be rejected.
+Changes uploaded after the backup was taken are lost. This was checked in a drill on a real deployment, with the Android app and the web client:
+
+- a task captured after the backup, already synced to both clients, disappeared from both once they reconnected, matching the restored server;
+- changes made on the phone while the server was down, a new capture and a rename of a task that was in the backup, were uploaded after the restore and applied.
+
+A queued change to a record that is missing from the backup would be rejected instead.
+
+`borgmatic restore` only restores database dumps; it never writes files back. `--data-source salamifocus` limits it to this database, so nothing else in the backup is touched. Media files come back separately, with `borgmatic extract`. To see what a restore would do first, add `--dry-run --verbosity 1`.
 
 ### Into the running stack
 
