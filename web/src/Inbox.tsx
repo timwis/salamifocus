@@ -90,7 +90,7 @@ function TitleEditor({ task, onDone }: { task: InboxRow; onDone: () => void }) {
 
 function SyncState() {
   const status = useStatus();
-  const { data } = useQuery<{ pending: number }>('SELECT count(*) AS pending FROM ps_crud');
+  const { data } = useQuery<{ pending: number }>('SELECT count(DISTINCT tx_id) AS pending FROM ps_crud');
   const pending = data[0]?.pending ?? 0;
   const persisted = usePersistedStorage();
 
