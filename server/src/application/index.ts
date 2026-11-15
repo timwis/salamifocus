@@ -52,6 +52,9 @@ const deferredUntil = (sql: Sql) => sql.unsafe(deferredUntilColumn);
 /** The earliest due date among a task (aliased `t`), the unfinished tasks it is beneath and its project. */
 const dueBy = (sql: Sql) => sql.unsafe(dueByColumn);
 
+/** Limits tasks (aliased `t`) to unfinished ones, except under Everything, which shows completed tasks too. */
+const unfinishedUnless = (sql: Sql, visibility: Visibility) => sql.unsafe(visibility === Visibility.everything ? 'TRUE' : 't.completed_at IS NULL');
+
 /**
  * The application's public operations and queries. Every adapter (the sync
  * upload endpoint now, the agent API later) goes through these, and the test
@@ -161,6 +164,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         title: string;
         note: string;
         projectId: string | null;
+        completedAt: string | null;
         deferUntil: string | null;
         dueAt: string | null;
         dueBy: string | null;
@@ -169,16 +173,16 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         deferredUntil: string | null;
       }[]
     >`
-      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.defer_until AS "deferUntil", t.due_at AS "dueAt", tt.tag_id AS "tagId",
-             ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.completed_at AS "completedAt", t.defer_until AS "deferUntil", t.due_at AS "dueAt",
+             tt.tag_id AS "tagId", ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
       FROM tasks t JOIN task_tags tt ON tt.task_id = t.id
-      WHERE t.completed_at IS NULL AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN ${sql(branch)})
+      WHERE ${unfinishedUnless(sql, visibility)} AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN ${sql(branch)})
       ORDER BY t.created_at, t.id`;
     const tasks = new Map<string, TagOutline['tasks'][number]>();
     for (const { tagId: rowTag, unfinishedChildren, deferredUntil, ...task } of rows) {
       const existing = tasks.get(task.id);
       if (existing) existing.tagIds.push(rowTag);
-      else tasks.set(task.id, { ...task, tagIds: [rowTag], unavailable: unavailability({ completedAt: null, unfinishedChildren, deferredUntil }, now) });
+      else tasks.set(task.id, { ...task, tagIds: [rowTag], unavailable: unavailability({ completedAt: task.completedAt, unfinishedChildren, deferredUntil }, now) });
     }
     const shown = [...tasks.values()].filter((task) => shownUnder(visibility, task.unavailable));
     return groupByTag(placed, shown, (task) => task.tagIds).map(({ tag, path, tasks }) => ({
@@ -210,6 +214,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         projectId: string;
         parentId: string | null;
         position: string | null;
+        completedAt: string | null;
         deferUntil: string | null;
         dueAt: string | null;
         dueBy: string | null;
@@ -217,12 +222,12 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         deferredUntil: string | null;
       }[]
     >`
-      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.parent_id AS "parentId", t.position, t.defer_until AS "deferUntil", t.due_at AS "dueAt",
-             ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
-      FROM tasks t WHERE t.project_id IN ${sql(ids)} AND t.completed_at IS NULL`;
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.parent_id AS "parentId", t.position, t.completed_at AS "completedAt",
+             t.defer_until AS "deferUntil", t.due_at AS "dueAt", ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
+      FROM tasks t WHERE t.project_id IN ${sql(ids)} AND ${unfinishedUnless(sql, visibility)}`;
     const withAvailability = rows.map((row) => ({
       ...row,
-      unavailable: unavailability({ completedAt: null, unfinishedChildren: row.unfinishedChildren, deferredUntil: row.deferredUntil }, now),
+      unavailable: unavailability({ completedAt: row.completedAt, unfinishedChildren: row.unfinishedChildren, deferredUntil: row.deferredUntil }, now),
     }));
     return selected.map((project) => ({
       project: {
@@ -241,6 +246,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         note: task.note,
         parentId,
         depth,
+        completedAt: task.completedAt,
         deferUntil: task.deferUntil,
         dueAt: task.dueAt,
         dueBy: task.dueBy,

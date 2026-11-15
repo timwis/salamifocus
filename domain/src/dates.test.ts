@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { describeDate, readDateEntry, type DateKind } from './dates.ts';
+import { describeDate, describeMoment, readDateEntry, type DateKind } from './dates.ts';
 
 // Run with TZ=Europe/London (see package.json), so local times are predictable.
 const monday = new Date('2026-11-16T09:30:00.000Z');
@@ -57,6 +57,11 @@ test('dates are described in local time, with the year only when it is not this 
   // British Summer Time: midnight in London is 23:00 the day before in UTC.
   assert.equal(describeDate('2027-06-30T23:00:00.000Z', 'defer', monday), 'Thu 1 Jul 2027');
   assert.equal(describeDate('2026-11-23T17:00:00.000Z', 'defer', monday), 'Mon 23 Nov 17:00');
+});
+
+test('a moment, such as a completion, is described with its time even at midnight', () => {
+  assert.equal(describeMoment('2026-11-14T15:30:00.000Z', monday), 'Sat 14 Nov 15:30');
+  assert.equal(describeMoment('2025-12-31T00:00:00.000Z', monday), 'Wed 31 Dec 2025 00:00');
 });
 
 test("today's own date or weekday means today, even late in the day", () => {

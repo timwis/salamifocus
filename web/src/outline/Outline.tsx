@@ -1,5 +1,6 @@
 import {
   describeDate,
+  describeMoment,
   normaliseTitle,
   positionAt,
   positionBetween,
@@ -13,7 +14,7 @@ import { useNow } from '../clock.ts';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
 import { taskUnavailability, type TaskState } from '../queries.ts';
 import { tagsInOrder, useTags, useTaskTags } from '../tags/data.tsx';
-import { completeTask, createTask, nestTask, reorderTask } from '../writes.ts';
+import { completeTask, createTask, nestTask, reopenTask, reorderTask } from '../writes.ts';
 import { ProjectDatesEditor, type DatedProject } from './ProjectDatesEditor.tsx';
 import { TaskEditor, type Field } from './TaskEditor.tsx';
 import { VisibilitySelector } from './VisibilitySelector.tsx';
@@ -57,6 +58,9 @@ const headingKey = (group: OutlineGroup) => `group:${group.id}`;
 const taskKey = (group: OutlineGroup, taskId: string) => `${group.id}/${taskId}`;
 
 const parentOf = (task: OutlineTask) => task.parentId ?? null;
+
+/** Completes an unfinished task, or marks a completed one (shown under Everything) unfinished again. */
+const toggleCompletion = (task: OutlineTask) => (task.completedAt ? reopenTask(task.id) : completeTask(task.id));
 const depthOf = (task: OutlineTask) => task.depth ?? 1;
 const siblingsOf = (group: OutlineGroup, parentId: string | null) => group.tasks.filter((t) => parentOf(t) === parentId);
 const childrenOf = (group: OutlineGroup, task: OutlineTask) => siblingsOf(group, task.id);
@@ -241,7 +245,7 @@ export function Outline({
         return handled(), startDraft();
       case ' ':
         if (focused?.kind !== 'task') return;
-        return handled(), void completeTask(focused.task.id);
+        return handled(), void toggleCompletion(focused.task);
       case 'Enter':
         if (focused?.kind === 'heading' && focused.group.project) return handled(), editProject(focused.key);
         if (focused?.kind !== 'task') return;
@@ -302,6 +306,7 @@ export function Outline({
             const tagIds = taskTags.get(task.id) ?? [];
             const chips = tagsInOrder(tags, tagIds);
             const unavailable = taskUnavailability(task, now);
+            const completed = task.completedAt ?? null;
             const blocked = unavailable.includes(Unavailable.blocked);
             const deferred = unavailable.includes(Unavailable.deferred) && task.deferredUntil ? task.deferredUntil : null;
             // A defer date that has passed is still worth seeing; a future one shows as the deferral itself.
@@ -310,7 +315,7 @@ export function Outline({
               <li
                 key={key}
                 data-key={key}
-                className="task-row"
+                className={completed ? 'task-row completed' : 'task-row'}
                 aria-level={group.ordered ? depthOf(task) : undefined}
                 style={indentBy(depthOf(task))}
                 tabIndex={isCurrent ? 0 : -1}
@@ -322,11 +327,11 @@ export function Outline({
                 <button
                   type="button"
                   tabIndex={-1}
-                  className="check"
-                  aria-label={`Complete ${task.title}`}
+                  className={completed ? 'check done' : 'check'}
+                  aria-label={completed ? `Mark ${task.title} unfinished` : `Complete ${task.title}`}
                   onClick={(event) => {
                     event.stopPropagation();
-                    void completeTask(task.id);
+                    void toggleCompletion(task);
                   }}
                 />
                 {editing?.mode === 'task' && editing.rowKey === key ? (
@@ -346,8 +351,9 @@ export function Outline({
                       >
                         {task.title}
                       </button>
-                      {(chips.length > 0 || task.projectName || blocked || deferred || pastDefer || task.dueBy) && (
+                      {(chips.length > 0 || task.projectName || completed || blocked || deferred || pastDefer || task.dueBy) && (
                         <span className="task-meta">
+                          {completed && <span className="completion">Completed {describeMoment(completed, now)}</span>}
                           {blocked && (
                             <span className="availability" title="Waiting on an unfinished task beneath it">
                               Blocked

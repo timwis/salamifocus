@@ -149,6 +149,12 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     return { taskId: id, completedAt: data.completed_at };
   },
 
+  [OperationName.reopenTask](entries) {
+    const { id, data } = onlyUpdate(entries, 'tasks', ['completed_at']);
+    if (data.completed_at !== null) throw new Malformed('Reopening a task must clear when it was completed.');
+    return { taskId: id };
+  },
+
   [OperationName.deferTask](entries) {
     const { id, data } = onlyUpdate(entries, 'tasks', ['defer_until']);
     return { taskId: id, deferUntil: data.defer_until ?? null };

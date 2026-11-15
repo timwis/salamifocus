@@ -59,14 +59,14 @@ export interface TagView {
 
 export interface TagOutline {
   tag: TagView;
-  tasks: { id: string; title: string; note: string; projectId: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; tagIds: string[]; unavailable: Unavailable[] }[];
+  tasks: { id: string; title: string; note: string; projectId: string | null; completedAt: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; tagIds: string[]; unavailable: Unavailable[] }[];
 }
 
 export interface ProjectOutline {
   /** The project's own defer and due dates; which its tasks inherit. */
   project: { id: string; name: string; kind: string; deferUntil: string | null; dueAt: string | null };
   /** In outline order, each followed by its children. `parentId` is the task it is shown beneath (null at the top level). */
-  tasks: { id: string; title: string; note: string; parentId: string | null; depth: number; deferUntil: string | null; dueAt: string | null; dueBy: string | null; unavailable: Unavailable[] }[];
+  tasks: { id: string; title: string; note: string; parentId: string | null; depth: number; completedAt: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; unavailable: Unavailable[] }[];
 }
 
 export interface ChangeView {

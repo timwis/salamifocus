@@ -3,7 +3,7 @@ import { groupByTag, shownUnder, tagBranch, tagPathSeparator, Visibility, type T
 import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
-import { taskStateColumns, taskUnavailability, type TaskState } from '../queries.ts';
+import { taskStateColumns, taskUnavailability, unfinishedUnless, type TaskState } from '../queries.ts';
 import { TreeSidebar, type NewItemKind } from '../sidebar/TreeSidebar.tsx';
 import { createTag, moveTag, renameTag } from '../writes.ts';
 import { useTags, useTaskTags } from './data.tsx';
@@ -22,7 +22,7 @@ interface TaskRow extends TaskState {
 /**
  * The tag hierarchy in the sidebar, and for the selected tag, the tasks the
  * visibility shows that carry it or any tag beneath it. A task appears under
- * each matching tag; completing it removes every appearance.
+ * each matching tag, and completing it changes every appearance.
  */
 export function TagsPerspective({ place }: { place: Place }) {
   const tags = useTags();
@@ -30,14 +30,14 @@ export function TagsPerspective({ place }: { place: Place }) {
   const selected = place.selection[0] ?? null;
   const branch = selected ? tagBranch(tags.tree, selected) : [];
   const branchIds = branch.map((p) => p.tag.id);
+  const visibility = place.visibility ?? Visibility.remaining;
   const { data: tasks } = useQuery<TaskRow>(
     `SELECT t.id, t.title, t.note, t.position, t.project_id, p.name AS project_name, ${taskStateColumns}
      FROM tasks t LEFT JOIN projects p ON p.id = t.project_id
-     WHERE t.completed_at IS NULL AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN (${branchIds.map(() => '?').join(', ')}))
+     WHERE ${unfinishedUnless(visibility)} AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN (${branchIds.map(() => '?').join(', ')}))
      ORDER BY t.created_at, t.id`,
     branchIds,
   );
-  const visibility = place.visibility ?? Visibility.remaining;
   // Under Available, a task joins the outline when its defer date passes.
   const now = useNow(tasks.map((t) => t.deferredUntil));
   const shown = tasks.filter((task) => shownUnder(visibility, taskUnavailability(task, now)));
@@ -79,7 +79,7 @@ export function TagsPerspective({ place }: { place: Place }) {
       />
       <Outline
         title="Tags"
-        summary={branch.length === 0 ? 'Select a tag in the sidebar' : `${count} ${count === 1 ? 'task' : 'tasks'} ${visibility}`}
+        summary={branch.length === 0 ? 'Select a tag in the sidebar' : `${count} ${count === 1 ? 'task' : 'tasks'}${visibility === Visibility.everything ? '' : ` ${visibility}`}`}
         groups={groups}
         empty="Nothing selected."
         visibility={{ value: visibility, choose: (visibility) => go({ ...place, visibility }) }}

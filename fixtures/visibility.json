@@ -607,6 +607,341 @@
           }
         ]
       }
+    },
+    {
+      "name": "Everything shows completed tasks as well, in their places",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "shed",
+            "name": "Build the garden shed",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tags": [
+          {
+            "id": "diy",
+            "name": "DIY",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "outdoors",
+            "name": "Outdoors",
+            "parent_id": "diy",
+            "position": "a0"
+          },
+          {
+            "id": "phone",
+            "name": "Phone",
+            "parent_id": "diy",
+            "position": "a1"
+          },
+          {
+            "id": "workshop",
+            "name": "Workshop",
+            "parent_id": "diy",
+            "position": "a2"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "plans",
+            "title": "Draw up the plans",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "order",
+            "title": "Order the timber",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-10T11:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "quote",
+            "title": "Get a quote from the timber yard",
+            "project_id": "shed",
+            "parent_id": "order",
+            "position": "a0",
+            "created_at": "2026-11-10T12:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "paint",
+            "title": "Paint the shed",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-10T13:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-30T00:00:00.000Z"
+          },
+          {
+            "id": "clear",
+            "title": "Clear the site",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": "2026-11-14T15:30:00.000Z"
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "plans-outdoors",
+            "task_id": "plans",
+            "tag_id": "outdoors"
+          },
+          {
+            "id": "clear-outdoors",
+            "task_id": "clear",
+            "tag_id": "outdoors"
+          },
+          {
+            "id": "order-phone",
+            "task_id": "order",
+            "tag_id": "phone"
+          },
+          {
+            "id": "quote-phone",
+            "task_id": "quote",
+            "tag_id": "phone"
+          },
+          {
+            "id": "paint-workshop",
+            "task_id": "paint",
+            "tag_id": "workshop"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "plans": [],
+          "order": [
+            "blocked"
+          ],
+          "quote": [],
+          "paint": [
+            "deferred"
+          ],
+          "clear": [
+            "completed"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "shed"
+            ],
+            "visibility": "everything",
+            "groups": [
+              {
+                "id": "shed",
+                "tasks": [
+                  {
+                    "id": "plans",
+                    "depth": 1
+                  },
+                  {
+                    "id": "order",
+                    "depth": 1
+                  },
+                  {
+                    "id": "quote",
+                    "depth": 2
+                  },
+                  {
+                    "id": "paint",
+                    "depth": 1
+                  },
+                  {
+                    "id": "clear",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "tags",
+            "selection": [
+              "diy"
+            ],
+            "visibility": "everything",
+            "groups": [
+              {
+                "id": "outdoors",
+                "tasks": [
+                  {
+                    "id": "clear",
+                    "depth": 1
+                  },
+                  {
+                    "id": "plans",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "phone",
+                "tasks": [
+                  {
+                    "id": "order",
+                    "depth": 1
+                  },
+                  {
+                    "id": "quote",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "workshop",
+                "tasks": [
+                  {
+                    "id": "paint",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "An unfinished task beneath a completed one shows beneath it only under Everything",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "shed",
+            "name": "Build the garden shed",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "frame",
+            "title": "Build the frame",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T10:00:00.000Z",
+            "completed_at": "2026-11-15T12:00:00.000Z"
+          },
+          {
+            "id": "square",
+            "title": "Check the frame is square",
+            "project_id": "shed",
+            "parent_id": "frame",
+            "position": "a0",
+            "created_at": "2026-11-10T11:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "roof",
+            "title": "Felt the roof",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-10T12:00:00.000Z",
+            "completed_at": null
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "frame": [
+            "completed"
+          ],
+          "square": [],
+          "roof": []
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "shed"
+            ],
+            "visibility": "available",
+            "groups": [
+              {
+                "id": "shed",
+                "tasks": [
+                  {
+                    "id": "square",
+                    "depth": 1
+                  },
+                  {
+                    "id": "roof",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "projects",
+            "selection": [
+              "shed"
+            ],
+            "groups": [
+              {
+                "id": "shed",
+                "tasks": [
+                  {
+                    "id": "square",
+                    "depth": 1
+                  },
+                  {
+                    "id": "roof",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "projects",
+            "selection": [
+              "shed"
+            ],
+            "visibility": "everything",
+            "groups": [
+              {
+                "id": "shed",
+                "tasks": [
+                  {
+                    "id": "frame",
+                    "depth": 1
+                  },
+                  {
+                    "id": "square",
+                    "depth": 2
+                  },
+                  {
+                    "id": "roof",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

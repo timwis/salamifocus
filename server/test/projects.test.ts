@@ -123,6 +123,46 @@ describe('tasks in projects', () => {
     assert.equal((await h.application.task(taskId))?.completedAt, history.at(-1)?.changes[0]?.after?.completed_at);
   });
 
+  it('shows completed tasks, with when they were completed, only under Everything', async () => {
+    const id = await project('Garage');
+    const done = await addTask(id, 'Sweep the floor', 'a0');
+    await addTask(id, 'Fix the door', 'a1');
+    await perform(OperationName.completeTask, { taskId: done, completedAt: '2026-11-14T15:30:00.000Z' });
+
+    const [everything] = await h.application.projects([id], 'everything');
+    assert.deepEqual(
+      everything?.tasks.map((t) => [t.title, t.completedAt, t.unavailable]),
+      [
+        ['Sweep the floor', '2026-11-14T15:30:00.000Z', ['completed']],
+        ['Fix the door', null, []],
+      ],
+    );
+    assert.deepEqual(await outline([id]), [{ Garage: ['Fix the door'] }]);
+  });
+
+  it('reopens a completed task, which comes back to Remaining with its completion kept in history', async () => {
+    const id = await project('Shed');
+    const taskId = await addTask(id, 'Oil the hinges', 'a0');
+    await perform(OperationName.completeTask, { taskId, completedAt: '2026-11-14T15:30:00.000Z' });
+
+    assert.equal(await perform(OperationName.reopenTask, { taskId }), 'applied');
+
+    assert.deepEqual(await outline([id]), [{ Shed: ['Oil the hinges'] }]);
+    assert.equal((await h.application.task(taskId))?.completedAt, null);
+    const history = await h.application.history(taskId);
+    assert.deepEqual(history.at(-1)?.changes[0], {
+      entity: 'task',
+      entityId: taskId,
+      kind: 'update',
+      before: { completed_at: '2026-11-14T15:30:00.000Z' },
+      after: { completed_at: null },
+    });
+    // Reopening it again, as a second device might, changes nothing.
+    assert.equal(await perform(OperationName.reopenTask, { taskId }), 'applied');
+    assert.equal((await h.application.history(taskId)).filter((entry) => entry.operation === 'reopen_task').length, 1);
+    assert.equal(await perform(OperationName.reopenTask, { taskId: crypto.randomUUID() }), 'not_found');
+  });
+
   it('never treats a single-action list as complete because it is empty', async () => {
     const id = await project('Miscellaneous', { kind: 'single_actions' });
     const only = await addTask(id, 'Post the parcel', 'a0');

@@ -153,6 +153,26 @@ export const completeTask: OperationDefinition<CompleteTaskArgs> = {
   },
 };
 
+export interface ReopenTaskArgs {
+  taskId: string;
+}
+
+/** Marks a completed task unfinished again. Its completion stays in its history. */
+export const reopenTask: OperationDefinition<ReopenTaskArgs> = {
+  name: OperationName.reopenTask,
+  parse(input) {
+    const a = args.record(input);
+    return { taskId: args.uuid(a, 'taskId') };
+  },
+  async apply(mutations, { taskId }) {
+    const task = await mutations.read('task', taskId);
+    if (!task) throw new Rejection('not_found', 'That task no longer exists.');
+    // Reopened on two devices: the first reopening stands.
+    if (task.completed_at === null) return;
+    await mutations.update('task', taskId, { completed_at: null });
+  },
+};
+
 export interface DeferTaskArgs {
   taskId: string;
   /** When the task comes back to attention, or null to stop deferring it. */
@@ -246,7 +266,7 @@ export const moveTask: OperationDefinition<MoveTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, deferTask, setTaskDue, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reopenTask, deferTask, setTaskDue, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

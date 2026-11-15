@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SimulatedDevice } from '../support/device.ts';
+import { server } from '../support/server.ts';
 import { run, signIn, treeItem } from '../support/web.ts';
 
 /** A project's rows as shown, children indented beneath their parents, without this run's suffix. */
@@ -62,4 +63,45 @@ test('Projects shows remaining tasks until V or Shift+V chooses another visibili
   await expect(choice(page, 'Remaining')).toBeChecked();
   await expect.poll(() => shownOutline(page, shed)).toEqual(remaining);
   await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
+});
+
+test('Everything shows completed tasks with when they were completed, and Space marks one unfinished again', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const garage = `Tidy the garage (${run})`;
+  const { projectId } = await phone.createProject(garage, { position: 'a8' });
+  const { taskId: sweep } = await phone.createTask(projectId, `Sweep the floor ${run}`, 'a0');
+  await phone.createTask(projectId, `Fix the door ${run}`, 'a1');
+  await phone.complete(sweep);
+
+  await signIn(page);
+  await page.goto(`/projects/${projectId}`);
+  await expect(treeItem(page, garage)).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('2');
+  await expect.poll(() => shownOutline(page, garage)).toEqual(['Fix the door']);
+
+  await page.keyboard.press('v');
+  await expect(choice(page, 'Everything')).toBeChecked();
+  await expect.poll(() => shownOutline(page, garage)).toEqual(['Sweep the floor', 'Fix the door']);
+  const swept = page.getByRole('listitem').filter({ hasText: `Sweep the floor ${run}` });
+  await expect(swept).toHaveAttribute('data-unavailable', 'completed');
+  await expect(swept).toContainText(/Completed \w{3} \d{1,2} \w{3}( \d{4})? \d\d:\d\d/);
+
+  // Space reopens a completed task, which stays in place, and completes an unfinished one, which stays too.
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await expect(swept).toBeFocused();
+  await page.keyboard.press(' ');
+  await expect(swept).not.toHaveAttribute('data-unavailable');
+  await expect.poll(async () => (await server.task(sweep))?.completedAt).toBeNull();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press(' ');
+  const door = page.getByRole('listitem').filter({ hasText: `Fix the door ${run}` });
+  await expect(door).toHaveAttribute('data-unavailable', 'completed');
+  await expect(door).toBeFocused();
+  await expect(page.getByRole('button', { name: `Mark Fix the door ${run} unfinished` })).toBeVisible();
+
+  // V wraps round to Available, where the reopened task is back and the completed one has gone.
+  await page.keyboard.press('v');
+  await expect(choice(page, 'Available')).toBeChecked();
+  await expect.poll(() => shownOutline(page, garage)).toEqual(['Sweep the floor']);
 });

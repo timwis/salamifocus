@@ -19,7 +19,7 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 2 | Go to Projects (focus goes to the sidebar) |
 | 3 | Go to Tags (focus goes to the sidebar) |
 | Tab / Shift+Tab | Next / previous region |
-| V / Shift+V | In Projects and Tags: show the next / previous of **Available** and **Remaining** (see [Visibility](#visibility)) |
+| V / Shift+V | In Projects and Tags: show the next / previous of **Available**, **Remaining** and **Everything** (see [Visibility](#visibility)) |
 | C | Capture to the Inbox without leaving where you are. Enter saves and clears the box for the next one; Enter on an empty box or Escape closes it, and focus goes back where it was. The **+ Capture** button does the same |
 
 ## Visibility
@@ -28,6 +28,7 @@ Projects and Tags can show more or less of the system. The choice is shown above
 
 - **Available**: only tasks that can be worked on now. Blocked and deferred tasks are left out, and a deferred task joins when its date arrives. A prerequisite whose parent is left out is shown where the parent was.
 - **Remaining**: every unfinished task, blocked and deferred ones included.
+- **Everything**: completed tasks as well, each in its place, struck through and marked **Completed** with the day and time. Completing a task here leaves it in place.
 
 Clicking a choice does the same as V, without moving keyboard focus.
 
@@ -91,7 +92,7 @@ The task rows of the current perspective. Inbox lists every unfinished task that
 | Enter | Edit the task, starting in its title. On a project heading: edit the project's dates |
 | P | Edit the task's project |
 | T | Edit the task's tags |
-| Space | Complete the task. It leaves the outline and the row now in its place becomes current |
+| Space | Complete the task. It leaves the outline (except under Everything) and the row now in its place becomes current. On a completed task, under Everything: mark it unfinished again |
 | Alt+↑ / Alt+↓ | Move the task, with its children, up or down among its siblings. The order is for your reading only; it never makes one task wait for another |
 | Alt+→ | Indent: make the task a prerequisite of the task above it at the same level (it becomes that task's last child). Its own children come with it |
 | Alt+← | Outdent: move the task out of its parent, to just after it. Its own children come with it |

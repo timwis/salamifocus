@@ -49,15 +49,25 @@ const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.g
 const dayFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
+function describeDay(date: Date, now: Date, options: { year?: boolean }): string {
+  const parts = Object.fromEntries(dayFormat.formatToParts(date).map((part) => [part.type, part.value]));
+  const withYear = options.year || date.getFullYear() !== now.getFullYear();
+  return [parts.weekday, parts.day, parts.month, ...(withYear ? [parts.year] : [])].join(' ');
+}
+
 /**
  * A date as the user reads it in their own time zone, such as "Mon 23 Nov", with the year when it is not
  * this year's (or always, with `year`), and the time when it is not the kind's usual hour.
  */
 export function describeDate(value: string | Date, kind: DateKind, now: Date, options: { year?: boolean } = {}): string {
   const date = new Date(value);
-  const parts = Object.fromEntries(dayFormat.formatToParts(date).map((part) => [part.type, part.value]));
-  const withYear = options.year || date.getFullYear() !== now.getFullYear();
-  const day = [parts.weekday, parts.day, parts.month, ...(withYear ? [parts.year] : [])].join(' ');
+  const day = describeDay(date, now, options);
   const usual = date.getHours() === defaultHour[kind] && date.getMinutes() === 0;
   return usual ? day : `${day} ${timeFormat.format(date)}`;
+}
+
+/** When something happened, such as a task's completion, always with its time: "Sat 14 Nov 15:30". */
+export function describeMoment(value: string | Date, now: Date): string {
+  const date = new Date(value);
+  return `${describeDay(date, now, {})} ${timeFormat.format(date)}`;
 }

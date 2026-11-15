@@ -5,6 +5,7 @@ import { isTyping } from '../focus.ts';
 const labels: Record<Visibility, { name: string; description: string }> = {
   [Visibility.available]: { name: 'Available', description: 'Only tasks that can be worked on now' },
   [Visibility.remaining]: { name: 'Remaining', description: 'Every unfinished task, including blocked and deferred ones' },
+  [Visibility.everything]: { name: 'Everything', description: 'Completed tasks as well, with when they were completed' },
 };
 
 /**

@@ -46,6 +46,11 @@ export function completeTask(taskId: string) {
   ]);
 }
 
+/** Marks a completed task unfinished again. */
+export function reopenTask(taskId: string) {
+  return write(OperationName.reopenTask, 'UPDATE tasks SET completed_at = NULL, _metadata = ? WHERE id = ?', (m) => [m, taskId]);
+}
+
 /** Defers a task (and the tasks beneath it) until a time, or with null stops deferring it. */
 export function deferTask(taskId: string, deferUntil: string | null) {
   return write(OperationName.deferTask, 'UPDATE tasks SET defer_until = ?, _metadata = ? WHERE id = ?', (m) => [deferUntil, m, taskId]);

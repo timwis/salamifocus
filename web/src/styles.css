@@ -243,6 +243,10 @@ button.check:hover {
   border-color: var(--accent);
   background: radial-gradient(circle, var(--accent) 30%, transparent 35%);
 }
+.check.done {
+  border-color: #8e8e93;
+  background: radial-gradient(circle, #8e8e93 45%, transparent 50%);
+}
 .project-heading {
   display: flex;
   flex-wrap: wrap;
@@ -474,10 +478,15 @@ nav:focus-within a[aria-current='page'] {
   color: #9a5b00;
   line-height: 1.35rem;
 }
-.task-date {
+.task-date,
+.completion {
   font-size: 0.8rem;
   color: var(--muted);
   line-height: 1.35rem;
+}
+.task-row.completed .task-title {
+  color: var(--muted);
+  text-decoration: line-through;
 }
 /* A blocked or deferred task reads as not yet actionable. */
 .task-row[data-unavailable~='blocked'] .task-title,

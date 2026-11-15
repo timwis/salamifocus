@@ -238,6 +238,18 @@ describe('uploading a client transaction', () => {
     assert.equal(rejected?.code, 'malformed_operation');
   });
 
+  it('completes a task and reopens it, refusing a reopening that sets a completion time', async () => {
+    const { taskId, entries } = captureTransaction('renew the parking permit');
+    await upload(entries);
+    const patch = (op: OperationName, data: Record<string, unknown>) => ({ op: 'PATCH', table: 'tasks', id: taskId, data, metadata: operationMetadata(op) });
+
+    await upload([patch(OperationName.completeTask, { completed_at: '2026-11-14T15:30:00.000Z' })]);
+    assert.deepEqual((await upload([patch(OperationName.reopenTask, { completed_at: null })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.task(taskId))?.completedAt, null);
+    const [rejected] = await upload([patch(OperationName.reopenTask, { completed_at: '2026-11-14T15:30:00.000Z' })]);
+    assert.equal(rejected?.code, 'malformed_operation');
+  });
+
   it('sets and clears a due date', async () => {
     const { taskId, entries } = captureTransaction('file the tax return');
     await upload(entries);
