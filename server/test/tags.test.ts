@@ -190,6 +190,30 @@ describe('the Tags perspective', () => {
     assert.deepEqual(new Set(lowEnergyGroup?.[0]?.tagIds), new Set([dad, lowEnergy]));
   });
 
+  it('adds a task straight to a tag; without a project it also waits in the Inbox', async () => {
+    const errand = await tag('@Errand', null, 'a0');
+    const taskId = crypto.randomUUID();
+    const link = { taskTagId: crypto.randomUUID(), tagId: errand };
+
+    assert.equal(await perform(OperationName.createTask, { taskId, projectId: null, title: 'Buy stamps', position: null, tags: [link] }), 'applied');
+
+    assert.deepEqual(await outline(errand), [{ '@Errand': ['Buy stamps'] }]);
+    assert.ok((await h.application.inbox()).some((entry) => entry.id === taskId));
+    const [created] = await h.application.history(taskId);
+    assert.deepEqual(created?.changes.map((c) => c.entity), ['task', 'task_tag']);
+  });
+
+  it('refuses a new task with a missing tag, or with a position but no project, and creates nothing', async () => {
+    const real = await tag('Real', null, 'a0');
+    const taskId = crypto.randomUUID();
+    const missing = { taskTagId: crypto.randomUUID(), tagId: crypto.randomUUID() };
+
+    assert.equal(await perform(OperationName.createTask, { taskId, projectId: null, title: 'Lost', tags: [missing] }), 'not_found');
+    assert.equal(await perform(OperationName.createTask, { taskId, projectId: null, title: 'Lost', position: 'a0' }), 'invalid_position');
+    assert.equal(await h.application.task(taskId), null);
+    assert.deepEqual(await outline(real), []);
+  });
+
   it('shows nothing for a tag without tasks or one that does not exist', async () => {
     const empty = await tag('Empty', null, 'a0');
     assert.deepEqual(await outline(empty), []);

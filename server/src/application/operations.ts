@@ -60,33 +60,57 @@ export const renameTask: OperationDefinition<RenameTaskArgs> = {
 
 export interface CreateTaskArgs {
   taskId: string;
-  projectId: string;
+  projectId: string | null;
   title: string;
-  position: string;
+  position: string | null;
   createdAt: string;
+  /** Tags to put on the task, each with the id of its link. */
+  tags: { taskTagId: string; tagId: string }[];
 }
 
-/** Adds a task directly to a project or single-action list, so it never passes through the Inbox. */
+/**
+ * Adds a task, with any tags, as one operation. A task added to a project or
+ * single-action list never passes through the Inbox; one added without a
+ * project (from a tag, say) waits there until it has one.
+ */
 export const createTask: OperationDefinition<CreateTaskArgs> = {
   name: OperationName.createTask,
   parse(input, now) {
     const a = args.record(input);
+    const tags = a.tags === undefined ? [] : a.tags;
+    if (!Array.isArray(tags)) throw new Rejection('invalid_arguments', 'tags must be a list.');
     return {
       taskId: args.uuid(a, 'taskId'),
-      projectId: args.uuid(a, 'projectId'),
+      projectId: args.nullableUuid(a, 'projectId') ?? null,
       title: args.text(a, 'title'),
-      position: args.text(a, 'position'),
+      position: a.position === undefined || a.position === null ? null : args.text(a, 'position'),
       createdAt: args.timestamp(a, 'createdAt', now),
+      tags: tags.map((link) => {
+        const l = args.record(link);
+        return { taskTagId: args.uuid(l, 'taskTagId'), tagId: args.uuid(l, 'tagId') };
+      }),
     };
   },
-  async apply(mutations, { taskId, projectId, title, position, createdAt }) {
+  async apply(mutations, { taskId, projectId, title, position, createdAt, tags }) {
     const badTitle = titleProblem(title);
     if (badTitle) throw new Rejection('invalid_title', badTitle);
-    const badPosition = positionProblem(position);
-    if (badPosition) throw new Rejection('invalid_position', badPosition);
+    if (projectId !== null) {
+      const badPosition = position === null ? 'A task in a project needs a position.' : positionProblem(position);
+      if (badPosition) throw new Rejection('invalid_position', badPosition);
+    } else if (position !== null) {
+      throw new Rejection('invalid_position', 'Only tasks in a project have a position.');
+    }
     if (await mutations.exists('task', taskId)) throw new Rejection('already_exists', 'Something with that id already exists.');
-    if (!(await mutations.exists('project', projectId))) throw new Rejection('not_found', 'That project no longer exists.');
+    if (projectId !== null && !(await mutations.exists('project', projectId))) throw new Rejection('not_found', 'That project no longer exists.');
     await mutations.create('task', taskId, { title: normaliseTitle(title), project_id: projectId, position, created_at: createdAt });
+    const added = new Set<string>();
+    for (const { taskTagId, tagId } of tags) {
+      if (!(await mutations.exists('tag', tagId))) throw new Rejection('not_found', 'That tag no longer exists.');
+      if (await mutations.exists('task_tag', taskTagId)) throw new Rejection('already_exists', 'Something with that id already exists.');
+      if (added.has(tagId)) continue;
+      added.add(tagId);
+      await mutations.create('task_tag', taskTagId, { task_id: taskId, tag_id: tagId });
+    }
   },
 };
 

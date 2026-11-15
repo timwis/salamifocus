@@ -29,12 +29,22 @@ export function reorderTask(taskId: string, position: string) {
   return write(OperationName.reorderTask, 'UPDATE tasks SET position = ?, _metadata = ? WHERE id = ?', (m) => [position, m, taskId]);
 }
 
-export function createTask(taskId: string, projectId: string, title: string, position: string) {
-  return write(
-    OperationName.createTask,
-    'INSERT INTO tasks (id, title, project_id, position, created_at, _metadata) VALUES (?, ?, ?, ?, ?, ?)',
-    (m) => [taskId, title, projectId, position, new Date().toISOString(), m],
-  );
+/** Adds a task, in a project at a position or (with no project) in the Inbox, with any tags, as one operation. */
+export async function createTask(taskId: string, projectId: string | null, title: string, position: string | null, tagIds: readonly string[] = []) {
+  const metadata = operationMetadata(OperationName.createTask);
+  await db.writeTransaction(async (tx) => {
+    await tx.execute('INSERT INTO tasks (id, title, project_id, position, created_at, _metadata) VALUES (?, ?, ?, ?, ?, ?)', [
+      taskId,
+      title,
+      projectId,
+      position,
+      new Date().toISOString(),
+      metadata,
+    ]);
+    for (const tagId of tagIds) {
+      await tx.execute('INSERT INTO task_tags (id, task_id, tag_id, _metadata) VALUES (?, ?, ?, ?)', [crypto.randomUUID(), taskId, tagId, metadata]);
+    }
+  });
 }
 
 export function createFolder(folderId: string, name: string, parentId: string | null, position: string) {

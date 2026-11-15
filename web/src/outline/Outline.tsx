@@ -18,9 +18,11 @@ export interface OutlineTask {
 export interface OutlineGroup {
   id: string;
   heading: string | null;
-  /** Whether new tasks can be added here, for example a project. */
-  projectId: string | null;
   tasks: OutlineTask[];
+  /** Where a task added here goes, or absent if tasks cannot be added here. */
+  newTask?: { projectId: string | null; tagId: string | null };
+  /** Whether the tasks are in an order of their own (a project's), which new tasks slot into and Alt+arrows change. */
+  ordered: boolean;
 }
 
 type Row = { key: string; group: OutlineGroup } & ({ kind: 'heading' } | { kind: 'task'; task: OutlineTask; index: number });
@@ -31,9 +33,9 @@ const EMPTY = 'empty';
 const headingKey = (group: OutlineGroup) => `group:${group.id}`;
 const taskKey = (group: OutlineGroup, taskId: string) => `${group.id}/${taskId}`;
 
-/** Where a draft row sits among a group's tasks: before the first task placed after it. */
+/** Where a draft row sits among a group's tasks: before the first task placed after it, or last where tasks are oldest first. */
 const draftIndex = (group: OutlineGroup, after: string | null) =>
-  after === null ? 0 : (() => {
+  !group.ordered ? group.tasks.length : after === null ? 0 : (() => {
     const index = group.tasks.findIndex((t) => t.position !== null && t.position > after);
     return index === -1 ? group.tasks.length : index;
   })();
@@ -78,7 +80,7 @@ export function Outline({
   }
 
   function startDraft() {
-    if (!focused?.group.projectId) return;
+    if (!focused?.group.newTask) return;
     const { group } = focused;
     roving.claim();
     if (focused.kind === 'heading') {
@@ -94,22 +96,23 @@ export function Outline({
   async function finishDraft(title: string | null, keepGoing: boolean) {
     if (editing?.mode !== 'draft') return;
     const group = groups.find((g) => g.id === editing.groupId);
-    if (title === null || !group?.projectId) {
+    if (title === null || !group?.newTask) {
       setEditing(null);
       current.set(editing.returnTo);
       return;
     }
     const id = crypto.randomUUID();
-    const position = positionBetween(editing.after, editing.before);
+    const { projectId, tagId } = group.newTask;
+    const position = group.ordered ? positionBetween(editing.after, editing.before) : null;
     // Enter saves and starts the next task straight after this one.
     setEditing(keepGoing ? { ...editing, after: position, returnTo: taskKey(group, id) } : null);
     current.await(taskKey(group, id));
-    await createTask(id, group.projectId, title, position);
+    await createTask(id, projectId, title, position, tagId ? [tagId] : []);
   }
 
   /** Moves the current task up or down within its project; it never crosses into another group. */
   function reorder(by: -1 | 1) {
-    if (focused?.kind !== 'task' || !focused.group.projectId) return;
+    if (focused?.kind !== 'task' || !focused.group.ordered) return;
     const { group, task, index } = focused;
     const target = index + by;
     if (target < 0 || target >= group.tasks.length) return;
@@ -149,7 +152,7 @@ export function Outline({
   }
 
   const draftRow = editing?.mode === 'draft' && (
-    <li key={`draft:${editing.after}`} className="task-row editing" data-key="draft">
+    <li key={`draft:${editing.after}:${editing.returnTo}`} className="task-row editing" data-key="draft">
       <span className="check" aria-hidden />
       <TitleEditor label="New task title" initial="" onDone={(title, how) => void finishDraft(title, how === 'enter')} />
     </li>
@@ -162,7 +165,7 @@ export function Outline({
           <h2 id="perspective-heading">{title}</h2>
           {summary && <p className="summary">{summary}</p>}
         </div>
-        {groups.some((g) => g.projectId) && (
+        {groups.some((g) => g.newTask) && (
           // The mouse equivalent of N, kept out of the Tab order so Tab still moves between regions.
           <button type="button" tabIndex={-1} aria-label="New task" title="New task (N)" aria-keyshortcuts="N" onClick={startDraft}>
             + New task

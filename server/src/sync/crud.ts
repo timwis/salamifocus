@@ -117,8 +117,17 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
   },
 
   [OperationName.createTask](entries) {
-    const { id, data } = onlyInsert(entries, 'tasks', ['title', 'project_id', 'position', 'created_at']);
-    return { taskId: id, projectId: data.project_id, title: data.title, position: data.position, createdAt: data.created_at };
+    // The task's row, then a link row for each tag it starts with.
+    const task = single(entries, 'PUT', 'tasks');
+    const data = onlyColumns(task, ['title', 'project_id', 'position', 'created_at']);
+    const links = entries.filter((entry) => entry !== task);
+    const tags = links.map((link) => {
+      if (link.op !== 'PUT' || link.table !== 'task_tags') throw new Malformed('A new task writes only its own row and its tags.');
+      const tag = onlyColumns(link, ['task_id', 'tag_id']);
+      if (tag.task_id !== task.id) throw new Malformed('A tag does not belong to the task it was added with.');
+      return { taskTagId: link.id, tagId: tag.tag_id };
+    });
+    return { taskId: task.id, projectId: data.project_id ?? null, title: data.title, position: data.position ?? null, createdAt: data.created_at, tags };
   },
 
   [OperationName.editTaskNote](entries) {

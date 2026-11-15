@@ -163,6 +163,21 @@ describe('uploading a client transaction', () => {
     assert.deepEqual((await h.application.task(capture.taskId))?.tags, []);
   });
 
+  it('creates a task with its tags as one operation', async () => {
+    const tagId = crypto.randomUUID();
+    const taskId = crypto.randomUUID();
+    await upload([{ op: 'PUT', table: 'tags', id: tagId, data: { name: '@Phone', position: 'a0' }, metadata: operationMetadata(OperationName.createTag) }]);
+    const metadata = operationMetadata(OperationName.createTask);
+
+    const results = await upload([
+      { op: 'PUT', table: 'tasks', id: taskId, data: { title: 'Call the bank', created_at: '2026-11-13T09:00:00.000Z' }, metadata },
+      { op: 'PUT', table: 'task_tags', id: crypto.randomUUID(), data: { task_id: taskId, tag_id: tagId }, metadata },
+    ]);
+
+    assert.deepEqual(results.map((r) => r.outcome), ['applied']);
+    assert.deepEqual((await h.application.task(taskId))?.tags.map((t) => t.name), ['@Phone']);
+  });
+
   it('rejects a move that also renames', async () => {
     const projectId = crypto.randomUUID();
     await upload([

@@ -33,14 +33,22 @@ export function TagsPerspective({ place }: { place: Place }) {
      ORDER BY t.created_at, t.id`,
     branch,
   );
-  const groups: OutlineGroup[] = selected
-    ? groupByTag(tags.tree, selected, tasks, (task) => taskTags.get(task.id) ?? []).map(({ tag, path, tasks }) => ({
-        id: tag.id,
-        heading: path.join(tagPathSeparator),
-        projectId: null,
-        tasks: tasks.map((task) => ({ ...task, projectName: task.project_name })),
-      }))
-    : [];
+  const groups: OutlineGroup[] = groupByTag(tags.tree, selected ?? '', tasks, (task) => taskTags.get(task.id) ?? []).map(
+    ({ tag, path, tasks }) => ({
+      id: tag.id,
+      heading: path.join(tagPathSeparator),
+      // A task added here gets this tag, and waits in the Inbox until it has a project.
+      newTask: { projectId: null, tagId: tag.id },
+      ordered: false,
+      tasks: tasks.map((task) => ({ ...task, projectName: task.project_name })),
+    }),
+  );
+  // With nothing in the branch, the selected tag still gets a heading, so tasks can be added to it.
+  const [selectedTag] = selected ? tagBranch(tags.tree, selected) : [];
+  if (groups.length === 0 && selectedTag) {
+    const { tag, path } = selectedTag;
+    groups.push({ id: tag.id, heading: path.join(tagPathSeparator), newTask: { projectId: null, tagId: tag.id }, ordered: false, tasks: [] });
+  }
   const count = tasks.length;
 
   return (
@@ -65,7 +73,7 @@ export function TagsPerspective({ place }: { place: Place }) {
         title="Tags"
         summary={branch.length === 0 ? 'Select a tag in the sidebar' : `${count} ${count === 1 ? 'task' : 'tasks'} remaining`}
         groups={groups}
-        empty={branch.length === 0 ? 'Nothing selected.' : 'No remaining tasks have this tag.'}
+        empty="Nothing selected."
       />
     </>
   );

@@ -81,7 +81,7 @@ The task rows of the current perspective. In Projects, each selected project has
 | T | Edit the task's tags |
 | Space | Complete the task. It leaves the outline and the row now in its place becomes current |
 | Alt+↑ / Alt+↓ | Move the task up or down within its project. The order is for your reading only; it never makes one task wait for another |
-| N | New task straight after the current row (on a project heading: at the top of that project). Enter saves it and starts another; Enter on an empty row or Escape stops. The **+ New task** button does the same |
+| N | New task straight after the current row (on a project heading: at the top of that project). In Tags, it goes at the end of the current row's tag group, carries that tag, and waits in the Inbox until it has a project. Enter saves it and starts another; Enter on an empty row or Escape stops. The **+ New task** button does the same |
 
 ### Editing a task
 

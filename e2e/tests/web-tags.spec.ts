@@ -210,6 +210,42 @@ test('with the mouse, a tag removed in the editor stays removed when another tas
   await expect.poll(async () => (await server.task(taskId))?.tags.map((t) => t.name)).toEqual([`@Home ${run}`]);
 });
 
+test('tasks added in the Tags perspective get the tag of their group, and wait in the Inbox for a project', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const { tagId: town } = await phone.createTag(`@Town ${run}`, { position: 'a8' });
+  const { tagId: post } = await phone.createTag(`Post office ${run}`, { parentId: town });
+  await signIn(page);
+  await page.goto(`/tags/${town}`);
+  const main = page.getByRole('main');
+
+  // An empty branch still has a heading for the selected tag, so N works.
+  await expect(main.getByRole('heading', { level: 3 })).toHaveText([`@Town ${run}`]);
+  await page.keyboard.press('3');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('n');
+  await page.keyboard.type(`Collect the dry cleaning ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(`Buy bread ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  const townTasks = main.getByRole('list', { name: `@Town ${run}`, exact: true }).locator('.task-title');
+  await expect(townTasks).toHaveText([`Collect the dry cleaning ${run}`, `Buy bread ${run}`]);
+
+  // A task added under a narrower tag's heading gets that tag.
+  await page.goto(`/tags/${post}`);
+  await page.getByRole('button', { name: 'New task' }).click();
+  await page.getByLabel('New task title').fill(`Send the passport form ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(main.getByRole('list', { name: `@Town ${run} : Post office ${run}`, exact: true })).toContainText(`Send the passport form ${run}`);
+  await page.goto(`/tags/${town}`);
+  await expect(main.getByRole('heading', { level: 3 })).toHaveText([`@Town ${run}`, `@Town ${run} : Post office ${run}`]);
+
+  await expect.poll(async () => (await server.tagged(post)).flatMap((g) => g.tasks.map((t) => t.title))).toEqual([`Send the passport form ${run}`]);
+  const inbox = (await server.inbox()).map((entry) => entry.title);
+  expect(inbox).toEqual(expect.arrayContaining([`Collect the dry cleaning ${run}`, `Buy bread ${run}`, `Send the passport form ${run}`]));
+});
+
 test('a tag created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   await signIn(page);
   await page.getByRole('navigation', { name: 'Perspectives' }).getByRole('link', { name: 'Tags' }).click();

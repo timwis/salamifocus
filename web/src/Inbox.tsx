@@ -12,6 +12,6 @@ export function Inbox() {
   const { data: tasks } = useQuery<InboxRow>('SELECT id, title, note, position FROM tasks WHERE project_id IS NULL AND completed_at IS NULL ORDER BY created_at, id');
 
   return (
-    <Outline title="Inbox" groups={[{ id: 'inbox', heading: null, projectId: null, tasks }]} empty="Nothing in the Inbox." />
+    <Outline title="Inbox" groups={[{ id: 'inbox', heading: null, ordered: false, tasks }]} empty="Nothing in the Inbox." />
   );
 }

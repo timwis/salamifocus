@@ -58,7 +58,8 @@ export function ProjectsPerspective({ place }: { place: Place }) {
   const groups: OutlineGroup[] = selected.map((project) => ({
     id: project.id,
     heading: project.name,
-    projectId: project.id,
+    newTask: { projectId: project.id, tagId: null },
+    ordered: true,
     tasks: tasks.filter((t) => t.project_id === project.id).sort(comparePositions),
   }));
   const taskCount = groups.reduce((sum, g) => sum + g.tasks.length, 0);
