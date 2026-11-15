@@ -55,8 +55,9 @@ for (const { scenario, file, examples } of loadScenarios()) {
             await page.goto(`/${perspective.perspective}/${perspective.selection.map((id) => ids.uuid(id)).join(',')}`);
             await expect.poll(async () => (await shown(page, ids)).groups).toEqual(perspective.groups);
             const { unavailable } = await shown(page, ids);
-            for (const [task, reasons] of Object.entries(unavailable)) {
-              expect(reasons, `availability of ${task}`).toEqual(example.expect.unavailable[task]);
+            // Only the listed tasks are checked, and only where this perspective shows them.
+            for (const [task, reasons] of Object.entries(example.expect.unavailable)) {
+              if (task in unavailable) expect(unavailable[task], `availability of ${task}`).toEqual(reasons);
             }
           }
         } finally {

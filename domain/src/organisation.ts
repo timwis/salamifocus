@@ -117,15 +117,18 @@ export function projectsInSelection(tree: readonly OrganisationNode[], selected:
   return found;
 }
 
-/** Whether putting `folderId` inside `parentId` would make a folder contain itself. */
+/**
+ * Whether putting `id` beneath `parentId` would make it contain itself, in any of the
+ * hierarchies (folders, tags, tasks). A loop already in `parentOf` counts as one too.
+ */
 export function wouldNestInItself(
-  folderId: string,
+  id: string,
   parentId: string | null,
   parentOf: (id: string) => string | null | undefined,
 ): boolean {
   const seen = new Set<string>();
   for (let current: string | null | undefined = parentId; current !== null && current !== undefined; current = parentOf(current)) {
-    if (current === folderId) return true;
+    if (current === id) return true;
     if (seen.has(current)) return true;
     seen.add(current);
   }

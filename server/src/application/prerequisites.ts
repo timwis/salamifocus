@@ -5,10 +5,12 @@ import type { OperationDefinition } from './operations.ts';
 import { checkPosition } from './organisation.ts';
 import { Rejection } from './rejection.ts';
 
-/** Checks that a task in `projectId` can go beneath `parentId`: the parent exists and is in the same project. */
+/** Checks that a task in `projectId` can go beneath `parentId`: the parent exists, is unfinished and is in the same project. */
 export async function checkParent(mutations: Mutations, projectId: string | null, parentId: string): Promise<void> {
   const parent = await mutations.read('task', parentId);
   if (!parent) throw new Rejection('not_found', 'That task no longer exists.');
+  // Another device may have completed it while this one was offline.
+  if (parent.completed_at !== null) throw new Rejection('parent_completed', 'That task has already been completed.');
   if (projectId === null || parent.project_id !== projectId) {
     throw new Rejection('different_project', 'A task can only go beneath another task in the same project.');
   }
@@ -18,6 +20,10 @@ export interface NestTaskArgs {
   taskId: string;
   /** The task to go beneath, null for the top of the project, or undefined to keep the same parent. */
   parentId: string | null | undefined;
+  /**
+   * Where it goes among its siblings, or undefined to keep its position. A synced client leaves it out
+   * whenever it is unchanged, even with a new parent, so other callers should always send it with one.
+   */
   position: string | undefined;
 }
 

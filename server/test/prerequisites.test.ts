@@ -94,6 +94,17 @@ describe('nested prerequisites', () => {
     assert.equal(await perform(OperationName.createTask, child), 'different_project');
   });
 
+  it('refuses to put a task beneath a completed one, as when another device completed it first', async () => {
+    const id = await project('Loft insulated');
+    const measure = await addTask(id, 'Measure the loft', 'a0');
+    const order = await addTask(id, 'Order the insulation', 'a1');
+    assert.equal(await perform(OperationName.completeTask, { taskId: measure, completedAt: '2026-11-13T11:00:00.000Z' }), 'applied');
+
+    assert.equal(await nest(order, measure, 'a0'), 'parent_completed');
+    const child = { taskId: crypto.randomUUID(), projectId: id, parentId: measure, title: 'Check the joists', position: 'a0' };
+    assert.equal(await perform(OperationName.createTask, child), 'parent_completed');
+  });
+
   it('records nesting in the task’s history', async () => {
     const id = await project('Car serviced');
     const book = await addTask(id, 'Book the service', 'a0');

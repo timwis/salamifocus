@@ -21,13 +21,6 @@ export interface OutlineTask {
   unfinishedChildren?: number;
 }
 
-/**
- * The column that says how many of a task's children (the task aliased `t`) are unfinished,
- * selected as `unfinishedChildren` for `OutlineTask`.
- */
-export const unfinishedChildrenColumn =
-  '(SELECT count(*) FROM tasks c WHERE c.parent_id = t.id AND c.completed_at IS NULL) AS "unfinishedChildren"';
-
 /** A run of tasks, under a heading when it is a project or tag, in outline order. One task can appear in several groups. */
 export interface OutlineGroup {
   id: string;

@@ -37,7 +37,7 @@ export interface ApplicationOptions {
 
 export type Application = ReturnType<typeof createApplication>;
 
-/** How many of a task's children (aliased `t`) are unfinished, which is what makes it blocked. */
+/** How many of a task's children (aliased `t`) are unfinished, which is what makes it blocked. The web client counts them the same way, in web/src/queries.ts. */
 const unfinishedChildren = (sql: Sql) =>
   sql`(SELECT count(*) FROM tasks c WHERE c.parent_id = t.id AND c.completed_at IS NULL)::int AS "unfinishedChildren"`;
 

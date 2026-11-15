@@ -1,7 +1,8 @@
 import { useQuery } from '@powersync/react';
 import { outlineTasks, projectsInSelection } from '@salamifocus/domain';
 import { go, type Place } from '../navigation.ts';
-import { Outline, unfinishedChildrenColumn, type OutlineGroup } from '../outline/Outline.tsx';
+import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
+import { unfinishedChildrenColumn } from '../queries.ts';
 import { useOrganisation } from './data.tsx';
 import { Sidebar } from './Sidebar.tsx';
 
