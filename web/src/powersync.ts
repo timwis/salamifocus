@@ -20,6 +20,7 @@ export const schema = new Schema({
   folders: new Table({ name: column.text, parent_id: column.text, position: column.text }, synced),
   projects: new Table({ name: column.text, kind: column.text, folder_id: column.text, position: column.text }, synced),
   tags: new Table({ name: column.text, parent_id: column.text, position: column.text }, synced),
+  task_tags: new Table({ task_id: column.text, tag_id: column.text }, synced),
 });
 
 export const db = new PowerSyncDatabase({

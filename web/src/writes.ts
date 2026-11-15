@@ -99,3 +99,21 @@ export function moveTag(tagId: string, parentId: string | null, position: string
     tagId,
   ]);
 }
+
+export function tagTask(taskId: string, tagId: string) {
+  return write(OperationName.tagTask, 'INSERT INTO task_tags (id, task_id, tag_id, _metadata) VALUES (?, ?, ?, ?)', (m) => [
+    crypto.randomUUID(),
+    taskId,
+    tagId,
+    m,
+  ]);
+}
+
+/** Deleting through _deleted lets the delete carry its operation, which a plain DELETE cannot. */
+export function untagTask(taskId: string, tagId: string) {
+  return write(OperationName.untagTask, 'UPDATE task_tags SET _deleted = TRUE, _metadata = ? WHERE task_id = ? AND tag_id = ?', (m) => [
+    m,
+    taskId,
+    tagId,
+  ]);
+}

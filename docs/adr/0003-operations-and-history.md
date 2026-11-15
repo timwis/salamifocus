@@ -19,7 +19,7 @@ Ticket 03 needs to define identity, attribution, exactly-once application and or
 4. **Write path.** `POST /api/sync/upload` receives one client transaction. The server regroups the rows by `op_id`, checks they have the shape their operation allows (for example, a rename may change only `title`), and hands each operation to the application's `execute`. In one Postgres transaction, `execute`:
    - takes an advisory lock on the operation id and returns the recorded outcome if the id has been seen before (a retry after a lost acknowledgement), counting the extra delivery;
    - validates and applies the operation;
-   - writes the `operations` row (name, actor, source, outcome, and what was submitted) and one `changes` row per row created or updated, with before and after values.
+   - writes the `operations` row (name, actor, source, outcome, and what was submitted) and one `changes` row per row created, updated or deleted, with before and after values.
 
    Mutations go through a single recorder (`server/src/application/mutations.ts`), so an operation cannot change state without producing change records.
 
@@ -35,5 +35,5 @@ Ticket 03 needs to define identity, attribution, exactly-once application and or
 
 - History (ticket 06) can be read from `operations` and `changes` without new write-side work. One logical operation is one entry, however many times it was delivered.
 - Change records are not synced to clients yet. Rejections are visible only on the server for now. Surfacing them, and detecting same-field conflicts from the previous values clients already send (`trackPrevious`), is ticket 34.
-- Deletes are not modelled. A plain SQL `DELETE` carries no metadata, so ticket 18 should use an update that marks the row deleted.
+- Records are not deleted, with one exception (ticket 08): taking a tag off a task deletes its link row in `task_tags`. A plain SQL `DELETE` carries no metadata, so the client writes `UPDATE task_tags SET _deleted = TRUE, _metadata = …`, which PowerSync uploads as a `DELETE` tagged with its operation. The change is recorded with kind `delete`, the removed row as `before` and no `after`. Ticket 18 should still mark tasks, projects and other records deleted rather than delete them.
 - The sign-in endpoint delays failed attempts but has no lockout. Ticket 04 should add rate limiting before the server is exposed to the internet.

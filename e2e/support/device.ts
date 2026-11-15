@@ -110,6 +110,18 @@ export class SimulatedDevice {
     return { tagId };
   }
 
+  async tagTask(taskId: string, tagId: string): Promise<void> {
+    await this.upload([
+      {
+        op: 'PUT',
+        table: 'task_tags',
+        id: crypto.randomUUID(),
+        data: { task_id: taskId, tag_id: tagId },
+        metadata: operationMetadata(OperationName.tagTask),
+      },
+    ]);
+  }
+
   private async upload(entries: unknown[]): Promise<void> {
     const response = await fetch(`${serverUrl}/api/sync/upload`, {
       method: 'POST',

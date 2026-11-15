@@ -378,3 +378,87 @@ nav:focus-within a[aria-current='page'] {
 .outline .hint {
   margin: 0.15rem 0 0.5rem;
 }
+
+/* Tags on a task row, and the tags field when editing */
+.task-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0 0.4rem 0.3rem;
+  margin-top: -0.2rem;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: #ececf0;
+  border-radius: 0.3rem;
+  padding: 0 0.4rem;
+  line-height: 1.35rem;
+  white-space: nowrap;
+}
+.tag-chip button {
+  font: inherit;
+  color: inherit;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.tags-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.4rem;
+}
+.tags-input {
+  position: relative;
+  flex: 1;
+  min-width: 8rem;
+}
+.tags-input input {
+  font: inherit;
+  font-size: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  background: transparent;
+  outline: none;
+}
+.tags-input input:focus {
+  border-color: var(--accent);
+  background: #fff;
+}
+.tag-suggestions {
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  left: 0;
+  min-width: 16rem;
+  margin: 0.15rem 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+}
+.tag-suggestions li {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.3rem;
+  cursor: default;
+  white-space: nowrap;
+}
+.tag-suggestions li[aria-selected='true'] {
+  background: var(--selected);
+}

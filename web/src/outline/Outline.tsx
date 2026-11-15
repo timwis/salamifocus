@@ -1,8 +1,9 @@
-import { normaliseTitle, positionAt, positionBetween, titleProblem } from '@salamifocus/domain';
+import { normaliseTitle, positionAt, positionBetween, tagPathSeparator, titleProblem } from '@salamifocus/domain';
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
+import { tagsInOrder, useTags, useTaskTags } from '../tags/data.ts';
 import { completeTask, createTask, reorderTask } from '../writes.ts';
-import { TaskEditor } from './TaskEditor.tsx';
+import { TaskEditor, type Field } from './TaskEditor.tsx';
 
 export interface OutlineTask {
   id: string;
@@ -11,7 +12,7 @@ export interface OutlineTask {
   position: string | null;
 }
 
-/** A run of tasks, under a heading when it is a project, in outline order. */
+/** A run of tasks, under a heading when it is a project or tag, in outline order. One task can appear in several groups. */
 export interface OutlineGroup {
   id: string;
   heading: string | null;
@@ -22,10 +23,11 @@ export interface OutlineGroup {
 
 type Row = { key: string; group: OutlineGroup } & ({ kind: 'heading' } | { kind: 'task'; task: OutlineTask; index: number });
 
-type Editing = { mode: 'task'; taskId: string } | { mode: 'draft'; groupId: string; after: string | null; before: string | null; returnTo: string | null };
+type Editing = { mode: 'task'; rowKey: string; startIn: Field } | { mode: 'draft'; groupId: string; after: string | null; before: string | null; returnTo: string | null };
 
 const EMPTY = 'empty';
 const headingKey = (group: OutlineGroup) => `group:${group.id}`;
+const taskKey = (group: OutlineGroup, taskId: string) => `${group.id}/${taskId}`;
 
 /** Where a draft row sits among a group's tasks: before the first task placed after it. */
 const draftIndex = (group: OutlineGroup, after: string | null) =>
@@ -51,14 +53,16 @@ export function Outline({
 }) {
   const rows: Row[] = groups.flatMap((group) => [
     ...(group.heading !== null ? [{ key: headingKey(group), group, kind: 'heading' as const }] : []),
-    ...group.tasks.map((task, index) => ({ key: task.id, group, kind: 'task' as const, task, index })),
+    ...group.tasks.map((task, index) => ({ key: taskKey(group, task.id), group, kind: 'task' as const, task, index })),
   ]);
+  const tags = useTags();
+  const taskTags = useTaskTags();
   const current = useCurrentRow(rows.map((r) => r.key));
   const [editing, setEditing] = useState<Editing | null>(null);
   const focused = rows[current.index] ?? null;
 
   // The task being edited can disappear, for example when another device completes it.
-  const editedTaskGone = editing?.mode === 'task' && !rows.some((r) => r.key === editing.taskId);
+  const editedTaskGone = editing?.mode === 'task' && !rows.some((r) => r.key === editing.rowKey);
   useEffect(() => {
     if (editedTaskGone) setEditing(null);
   }, [editedTaskGone]);
@@ -96,8 +100,8 @@ export function Outline({
     const id = crypto.randomUUID();
     const position = positionBetween(editing.after, editing.before);
     // Enter saves and starts the next task straight after this one.
-    setEditing(keepGoing ? { ...editing, after: position, returnTo: id } : null);
-    current.await(id);
+    setEditing(keepGoing ? { ...editing, after: position, returnTo: taskKey(group, id) } : null);
+    current.await(taskKey(group, id));
     await createTask(id, group.projectId, title, position);
   }
 
@@ -135,7 +139,10 @@ export function Outline({
         return handled(), void completeTask(focused.task.id);
       case 'Enter':
         if (focused?.kind !== 'task') return;
-        return handled(), setEditing({ mode: 'task', taskId: focused.task.id });
+        return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'title' });
+      case 't':
+        if (focused?.kind !== 'task') return;
+        return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'tags' });
     }
   }
 
@@ -173,15 +180,18 @@ export function Outline({
         {groups.map((group) => {
           const draftAt = editing?.mode === 'draft' && editing.groupId === group.id ? draftIndex(group, editing.after) : -1;
           const items = group.tasks.map((task) => {
-            const isCurrent = task.id === focused?.key && !editing;
+            const key = taskKey(group, task.id);
+            const isCurrent = key === focused?.key && !editing;
+            const tagIds = taskTags.get(task.id) ?? [];
+            const chips = tagsInOrder(tags, tagIds);
             return (
               <li
-                key={task.id}
-                data-key={task.id}
+                key={key}
+                data-key={key}
                 className="task-row"
                 tabIndex={isCurrent ? 0 : -1}
-                data-current={task.id === focused?.key || undefined}
-                onClick={() => current.set(task.id)}
+                data-current={key === focused?.key || undefined}
+                onClick={() => current.set(key)}
               >
                 <button
                   type="button"
@@ -193,22 +203,33 @@ export function Outline({
                     void completeTask(task.id);
                   }}
                 />
-                {editing?.mode === 'task' && editing.taskId === task.id ? (
-                  <TaskEditor task={task} onClose={() => setEditing(null)} />
+                {editing?.mode === 'task' && editing.rowKey === key ? (
+                  <TaskEditor task={{ ...task, tagIds }} tags={tags} startIn={editing.startIn} onClose={() => setEditing(null)} />
                 ) : (
                   <>
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      className="task-title"
-                      onClick={() => {
-                        roving.claim();
-                        current.set(task.id);
-                        setEditing({ mode: 'task', taskId: task.id });
-                      }}
-                    >
-                      {task.title}
-                    </button>
+                    <div className="task-body">
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        className="task-title"
+                        onClick={() => {
+                          roving.claim();
+                          current.set(key);
+                          setEditing({ mode: 'task', rowKey: key, startIn: 'title' });
+                        }}
+                      >
+                        {task.title}
+                      </button>
+                      {chips.length > 0 && (
+                        <span className="task-meta">
+                          {chips.map(({ tag, path }) => (
+                            <span key={tag.id} className="tag-chip" title={path.join(tagPathSeparator)}>
+                              {tag.name}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </div>
                     {task.note ? <span className="note-mark" role="img" aria-label="Has a note" title={task.note} /> : null}
                   </>
                 )}

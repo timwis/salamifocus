@@ -17,6 +17,8 @@ export const OperationName = {
   createTag: 'create_tag',
   renameTag: 'rename_tag',
   moveTag: 'move_tag',
+  tagTask: 'tag_task',
+  untagTask: 'untag_task',
 } as const;
 
 export type OperationName = (typeof OperationName)[keyof typeof OperationName];

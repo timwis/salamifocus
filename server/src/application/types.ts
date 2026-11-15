@@ -34,7 +34,15 @@ export interface TaskView {
   createdAt: string;
   projectId: string | null;
   completedAt: string | null;
+  /** In sidebar order, each with its full path. */
+  tags: TagView[];
   capture: { id: string; text: string; capturedAt: string } | null;
+}
+
+export interface TagView {
+  id: string;
+  name: string;
+  path: string[];
 }
 
 export interface ProjectOutline {
@@ -45,9 +53,9 @@ export interface ProjectOutline {
 export interface ChangeView {
   entity: string;
   entityId: string;
-  kind: 'create' | 'update';
+  kind: 'create' | 'update' | 'delete';
   before: Record<string, unknown> | null;
-  after: Record<string, unknown>;
+  after: Record<string, unknown> | null;
 }
 
 export interface HistoryEntry {

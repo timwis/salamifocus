@@ -79,4 +79,43 @@ export const moveTag: OperationDefinition<MoveTagArgs> = {
   },
 };
 
-export const tagOperations = [createTag, renameTag, moveTag];
+
+export interface TagTaskArgs {
+  taskTagId: string;
+  taskId: string;
+  tagId: string;
+}
+
+/** Puts a tag on a task. Adding a tag the task already has changes nothing. */
+export const tagTask: OperationDefinition<TagTaskArgs> = {
+  name: OperationName.tagTask,
+  parse(input) {
+    const a = args.record(input);
+    return { taskTagId: args.uuid(a, 'taskTagId'), taskId: args.uuid(a, 'taskId'), tagId: args.uuid(a, 'tagId') };
+  },
+  async apply(mutations, { taskTagId, taskId, tagId }) {
+    // Locking the task serialises tagging it, so the same tag cannot be added twice at once.
+    if (!(await mutations.read('task', taskId))) throw new Rejection('not_found', 'That task no longer exists.');
+    await checkTagExists(mutations, tagId);
+    if (await mutations.exists('task_tag', taskTagId)) throw new Rejection('already_exists', 'Something with that id already exists.');
+    if (await mutations.taskHasTag(taskId, tagId)) return;
+    await mutations.create('task_tag', taskTagId, { task_id: taskId, tag_id: tagId });
+  },
+};
+
+export interface UntagTaskArgs {
+  taskTagId: string;
+}
+
+/** Takes a tag off a task by removing their link. Removing a link that is already gone changes nothing. */
+export const untagTask: OperationDefinition<UntagTaskArgs> = {
+  name: OperationName.untagTask,
+  parse(input) {
+    return { taskTagId: args.uuid(args.record(input), 'taskTagId') };
+  },
+  async apply(mutations, { taskTagId }) {
+    await mutations.delete('task_tag', taskTagId);
+  },
+};
+
+export const tagOperations = [createTag, renameTag, moveTag, tagTask, untagTask];

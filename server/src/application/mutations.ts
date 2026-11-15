@@ -7,6 +7,7 @@ const tables = {
   folder: 'folders',
   project: 'projects',
   tag: 'tags',
+  task_tag: 'task_tags',
 } as const;
 
 export type Entity = keyof typeof tables;
@@ -16,13 +17,13 @@ type Row = Record<string, string | number | boolean | null>;
 interface PendingChange {
   entity: Entity;
   entityId: string;
-  kind: 'create' | 'update';
+  kind: 'create' | 'update' | 'delete';
   before: Row | null;
-  after: Row;
+  after: Row | null;
 }
 
 /**
- * The only way operations change state. Each create or update is written
+ * The only way operations change state. Each create, update or delete is written
  * and its before and after values are collected, so no mutation can happen
  * without a change record.
  */
@@ -56,6 +57,11 @@ export class Mutations {
     return row ?? null;
   }
 
+  async taskHasTag(taskId: string, tagId: string): Promise<boolean> {
+    const rows = await this.#tx`SELECT 1 FROM task_tags WHERE task_id = ${taskId} AND tag_id = ${tagId}`;
+    return rows.length > 0;
+  }
+
   /** Serialises operations that must see each other's effects, such as moves that could form a cycle. */
   async lock(name: string): Promise<void> {
     await this.#tx`SELECT pg_advisory_xact_lock(hashtextextended(${`lock:${name}`}, 0))`;
@@ -84,5 +90,13 @@ export class Mutations {
     }
     await this.#tx`UPDATE ${this.#tx(tables[entity])} SET ${this.#tx(after)} WHERE id = ${id}`;
     this.#changes.push({ entity, entityId: id, kind: 'update', before, after });
+  }
+
+  /** Deletes a row if it is there, keeping what it held. Only link rows (a tag on a task) are deleted. */
+  async delete(entity: Entity, id: string): Promise<void> {
+    const [current] = await this.#tx<Row[]>`DELETE FROM ${this.#tx(tables[entity])} WHERE id = ${id} RETURNING *`;
+    if (!current) return;
+    const { id: _id, ...before } = current;
+    this.#changes.push({ entity, entityId: id, kind: 'delete', before, after: null });
   }
 }

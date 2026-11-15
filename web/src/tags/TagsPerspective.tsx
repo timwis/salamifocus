@@ -1,27 +1,14 @@
-import { useQuery } from '@powersync/react';
-import { buildTagTree, type TagNode } from '@salamifocus/domain';
-import { useMemo } from 'react';
+import type { TagNode } from '@salamifocus/domain';
 import { go, type Place } from '../navigation.ts';
 import { Outline } from '../outline/Outline.tsx';
 import { TreeSidebar, type NewItemKind } from '../sidebar/TreeSidebar.tsx';
 import { createTag, moveTag, renameTag } from '../writes.ts';
-
-interface TagRow {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  position: string;
-}
-
-export function useTagTree(): TagNode[] {
-  const { data } = useQuery<TagRow>('SELECT id, name, parent_id, position FROM tags');
-  return useMemo(() => buildTagTree(data.map((t) => ({ id: t.id, name: t.name, parentId: t.parent_id, position: t.position }))), [data]);
-}
+import { useTags } from './data.ts';
 
 const newKinds: NewItemKind[] = [{ kind: 'tag', key: 'N', button: 'Tag', name: 'tag' }];
 
 export function TagsPerspective({ place }: { place: Place }) {
-  const tree = useTagTree();
+  const { tree } = useTags();
 
   return (
     <>

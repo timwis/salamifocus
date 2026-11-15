@@ -1,4 +1,4 @@
-import { buildTagTree, buildTree, comparePositions, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
+import { buildTagTree, buildTree, placedTags, comparePositions, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
 import type { Sql } from '../db.ts';
 import { Mutations } from './mutations.ts';
 import { findOperation } from './operations.ts';
@@ -84,7 +84,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
             entity_id: change.entityId,
             kind: change.kind,
             before: change.before ? tx.json(change.before) : null,
-            after: tx.json(change.after),
+            after: change.after ? tx.json(change.after) : null,
           })}`;
       }
       return { opId, outcome: 'applied', duplicate: false };
@@ -135,11 +135,16 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   }
 
   async function task(id: string): Promise<TaskView | null> {
-    const [row] = await sql`
-      SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.completed_at, c.id AS capture_id, c.text, c.captured_at
-      FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
-      WHERE t.id = ${id}::uuid`;
+    const [[row], tagRows, tree] = await Promise.all([
+      sql`
+        SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.completed_at, c.id AS capture_id, c.text, c.captured_at
+        FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
+        WHERE t.id = ${id}::uuid`,
+      sql<{ tag_id: string }[]>`SELECT tag_id FROM task_tags WHERE task_id = ${id}::uuid`,
+      tags(),
+    ]);
     if (!row) return null;
+    const tagIds = new Set(tagRows.map((r) => r.tag_id));
     return {
       id: row.id,
       title: row.title,
@@ -147,11 +152,14 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       createdAt: row.created_at,
       projectId: row.project_id,
       completedAt: row.completed_at,
+      tags: placedTags(tree)
+        .filter((p) => tagIds.has(p.tag.id))
+        .map((p) => ({ id: p.tag.id, name: p.tag.name, path: p.path })),
       capture: row.capture_id ? { id: row.capture_id, text: row.text, capturedAt: row.captured_at } : null,
     };
   }
 
-  /** Applied operations that changed the task or its capture, oldest first. */
+  /** Applied operations that changed the task, its capture or its tags, oldest first. */
   async function history(taskId: string): Promise<HistoryEntry[]> {
     const rows = await sql`
       SELECT o.id AS op_id, o.name, o.actor_type, o.actor_id, o.source, o.recorded_at,
@@ -159,6 +167,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       FROM changes ch JOIN operations o ON o.id = ch.operation_id
       WHERE (ch.entity = 'task' AND ch.entity_id = ${taskId}::uuid)
          OR (ch.entity = 'capture' AND ch.entity_id IN (SELECT id FROM captures WHERE task_id = ${taskId}::uuid))
+         OR (ch.entity = 'task_tag' AND COALESCE(ch.after, ch.before)->>'task_id' = ${taskId})
       ORDER BY o.recorded_at, ch.id`;
     const entries = new Map<string, HistoryEntry>();
     for (const row of rows) {

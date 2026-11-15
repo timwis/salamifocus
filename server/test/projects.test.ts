@@ -132,7 +132,7 @@ describe('tasks in projects', () => {
     assert.deepEqual([first, second], ['applied', 'applied']);
     const history = await h.application.history(taskId);
     assert.equal(history.filter((entry) => entry.operation === 'complete_task').length, 1);
-    assert.equal((await h.application.task(taskId))?.completedAt, history.at(-1)?.changes[0]?.after.completed_at);
+    assert.equal((await h.application.task(taskId))?.completedAt, history.at(-1)?.changes[0]?.after?.completed_at);
   });
 
   it('never treats a single-action list as complete because it is empty', async () => {

@@ -1,38 +1,44 @@
 import { normaliseNote, normaliseTitle, titleProblem } from '@salamifocus/domain';
-import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
-import { editTaskNote, renameTask } from '../writes.ts';
+import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
+import type { Tags } from '../tags/data.ts';
+import { editTaskNote, renameTask, tagTask, untagTask } from '../writes.ts';
+import { TagsField } from './TagsField.tsx';
 
 export interface EditableTask {
   id: string;
   title: string;
   note: string | null;
+  tagIds: readonly string[];
 }
 
-type Field = 'title' | 'note';
+export type Field = 'title' | 'tags' | 'note';
+
+const fieldOrder: Field[] = ['title', 'tags', 'note'];
 
 /**
  * Edits a task in place. Each field is saved when the user leaves it, so Tab
  * moves on with the change kept, and Escape abandons only the field being
- * edited. Leaving the editor (Enter in the title, Cmd/Ctrl+Enter in the
- * note, or focus moving elsewhere) closes it.
+ * edited. Leaving the editor (Enter in the title or the empty tags field,
+ * Cmd/Ctrl+Enter in the note, or focus moving elsewhere) closes it.
  */
-export function TaskEditor({ task, onClose }: { task: EditableTask; onClose: () => void }) {
+export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: EditableTask; tags: Tags; startIn?: Field; onClose: () => void }) {
   const [title, setTitle] = useState(task.title);
   const [note, setNote] = useState(task.note ?? '');
+  const [tagIds, setTagIds] = useState<string[]>([...task.tagIds]);
   const [problem, setProblem] = useState<string | null>(null);
   const container = useRef<HTMLDivElement>(null);
-  const fields = { title: useRef<HTMLInputElement>(null), note: useRef<HTMLTextAreaElement>(null) };
+  const fields = { title: useRef<HTMLInputElement>(null), tags: useRef<HTMLInputElement>(null), note: useRef<HTMLTextAreaElement>(null) };
   // What is typed, and what has been saved, without waiting for a re-render.
-  const typed = useRef({ title: task.title, note: task.note ?? '' });
-  const saved = useRef({ title: task.title, note: normaliseNote(task.note ?? '') });
+  const typed = useRef({ title: task.title, note: task.note ?? '', tags: [...task.tagIds] });
+  const saved = useRef({ title: task.title, note: normaliseNote(task.note ?? ''), tags: [...task.tagIds] });
   const closed = useRef(false);
+
+  useLayoutEffect(() => fields[startIn].current?.focus(), []);
 
   // If the editor goes away without closing (its task vanished in a sync), keep what was typed.
   useEffect(
     () => () => {
-      if (closed.current) return;
-      save('title');
-      save('note');
+      if (!closed.current) fieldOrder.forEach(save);
     },
     // save reads refs only, so the first render's copy stays correct.
     [],
@@ -45,51 +51,61 @@ export function TaskEditor({ task, onClose }: { task: EditableTask; onClose: () 
       if (next === saved.current.title) return;
       saved.current.title = next;
       void renameTask(task.id, next);
-    } else {
+    } else if (field === 'note') {
       const next = normaliseNote(typed.current.note);
       if (next === saved.current.note) return;
       saved.current.note = next;
       void editTaskNote(task.id, next);
+    } else {
+      const before = new Set(saved.current.tags);
+      const after = new Set(typed.current.tags);
+      saved.current.tags = [...typed.current.tags];
+      for (const id of after) if (!before.has(id)) void tagTask(task.id, id);
+      for (const id of before) if (!after.has(id)) void untagTask(task.id, id);
     }
   }
 
   function close(abandon?: Field) {
     if (closed.current) return;
     closed.current = true;
-    if (abandon !== 'title') save('title');
-    if (abandon !== 'note') save('note');
+    for (const field of fieldOrder) if (field !== abandon) save(field);
     onClose();
   }
 
-  function moveTo(field: Field, from: Field, event: KeyboardEvent) {
-    event.preventDefault();
-    save(from);
-    fields[field].current?.focus();
+  /** Common keys for every field: Tab and Shift+Tab move between fields (wrapping round), Escape abandons this one. */
+  function onFieldKeyDown(field: Field, event: KeyboardEvent) {
+    event.stopPropagation();
+    if (event.key === 'Escape') return close(field);
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      save(field);
+      const next = fieldOrder[(fieldOrder.indexOf(field) + (event.shiftKey ? -1 : 1) + fieldOrder.length) % fieldOrder.length]!;
+      fields[next].current?.focus();
+    }
   }
 
   function onTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    event.stopPropagation();
-    if (event.key === 'Enter') {
-      const reason = titleProblem(typed.current.title);
-      return reason ? setProblem(reason) : close();
-    }
-    if (event.key === 'Escape') return close('title');
-    if (event.key === 'Tab') {
-      // A blank title is refused here as it is on Enter, rather than being quietly dropped later.
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      // A blank title is refused on Tab as it is on Enter, rather than being quietly dropped later.
       const reason = titleProblem(typed.current.title);
       if (reason) {
+        event.stopPropagation();
         event.preventDefault();
         return setProblem(reason);
       }
-      return moveTo('note', 'title', event);
+      if (event.key === 'Enter') return event.stopPropagation(), close();
     }
+    onFieldKeyDown('title', event);
+  }
+
+  function onTagsKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') return close();
+    onFieldKeyDown('tags', event);
   }
 
   function onNoteKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    event.stopPropagation();
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) return close();
-    if (event.key === 'Escape') return close('note');
-    if (event.key === 'Tab') return moveTo('title', 'note', event);
+    onFieldKeyDown('note', event);
   }
 
   function onBlur(event: FocusEvent) {
@@ -105,7 +121,6 @@ export function TaskEditor({ task, onClose }: { task: EditableTask; onClose: () 
           ref={fields.title}
           aria-label="Title"
           value={title}
-          autoFocus
           onChange={(e) => {
             typed.current.title = e.target.value;
             setTitle(e.target.value);
@@ -115,6 +130,16 @@ export function TaskEditor({ task, onClose }: { task: EditableTask; onClose: () 
         />
         {problem && <span role="alert">{problem}</span>}
       </span>
+      <TagsField
+        tags={tags}
+        value={tagIds}
+        inputRef={fields.tags}
+        onChange={(ids) => {
+          typed.current.tags = ids;
+          setTagIds(ids);
+        }}
+        onKeyDown={onTagsKeyDown}
+      />
       <textarea
         ref={fields.note}
         aria-label="Note"

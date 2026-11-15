@@ -145,6 +145,24 @@ describe('uploading a client transaction', () => {
     assert.deepEqual(computer?.children.map((c) => c.name), ['Shallow work']);
   });
 
+  it('adds a tag to a task and removes it again by deleting the link', async () => {
+    const capture = captureTransaction('Buy stamps');
+    const tagId = crypto.randomUUID();
+    const taskTagId = crypto.randomUUID();
+    await upload(capture.entries);
+    await upload([{ op: 'PUT', table: 'tags', id: tagId, data: { name: '@Errand', position: 'a0' }, metadata: operationMetadata(OperationName.createTag) }]);
+
+    const [added] = await upload([
+      { op: 'PUT', table: 'task_tags', id: taskTagId, data: { task_id: capture.taskId, tag_id: tagId }, metadata: operationMetadata(OperationName.tagTask) },
+    ]);
+    assert.equal(added?.outcome, 'applied');
+    assert.deepEqual((await h.application.task(capture.taskId))?.tags.map((t) => t.name), ['@Errand']);
+
+    const [removed] = await upload([{ op: 'DELETE', table: 'task_tags', id: taskTagId, metadata: operationMetadata(OperationName.untagTask) }]);
+    assert.equal(removed?.outcome, 'applied');
+    assert.deepEqual((await h.application.task(capture.taskId))?.tags, []);
+  });
+
   it('rejects a move that also renames', async () => {
     const projectId = crypto.randomUUID();
     await upload([

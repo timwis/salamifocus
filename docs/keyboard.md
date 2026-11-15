@@ -78,18 +78,23 @@ The task rows of the current perspective. In Projects, each selected project has
 |---|---|
 | ↑ / ↓, Home / End | Previous / next row, first / last row |
 | Enter | Edit the task, starting in its title |
+| T | Edit the task's tags |
 | Space | Complete the task. It leaves the outline and the row now in its place becomes current |
 | Alt+↑ / Alt+↓ | Move the task up or down within its project. The order is for your reading only; it never makes one task wait for another |
 | N | New task straight after the current row (on a project heading: at the top of that project). Enter saves it and starts another; Enter on an empty row or Escape stops. The **+ New task** button does the same |
 
 ### Editing a task
 
-The task's fields, in order: title, then note. Later tickets add tags, defer and due dates between them. Each field is saved when you leave it.
+The task's fields, in order: title, tags, then note. Later tickets add defer and due dates before the note. Each field is saved when you leave it.
 
 | Key | Action |
 |---|---|
 | Tab / Shift+Tab | Next / previous field, keeping the change (wraps round) |
 | Enter in the title | Save and stop editing (a blank title is refused) |
+| Typing in tags | Lists the tags whose name or path contains what you typed |
+| ↑ / ↓ in tags | Choose among the listed tags |
+| Enter in tags | Add the chosen tag; with nothing typed, save and stop editing |
+| Backspace in empty tags | Remove the last tag |
 | Enter in the note | New line |
 | Cmd+Enter on macOS, Ctrl+Enter on Linux, in the note | Save and stop editing |
 | Escape | Abandon the field you are in and stop editing; fields you already left stay saved |

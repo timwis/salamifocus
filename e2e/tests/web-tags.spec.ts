@@ -71,6 +71,60 @@ test('tags are created, nested, reordered and renamed from the keyboard', async 
     .toEqual([[`Shallow ${run}`, [`Low energy ${run}`]]]);
 });
 
+test('tags are added to a task from its row with type-ahead, shown on the row, and removed', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const { tagId: people } = await phone.createTag(`People ${run}`, { position: 'a1' });
+  await phone.createTag(`Dad ${run}`, { parentId: people });
+  const { tagId: computer } = await phone.createTag(`@Laptop ${run}`, { position: 'a2' });
+  const { tagId: shallow } = await phone.createTag(`Quick wins ${run}`, { parentId: computer });
+  await phone.createTag(`Low battery ${run}`, { parentId: shallow });
+  const { tagId: phoneTag } = await phone.createTag(`@Mobile ${run}`, { position: 'a3' });
+  const { projectId } = await phone.createProject(`Parents ${run}`, { position: 'a7' });
+  const { taskId } = await phone.createTask(projectId, `Ask Dad about AAA checkup ${run}`);
+  await phone.tagTask(taskId, phoneTag);
+  await signIn(page);
+  await page.goto(`/projects/${projectId}`);
+  const row = page.getByRole('list', { name: `Parents ${run}` }).getByRole('listitem');
+  await expect(row).toContainText(`@Mobile ${run}`);
+
+  await page.keyboard.press('2');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await expect(row).toBeFocused();
+
+  // T opens the tags field; typing narrows the choices to matching tags, shown with their paths.
+  await page.keyboard.press('t');
+  await expect(page.getByRole('combobox', { name: 'Tags' })).toBeFocused();
+  await page.keyboard.type('low ba');
+  await expect(page.getByRole('option')).toHaveText([`@Laptop ${run} : Quick wins ${run} : Low battery ${run}`]);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(`dad ${run}`);
+  await expect(page.getByRole('option', { selected: true })).toHaveText(`People ${run} : Dad ${run}`);
+  await page.keyboard.press('Enter');
+  // Backspace in the empty field takes off the last tag; Enter then saves and closes.
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Enter');
+  await expect(row).toBeFocused();
+  await expect(row.locator('.tag-chip')).toHaveText([`Dad ${run}`, `Low battery ${run}`]);
+
+  // Escape abandons tag changes; Tab keeps them.
+  await page.keyboard.press('t');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Escape');
+  await expect(row).toBeFocused();
+  await expect(row.locator('.tag-chip')).toHaveText([`Dad ${run}`, `Low battery ${run}`]);
+  await page.keyboard.press('t');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Note')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(row.locator('.tag-chip')).toHaveText([`Dad ${run}`]);
+
+  await expect.poll(async () => (await server.task(taskId))?.tags.map((t) => t.path.join(' : '))).toEqual([`People ${run} : Dad ${run}`]);
+  const operations = (await server.history(taskId)).map((entry) => entry.operation);
+  expect(operations.filter((op) => op.endsWith('tag_task'))).toEqual(['tag_task', 'tag_task', 'tag_task', 'untag_task', 'untag_task']);
+});
+
 test('a tag created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   await signIn(page);
   await page.getByRole('navigation', { name: 'Perspectives' }).getByRole('link', { name: 'Tags' }).click();

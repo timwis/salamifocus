@@ -181,6 +181,8 @@ test('a task’s title and note are edited together; Tab keeps a change and Esca
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('Title')).toBeFocused();
   await page.keyboard.press('Tab');
+  await expect(page.getByRole('combobox', { name: 'Tags' })).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByLabel('Note')).toBeFocused();
   await page.keyboard.type('Policy 12-345');
   await page.keyboard.press('Enter');
@@ -197,7 +199,8 @@ test('a task’s title and note are edited together; Tab keeps a change and Esca
   await expect(page.getByRole('alert')).toHaveText('A task needs a title.');
   await expect(page.getByLabel('Title')).toBeFocused();
   await page.getByLabel('Title').fill(`Renew car insurance ${run}`);
-  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByLabel('Note')).toBeFocused();
   await page.keyboard.type(' (never mind)');
   await page.keyboard.press('Escape');
   await expect(row).toBeFocused();

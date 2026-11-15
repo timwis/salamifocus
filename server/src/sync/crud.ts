@@ -181,4 +181,14 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     const { id, data } = onlyUpdate(entries, 'tags', ['parent_id', 'position']);
     return { tagId: id, parentId: changed(data, 'parent_id'), position: changed(data, 'position') };
   },
+
+  [OperationName.tagTask](entries) {
+    const { id, data } = onlyInsert(entries, 'task_tags', ['task_id', 'tag_id']);
+    return { taskTagId: id, taskId: data.task_id, tagId: data.tag_id };
+  },
+
+  [OperationName.untagTask](entries) {
+    if (entries.length !== 1) throw new Malformed('Removing a tag deletes exactly one link.');
+    return { taskTagId: single(entries, 'DELETE', 'task_tags').id };
+  },
 };

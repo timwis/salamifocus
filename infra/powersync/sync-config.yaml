@@ -11,3 +11,4 @@ streams:
       - SELECT * FROM folders
       - SELECT * FROM projects
       - SELECT * FROM tags
+      - SELECT * FROM task_tags
