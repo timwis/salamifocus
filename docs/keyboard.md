@@ -85,7 +85,7 @@ The task rows of the current perspective. In Projects, each selected project has
 
 ### Editing a task
 
-The task's fields, in order: title, tags, then note. Later tickets add defer and due dates before the note. Each field is saved when you leave it.
+The task's fields, in order: title, tags, then note. Later tickets add defer and due dates before the note. Each field is saved when you leave it, except tags, which are kept when you leave them and saved when you stop editing (so in Tags, a task you are editing does not vanish from the outline when you remove the selected tag).
 
 | Key | Action |
 |---|---|

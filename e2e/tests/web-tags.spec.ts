@@ -249,6 +249,38 @@ test('tasks added in the Tags perspective get the tag of their group, and wait i
   expect(inbox).toEqual(expect.arrayContaining([`Collect the dry cleaning ${run}`, `Buy bread ${run}`, `Send the passport form ${run}`]));
 });
 
+test('in Tags, removing the selected tag while editing keeps the editor open until editing stops', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const { tagId: garden } = await phone.createTag(`Garden ${run}`, { position: 'a9' });
+  const { projectId } = await phone.createProject(`Outdoors ${run}`, { position: 'aA' });
+  const { taskId } = await phone.createTask(projectId, `Prune the roses ${run}`);
+  await phone.tagTask(taskId, garden);
+  await signIn(page);
+  await page.goto(`/tags/${garden}`);
+  const main = page.getByRole('main');
+  await expect(main.locator('.task-title')).toHaveText([`Prune the roses ${run}`]);
+
+  await page.keyboard.press('3');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('t');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Tab');
+  // Give a premature write time to reach the outline: the editor must stay put.
+  await page.waitForTimeout(500);
+  await expect(page.getByLabel('Note')).toBeFocused();
+  await page.keyboard.type('After flowering');
+  await page.keyboard.press('ControlOrMeta+Enter');
+
+  await expect(main.locator('.task-title')).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const task = await server.task(taskId);
+      return [task?.note, task?.tags.length];
+    })
+    .toEqual(['After flowering', 0]);
+});
+
 test('a tag created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   await signIn(page);
   await page.getByRole('navigation', { name: 'Perspectives' }).getByRole('link', { name: 'Tags' }).click();

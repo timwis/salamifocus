@@ -1,6 +1,6 @@
 import { normaliseNote, normaliseTitle, titleProblem } from '@salamifocus/domain';
 import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
-import type { Tags } from '../tags/data.ts';
+import type { Tags } from '../tags/data.tsx';
 import { editTaskNote, renameTask, tagTask, untagTask } from '../writes.ts';
 import { TagsField } from './TagsField.tsx';
 
@@ -78,7 +78,8 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
     if (event.key === 'Escape') return close(field);
     if (event.key === 'Tab') {
       event.preventDefault();
-      save(field);
+      // Tags are kept but written on closing: in Tags, removing the selected tag would otherwise take the task, and this editor, out of the outline.
+      if (field !== 'tags') save(field);
       const next = fieldOrder[(fieldOrder.indexOf(field) + (event.shiftKey ? -1 : 1) + fieldOrder.length) % fieldOrder.length]!;
       fields[next].current?.focus();
     }
