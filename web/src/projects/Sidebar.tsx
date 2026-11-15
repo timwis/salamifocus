@@ -211,6 +211,7 @@ export function Sidebar({
   const draft =
     editing?.mode === 'create' ? (
       <li key="draft" role="treeitem" aria-level={editing.depth} aria-selected={false} data-key="draft" className="tree-row" style={indent(editing.depth)}>
+        <span className="disclosure" aria-hidden />
         <span className={`icon icon-${editing.kind}`} aria-hidden />
         <NameEditor
           label={editing.kind === 'folder' ? 'New folder name' : editing.kind === ProjectKind.singleActions ? 'New single-action list name' : 'New project name'}
