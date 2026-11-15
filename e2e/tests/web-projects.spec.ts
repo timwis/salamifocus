@@ -242,6 +242,46 @@ test('Space completes a task, focus moves to the next row, and an emptied single
   expect((await server.task(first))?.completedAt).toBeTruthy();
 });
 
+test('the mouse works too: clicking a perspective or empty space leaves the keys working, and buttons add things', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const { folderId } = await phone.createFolder(`Garage ${run}`, { position: 'a6' });
+  await signIn(page);
+
+  // Clicking Projects puts focus in the sidebar, so N works straight away.
+  await page.getByRole('navigation', { name: 'Perspectives' }).getByRole('link', { name: 'Projects' }).click();
+  await expect(page).toHaveURL(/\/projects$/);
+  await expect(page.locator(':focus')).toHaveAttribute('role', 'treeitem');
+  await treeItem(page, `Garage ${run}`).click();
+  await expect(page).toHaveURL(new RegExp(`/projects/${folderId}$`));
+  const box = (await sidebar(page).boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height - 5);
+  await expect(treeItem(page, `Garage ${run}`)).toBeFocused();
+  await page.keyboard.press('n');
+  await typeName(page, 'New project name', `Bike serviced ${run}`);
+
+  // The sidebar's buttons add next to the current item, as the keys do.
+  await page.getByRole('button', { name: 'New single-action list' }).click();
+  await typeName(page, 'New single-action list name', `Garage odds and ends ${run}`);
+  expect(await sidebarOutline(page)).toEqual(expect.arrayContaining(['Garage', '  Bike serviced', '  Garage odds and ends']));
+
+  // New task adds to the selected project; clicking empty space then keeps the outline's keys working.
+  await page.getByRole('button', { name: 'New task' }).click();
+  await page.getByLabel('New task title').fill(`Buy a bin ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  const tasks = page.getByRole('list', { name: `Garage odds and ends ${run}` }).getByRole('listitem');
+  await expect(tasks).toHaveText([`Buy a bin ${run}`]);
+  await page.getByText('1 task, 1 project selected').click();
+  await expect(tasks.first()).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(tasks).toHaveCount(0);
+  await expect(page.getByText('No tasks yet.')).toBeVisible();
+
+  // A path reloads to the same place.
+  await page.reload();
+  await expect(treeItem(page, `Garage odds and ends ${run}`)).toHaveAttribute('aria-selected', 'true');
+});
+
 test('a project created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const { folderId } = await phone.createFolder(`Errands ${run}`, { position: 'a2' });

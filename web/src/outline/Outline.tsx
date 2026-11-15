@@ -38,7 +38,17 @@ const draftIndex = (group: OutlineGroup, after: string | null) =>
  * The main task outline: compact rows, grouped under project headings where
  * there are projects. One stop in the Tab order; arrow keys move between rows.
  */
-export function Outline({ label, groups, empty }: { label: string; groups: OutlineGroup[]; empty: ReactNode }) {
+export function Outline({
+  title,
+  summary,
+  groups,
+  empty,
+}: {
+  title: string;
+  summary?: ReactNode;
+  groups: OutlineGroup[];
+  empty: ReactNode;
+}) {
   const rows: Row[] = groups.flatMap((group) => [
     ...(group.heading !== null ? [{ key: headingKey(group), group, kind: 'heading' as const }] : []),
     ...group.tasks.map((task, index) => ({ key: task.id, group, kind: 'task' as const, task, index })),
@@ -129,85 +139,103 @@ export function Outline({ label, groups, empty }: { label: string; groups: Outli
   );
 
   return (
-    <div
-      ref={roving.ref}
-      className="outline"
-      data-key={EMPTY}
-      tabIndex={rows.length === 0 && !editing ? 0 : -1}
-      onKeyDown={onKeyDown}
-      {...roving.handlers}
-    >
-      {rows.length === 0 && editing === null && <p className="empty">{empty}</p>}
-      {groups.map((group) => {
-        const draftAt = editing?.mode === 'draft' && editing.groupId === group.id ? draftIndex(group, editing.after) : -1;
-        const items = group.tasks.map((task) => {
-          const isCurrent = task.id === focused?.key && !editing;
-          return (
-            <li
-              key={task.id}
-              data-key={task.id}
-              className="task-row"
-              tabIndex={isCurrent ? 0 : -1}
-              onFocus={(event) => event.target === event.currentTarget && current.set(task.id)}
-              onClick={() => current.set(task.id)}
-            >
-              <button
-                type="button"
-                tabIndex={-1}
-                className="check"
-                aria-label={`Complete ${task.title}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void completeTask(task.id);
-                }}
-              />
-              {editing?.mode === 'task' && editing.taskId === task.id ? (
-                <TaskEditor task={task} onClose={() => setEditing(null)} />
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    className="task-title"
-                    onClick={() => {
-                      roving.claim();
-                      current.set(task.id);
-                      setEditing({ mode: 'task', taskId: task.id });
-                    }}
-                  >
-                    {task.title}
-                  </button>
-                  {task.note ? <span className="note-mark" role="img" aria-label="Has a note" title={task.note} /> : null}
-                </>
-              )}
-            </li>
+    <main data-region="outline" aria-labelledby="perspective-heading">
+      <div className="outline-header">
+        <div>
+          <h2 id="perspective-heading">{title}</h2>
+          {summary && <p className="summary">{summary}</p>}
+        </div>
+        {groups.some((g) => g.projectId) && (
+          // The mouse equivalent of N, kept out of the Tab order so Tab still moves between regions.
+          <button type="button" tabIndex={-1} aria-label="New task" title="New task (N)" aria-keyshortcuts="N" onClick={startDraft}>
+            + New task
+          </button>
+        )}
+      </div>
+      <div
+        ref={roving.ref}
+        className="outline"
+        data-roving
+        data-key={EMPTY}
+        tabIndex={rows.length === 0 && !editing ? 0 : -1}
+        onKeyDown={onKeyDown}
+        {...roving.handlers}
+      >
+        {rows.length === 0 && editing === null && <p className="empty">{empty}</p>}
+        {groups.map((group) => {
+          const draftAt = editing?.mode === 'draft' && editing.groupId === group.id ? draftIndex(group, editing.after) : -1;
+          const items = group.tasks.map((task) => {
+            const isCurrent = task.id === focused?.key && !editing;
+            return (
+              <li
+                key={task.id}
+                data-key={task.id}
+                className="task-row"
+                tabIndex={isCurrent ? 0 : -1}
+                data-current={task.id === focused?.key || undefined}
+                onFocus={(event) => event.target === event.currentTarget && current.set(task.id)}
+                onClick={() => current.set(task.id)}
+              >
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="check"
+                  aria-label={`Complete ${task.title}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void completeTask(task.id);
+                  }}
+                />
+                {editing?.mode === 'task' && editing.taskId === task.id ? (
+                  <TaskEditor task={task} onClose={() => setEditing(null)} />
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="task-title"
+                      onClick={() => {
+                        roving.claim();
+                        current.set(task.id);
+                        setEditing({ mode: 'task', taskId: task.id });
+                      }}
+                    >
+                      {task.title}
+                    </button>
+                    {task.note ? <span className="note-mark" role="img" aria-label="Has a note" title={task.note} /> : null}
+                  </>
+                )}
+              </li>
+            );
+          });
+          if (draftAt !== -1 && draftRow) items.splice(draftAt, 0, draftRow);
+          const list = (
+            <ul className="tasks" aria-label={group.heading ?? title}>
+              {items}
+            </ul>
           );
-        });
-        if (draftAt !== -1 && draftRow) items.splice(draftAt, 0, draftRow);
-        const list = (
-          <ul className="tasks" aria-label={group.heading ?? label}>
-            {items}
-          </ul>
-        );
-        if (group.heading === null) return <div key={group.id}>{list}</div>;
-        const key = headingKey(group);
-        return (
-          <section key={group.id} aria-labelledby={`heading-${group.id}`}>
-            <h3
-              id={`heading-${group.id}`}
-              className="project-heading"
-              data-key={key}
-              tabIndex={key === focused?.key && !editing ? 0 : -1}
-              onFocus={(event) => event.target === event.currentTarget && current.set(key)}
-              onClick={() => current.set(key)}
-            >
-              {group.heading}
-            </h3>
-            {list}
-          </section>
-        );
-      })}
-    </div>
+          if (group.heading === null) return <div key={group.id}>{list}</div>;
+          const key = headingKey(group);
+          return (
+            <section key={group.id} aria-labelledby={`heading-${group.id}`}>
+              <h3
+                id={`heading-${group.id}`}
+                className="project-heading"
+                data-key={key}
+                tabIndex={key === focused?.key && !editing ? 0 : -1}
+                data-current={key === focused?.key || undefined}
+                onFocus={(event) => event.target === event.currentTarget && current.set(key)}
+                onClick={() => current.set(key)}
+              >
+                {group.heading}
+              </h3>
+              {list}
+              {group.tasks.length === 0 && draftAt === -1 && <p className="hint">No tasks yet. Press N or use New task to add one.</p>}
+            </section>
+          );
+        })}
+      </div>
+    </main>
   );
 }
 

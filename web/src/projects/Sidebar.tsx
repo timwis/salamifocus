@@ -228,6 +228,7 @@ export function Sidebar({
         aria-label="Folders and projects"
         aria-multiselectable
         className="tree"
+        data-roving
         data-key={EMPTY}
         tabIndex={rows.length === 0 && !editing ? 0 : -1}
         onKeyDown={onKeyDown}
@@ -249,6 +250,7 @@ export function Sidebar({
               aria-selected={selected.has(node.id)}
               aria-expanded={isFolder ? !isCollapsed : undefined}
               tabIndex={node.id === focused?.node.id && !editing ? 0 : -1}
+              data-current={node.id === focused?.node.id || undefined}
               className="tree-row"
               style={indent(depth)}
               onClick={(event) => onRowClick(event, index)}
@@ -272,6 +274,28 @@ export function Sidebar({
         })}
       </ul>
       {rows.length === 0 && !editing && <p className="hint">Press N for a new project, F for a folder, S for a single-action list.</p>}
+      {/* Mouse equivalents of N, S and F; kept out of the Tab order so Tab still moves between regions. */}
+      <div className="sidebar-actions">
+        {(
+          [
+            [ProjectKind.project, 'Project', 'project', 'N'],
+            [ProjectKind.singleActions, 'List', 'single-action list', 'S'],
+            ['folder', 'Folder', 'folder', 'F'],
+          ] as const
+        ).map(([kind, label, name, key]) => (
+          <button
+            key={kind}
+            type="button"
+            tabIndex={-1}
+            aria-label={`New ${name}`}
+            title={`New ${name} (${key})`}
+            aria-keyshortcuts={key}
+            onClick={() => startCreating(kind)}
+          >
+            + {label}
+          </button>
+        ))}
+      </div>
     </aside>
   );
 }

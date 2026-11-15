@@ -66,15 +66,16 @@ export function ProjectsPerspective({ place }: { place: Place }) {
   return (
     <>
       <Sidebar tree={tree} selection={place.selection} onSelect={(selection) => go({ perspective: 'projects', selection })} />
-      <main data-region="outline" aria-labelledby="perspective-heading">
-        <h2 id="perspective-heading">Projects</h2>
-        <p className="summary">
-          {selected.length === 0
+      <Outline
+        title="Projects"
+        summary={
+          selected.length === 0
             ? 'Select a project in the sidebar'
-            : `${taskCount} ${taskCount === 1 ? 'task' : 'tasks'}, ${selected.length} ${selected.length === 1 ? 'project' : 'projects'} selected`}
-        </p>
-        <Outline label="Projects" groups={groups} empty="Nothing selected." />
-      </main>
+            : `${taskCount} ${taskCount === 1 ? 'task' : 'tasks'}, ${selected.length} ${selected.length === 1 ? 'project' : 'projects'} selected`
+        }
+        groups={groups}
+        empty="Nothing selected."
+      />
     </>
   );
 }

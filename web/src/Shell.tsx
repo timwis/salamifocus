@@ -6,12 +6,25 @@ import { ProjectsPerspective } from './projects/ProjectsPerspective.tsx';
 import { signOut } from './session.ts';
 import { SyncState } from './SyncState.tsx';
 
-/** Focuses the current row of a region, once the next render has happened. */
-export function focusRegion(region: 'perspectives' | 'sidebar' | 'outline') {
+type Region = 'perspectives' | 'sidebar' | 'outline';
+
+/** Focuses the region's current row (its one Tab stop). */
+function focusCurrentRow(region: HTMLElement | null) {
+  const target = region?.matches('[tabindex="0"]') ? region : region?.querySelector<HTMLElement>('[tabindex="0"]');
+  target?.focus();
+}
+
+/**
+ * Focuses the current row of a region straight away, so keys pressed next go
+ * there. If the region is still rendering (just after switching perspective),
+ * tries again after the next frame, unless the user has moved focus since.
+ */
+function focusRegion(region: Region) {
+  const container = () => document.querySelector<HTMLElement>(`[data-region="${region}"]`);
+  focusCurrentRow(container());
+  const settled = document.activeElement;
   requestAnimationFrame(() => {
-    const container = document.querySelector<HTMLElement>(`[data-region="${region}"]`);
-    const target = container?.matches('[tabindex="0"]') ? container : container?.querySelector<HTMLElement>('[tabindex="0"]');
-    target?.focus();
+    if (document.activeElement === settled && !container()?.contains(settled)) focusCurrentRow(container());
   });
 }
 
@@ -30,8 +43,22 @@ export function Shell() {
       event.preventDefault();
       switchTo(perspective.id);
     }
+    // Clicking empty space in a region keeps keyboard focus in that region
+    // rather than dropping it on the page, where no keys would work.
+    function onMouseDown(event: MouseEvent) {
+      const target = event.target as Element;
+      const region = target.closest<HTMLElement>('[data-region]');
+      const focusable = target.closest('input, textarea, select, button, a, [tabindex]');
+      if (!region || (focusable && !focusable.hasAttribute('data-roving'))) return;
+      event.preventDefault();
+      focusCurrentRow(region);
+    }
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('mousedown', onMouseDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousedown', onMouseDown);
+    };
   });
 
   function switchTo(perspective: Perspective) {
@@ -49,14 +76,26 @@ export function Shell() {
         </button>
       </header>
       <div className="regions" data-perspective={place.perspective}>
-        <PerspectiveNav current={place.perspective} onSelect={goToPerspective} />
+        <PerspectiveNav current={place.perspective} onBrowse={goToPerspective} onOpen={switchTo} />
         {place.perspective === 'projects' ? <ProjectsPerspective place={place} /> : <Inbox />}
       </div>
     </div>
   );
 }
 
-function PerspectiveNav({ current, onSelect }: { current: Perspective; onSelect: (perspective: Perspective) => void }) {
+/**
+ * Arrow keys browse perspectives while staying in the navigation. Clicking
+ * one, or pressing Enter, opens it and moves focus into it.
+ */
+function PerspectiveNav({
+  current,
+  onBrowse,
+  onOpen,
+}: {
+  current: Perspective;
+  onBrowse: (perspective: Perspective) => void;
+  onOpen: (perspective: Perspective) => void;
+}) {
   const roving = useRovingFocus<HTMLUListElement>(current);
 
   function onKeyDown(event: KeyboardEvent) {
@@ -66,7 +105,7 @@ function PerspectiveNav({ current, onSelect }: { current: Perspective; onSelect:
     if (step === 0 || !next) return;
     event.preventDefault();
     roving.claim();
-    onSelect(next.id);
+    onBrowse(next.id);
   }
 
   return (
@@ -79,7 +118,7 @@ function PerspectiveNav({ current, onSelect }: { current: Perspective; onSelect:
               onClick={(event) => {
                 if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                 event.preventDefault();
-                onSelect(perspective.id);
+                onOpen(perspective.id);
               }}
               data-key={perspective.id}
               tabIndex={perspective.id === current ? 0 : -1}

@@ -8,6 +8,8 @@ The web client is meant to be used from the keyboard. This is the reference for 
 - **Plain keys are commands only when you are not typing.** Single-letter and digit commands are ignored while a text field has focus.
 - **Avoid browser and OS shortcuts.** Bindings do not use Cmd or Ctrl with letters (new tab, find, reload, close), and do not use F6 or Alt+letter, which browsers and Linux desktops claim.
 - **Escape** abandons the edit in progress. **Enter** saves it.
+- **Where the keys go.** The region with keyboard focus has an accent line along its top, and its current row is outlined in blue. In other regions the current row and selection stay marked in grey.
+- **The mouse keeps the keys working.** Clicking a perspective opens it with focus in its sidebar (or its outline, if it has no sidebar). Clicking empty space in a region puts focus back on that region's current row.
 
 ## Everywhere
 
@@ -21,7 +23,8 @@ The web client is meant to be used from the keyboard. This is the reference for 
 
 | Key | Action |
 |---|---|
-| ↑ / ↓ | Previous / next perspective |
+| ↑ / ↓ | Previous / next perspective, staying in the navigation |
+| Enter | Open the perspective and move focus into it |
 
 ## Projects sidebar
 
@@ -45,7 +48,7 @@ Folders, projects and single-action lists. Selecting a folder shows every projec
 
 A new item goes at the end of the focused folder, or just after the focused project or list.
 
-With the mouse, click selects, Cmd/Ctrl+click adds or removes an item, and Shift+click selects a range. Double-click renames.
+With the mouse, click selects, Cmd/Ctrl+click adds or removes an item, and Shift+click selects a range. Double-click renames. The **+ Project**, **+ List** and **+ Folder** buttons below the sidebar do the same as N, S and F.
 
 ## Outline
 
@@ -57,7 +60,7 @@ The task rows of the current perspective. In Projects, each selected project has
 | Enter | Edit the task, starting in its title |
 | Space | Complete the task. It leaves the outline and the row now in its place becomes current |
 | Alt+↑ / Alt+↓ | Move the task up or down within its project. The order is for your reading only; it never makes one task wait for another |
-| N | New task straight after the current row (on a project heading: at the top of that project). Enter saves it and starts another; Enter on an empty row or Escape stops |
+| N | New task straight after the current row (on a project heading: at the top of that project). Enter saves it and starts another; Enter on an empty row or Escape stops. The **+ New task** button does the same |
 
 ### Editing a task
 
