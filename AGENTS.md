@@ -1,6 +1,6 @@
 # Notes for agents
 
-Start with the README (layout, running, tests) and `docs/adr/` (decisions). Record new decisions as ADRs.
+Start with the README (layout, running, tests) and `docs/adr/` (decisions). Follow [docs/adr-format.md](docs/adr-format.md) for when to offer an ADR and how to format it; offer one only when all three criteria apply.
 
 ## Rules
 

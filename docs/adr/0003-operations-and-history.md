@@ -1,13 +1,14 @@
-# ADR 0003: Operations, identity and history
+---
+status: proposed
+date: 2026-11-13
+status_note: "Proposed (ticket 03)"
+---
 
-- **Status:** Proposed (ticket 03)
-- **Date:** 13 November 2026
+# Operations, identity and history
 
-## Context
+Ticket 03 needs to define identity, attribution, exactly-once application and original-capture storage on the application-owned write path established by ADR 0001. Propose client-generated UUIDs and named logical operations, applied through a single application boundary that validates mutations and records their attributed history atomically, with actors derived from authenticated sessions. This keeps retries from duplicating changes, prevents agents from labelling themselves as the user, and lets history and the future agent API share the same write path.
 
-Ticket 03 fixes the structural commitments that every later ticket builds on: where identity comes from, how a change is named and attributed, how the server applies it exactly once, and where the original capture lives. ADR 0001 established the mechanism (PowerSync's upload queue posting to an application-owned write path). This ADR records the shape of that write path.
-
-## Decision
+## Consequences
 
 1. **Identity.** Every row's id is a UUID chosen by the client that creates it, at the moment it is created, including offline. The server never reassigns ids.
 
@@ -31,8 +32,6 @@ Ticket 03 fixes the structural commitments that every later ticket builds on: wh
 8. **One address per server.** The app server proxies `/powersync/*` to the PowerSync service, so each client needs only the server's base URL. Clients therefore use PowerSync's HTTP streaming connection, not WebSockets.
 
 9. **Application boundary.** The application's public surface is `execute(operation)` plus queries (`inbox`, `task`, `history`, `operation`) in `server/src/application/`. The sync endpoint is one adapter onto it. The agent API (ticket 26) is meant to be another. The test harness drives this boundary directly against a real Postgres.
-
-## Consequences
 
 - History (ticket 06) can be read from `operations` and `changes` without new write-side work. One logical operation is one entry, however many times it was delivered.
 - Change records are not synced to clients yet. Rejections are visible only on the server for now. Surfacing them, and detecting same-field conflicts from the previous values clients already send (`trackPrevious`), is ticket 34.
