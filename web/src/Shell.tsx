@@ -1,7 +1,7 @@
 import { useEffect, type KeyboardEvent } from 'react';
 import { isTyping, useRovingFocus } from './focus.ts';
 import { Inbox } from './Inbox.tsx';
-import { goToPerspective, perspectiveHref, perspectives, usePlace, type Perspective } from './navigation.ts';
+import { goToPerspective, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
 import { ProjectsPerspective } from './projects/ProjectsPerspective.tsx';
 import { signOut } from './session.ts';
 import { SyncState } from './SyncState.tsx';
@@ -75,7 +75,12 @@ function PerspectiveNav({ current, onSelect }: { current: Perspective; onSelect:
         {perspectives.map((perspective, index) => (
           <li key={perspective.id}>
             <a
-              href={perspectiveHref(perspective.id)}
+              href={perspectivePath(perspective.id)}
+              onClick={(event) => {
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                onSelect(perspective.id);
+              }}
               data-key={perspective.id}
               tabIndex={perspective.id === current ? 0 : -1}
               aria-current={perspective.id === current ? 'page' : undefined}

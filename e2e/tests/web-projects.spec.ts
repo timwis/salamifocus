@@ -9,7 +9,7 @@ test.afterEach(() => network.online());
 
 /** Opens Projects with one item selected, then puts keyboard focus on it as the "2" shortcut does. */
 async function openProjectsAt(page: Page, id: string, name: string) {
-  await page.goto(`/#/projects/${id}`);
+  await page.goto(`/projects/${id}`);
   await expect(treeItem(page, name)).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('2');
   await expect(treeItem(page, name)).toBeFocused();

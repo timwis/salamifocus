@@ -1,8 +1,9 @@
 import { useSyncExternalStore } from 'react';
 
 // Where the user is: the perspective, and for Projects the selected folders
-// and projects. Kept in the URL so a reload, including offline, comes back to
-// the same place.
+// and projects, as a path such as /projects/<id>,<id>. Kept in the URL so a
+// reload comes back to the same place. The app server answers any page path
+// with the app, so these paths load directly too.
 
 export const perspectives = [
   { id: 'inbox', name: 'Inbox' },
@@ -17,30 +18,29 @@ export interface Place {
 }
 
 const listeners = new Set<() => void>();
-let cached: { hash: string; place: Place } | null = null;
+let cached: { path: string; place: Place } | null = null;
+// Returning to a perspective brings back what was selected there.
+const lastSelection = new Map<Perspective, string[]>();
 
 function read(): Place {
-  if (cached?.hash === location.hash) return cached.place;
-  const [, perspective = '', selection = ''] = location.hash.split('/');
+  if (cached?.path === location.pathname) return cached.place;
+  const [, perspective = '', selection = ''] = location.pathname.split('/');
   const place: Place = {
     perspective: perspectives.some((p) => p.id === perspective) ? (perspective as Perspective) : 'inbox',
     selection: selection ? selection.split(',').map(decodeURIComponent) : [],
   };
-  cached = { hash: location.hash, place };
+  cached = { path: location.pathname, place };
   lastSelection.set(place.perspective, place.selection);
   return place;
 }
 
-// Returning to a perspective brings back what was selected there.
-const lastSelection = new Map<Perspective, string[]>();
-
-export function hrefFor(place: Place): string {
+export function pathFor(place: Place): string {
   const selection = place.selection.map(encodeURIComponent).join(',');
-  return `#/${place.perspective}${selection ? `/${selection}` : ''}`;
+  return `/${place.perspective}${selection ? `/${selection}` : ''}`;
 }
 
-export function perspectiveHref(perspective: Perspective): string {
-  return hrefFor({ perspective, selection: lastSelection.get(perspective) ?? [] });
+export function perspectivePath(perspective: Perspective): string {
+  return pathFor({ perspective, selection: lastSelection.get(perspective) ?? [] });
 }
 
 export function goToPerspective(perspective: Perspective): void {
@@ -49,10 +49,10 @@ export function goToPerspective(perspective: Perspective): void {
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  window.addEventListener('hashchange', listener);
+  window.addEventListener('popstate', listener);
   return () => {
     listeners.delete(listener);
-    window.removeEventListener('hashchange', listener);
+    window.removeEventListener('popstate', listener);
   };
 }
 
@@ -63,10 +63,10 @@ export function usePlace(): Place {
 /** Goes to a place. Changing perspective adds a history entry; changing the selection replaces it. */
 export function go(place: Place): void {
   const current = read();
-  const hash = hrefFor(place);
-  if (hash === location.hash) return;
-  if (place.perspective === current.perspective) history.replaceState(null, '', hash);
-  else history.pushState(null, '', hash);
+  const path = pathFor(place);
+  if (path === location.pathname) return;
+  if (place.perspective === current.perspective) history.replaceState(null, '', path);
+  else history.pushState(null, '', path);
   read();
   for (const listener of listeners) listener();
 }
