@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildTree, placedProjects, projectsInSelection, wouldNestInItself, type FolderRecord, type OrganisationNode, type ProjectRecord } from './organisation.ts';
+import { buildTree, placedFolders, placedProjects, projectsInSelection, wouldNestInItself, type FolderRecord, type OrganisationNode, type ProjectRecord } from './organisation.ts';
 
 const folder = (id: string, parentId: string | null, position: string): FolderRecord => ({ id, name: id, parentId, position });
 const project = (id: string, folderId: string | null, position: string): ProjectRecord => ({
@@ -54,5 +54,12 @@ test('every project knows the folders it is in, in sidebar order', () => {
   assert.deepEqual(
     placedProjects(buildTree(folders, projects)).map((p) => p.path.join(' : ')),
     ['personal : miscellaneous', 'personal : parents : tax', 'personal : passport', 'work : work-misc'],
+  );
+});
+
+test('every folder knows its full path, and comes before the folders inside it', () => {
+  assert.deepEqual(
+    placedFolders(buildTree(folders, projects)).map((p) => p.path.join(' : ')),
+    ['personal', 'personal : parents', 'work'],
   );
 });

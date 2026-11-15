@@ -1,9 +1,9 @@
 import { normaliseNote, normaliseTitle, titleProblem } from '@salamifocus/domain';
 import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
-import { useProjects } from '../projects/data.tsx';
+import { useFolders, useProjects } from '../projects/data.tsx';
 import type { Tags } from '../tags/data.tsx';
-import { editTaskNote, moveTask, renameTask, tagTask, untagTask } from '../writes.ts';
-import { ProjectField } from './ProjectField.tsx';
+import { createProjectForTask, editTaskNote, moveTask, renameTask, tagTask, untagTask } from '../writes.ts';
+import { ProjectField, type NewProject } from './ProjectField.tsx';
 import { TagsField } from './TagsField.tsx';
 
 export interface EditableTask {
@@ -33,9 +33,11 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
   const [title, setTitle] = useState(task.title);
   const [note, setNote] = useState(task.note ?? '');
   const [projectId, setProjectId] = useState(task.projectId);
+  const [newProject, setNewProject] = useState<NewProject | null>(null);
   const [tagIds, setTagIds] = useState<string[]>([...task.tagIds]);
   const [problem, setProblem] = useState<string | null>(null);
   const projects = useProjects();
+  const folders = useFolders();
   const container = useRef<HTMLDivElement>(null);
   const fields = {
     title: useRef<HTMLInputElement>(null),
@@ -44,7 +46,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
     note: useRef<HTMLTextAreaElement>(null),
   };
   // What is typed, and what has been saved, without waiting for a re-render.
-  const typed = useRef({ title: task.title, note: task.note ?? '', projectId: task.projectId, tags: [...task.tagIds] });
+  const typed = useRef({ title: task.title, note: task.note ?? '', projectId: task.projectId, newProject: null as NewProject | null, tags: [...task.tagIds] });
   const saved = useRef({ title: task.title, note: normaliseNote(task.note ?? ''), projectId: task.projectId, tags: [...task.tagIds] });
   const closed = useRef(false);
 
@@ -75,7 +77,8 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
       const next = typed.current.projectId;
       if (next === saved.current.projectId) return;
       saved.current.projectId = next;
-      void moveTask(task.id, next);
+      const created = typed.current.newProject;
+      void (created && created.id === next ? createProjectForTask(task.id, created) : moveTask(task.id, next));
     } else {
       const before = new Set(saved.current.tags);
       const after = new Set(typed.current.tags);
@@ -152,10 +155,14 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
       </span>
       <ProjectField
         projects={projects}
+        folders={folders}
         value={projectId}
+        newProject={newProject}
         inputRef={fields.project}
-        onChange={(id) => {
+        onChange={(id, created) => {
           typed.current.projectId = id;
+          typed.current.newProject = created ?? null;
+          setNewProject(created ?? null);
           setProjectId(id);
         }}
         onKeyDown={(event) => onChipsKeyDown('project', event)}

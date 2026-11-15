@@ -105,9 +105,12 @@ test('captures are processed from the keyboard, leaving the Inbox only once they
   await page.keyboard.press('Enter');
   await page.getByLabel('Title').fill(`Book a hedge trimmer ${run}`);
   await page.keyboard.press('Tab');
-  await expect(page.getByLabel('Project')).toBeFocused();
+  await expect(page.getByLabel('Project', { exact: true })).toBeFocused();
   await page.keyboard.type(`outdoors ${mine}`);
-  await expect(page.getByRole('listbox', { name: 'Matching projects' }).getByRole('option')).toHaveText([`Outdoors ${mine} : ${allotment}`]);
+  await expect(page.getByRole('listbox', { name: 'Matching projects' }).getByRole('option')).toHaveText([
+    `Outdoors ${mine} : ${allotment}`,
+    `New project “outdoors ${mine}”`,
+  ]);
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
 
@@ -154,5 +157,50 @@ test('captures are processed from the keyboard, leaving the Inbox only once they
   expect(inboxIds).not.toContain(hedge.taskId);
   expect(inboxIds).not.toContain(stamps.taskId);
   expect(inboxIds).toContain(last.taskId);
+  await expect(status(page)).toContainText('All changes uploaded');
+});
+
+test('a new project is created in a chosen folder without leaving the row', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const mine = `${run}-new-project`;
+  const { tagId: workshop } = await phone.createTag(`@Workshop ${mine}`, { position: 'Zx' });
+  const { folderId } = await phone.createFolder(`Sheds ${mine}`, { position: 'Zx' });
+  const { taskId } = await phone.capture(`paint shed ${run}`);
+  await signIn(page);
+  await page.keyboard.press('1');
+  const row = inbox(page).getByRole('listitem').filter({ hasText: `paint shed ${run}` });
+  await expect(row).toBeVisible();
+  await page.keyboard.press('End');
+  await expect(row).toBeFocused();
+
+  await page.keyboard.press('p');
+  const name = `Repaint the shed ${mine}`;
+  await page.keyboard.type(name);
+  await expect(page.getByRole('listbox', { name: 'Matching projects' }).getByRole('option')).toHaveText([`New project “${name}”`]);
+  await page.keyboard.press('Enter');
+
+  // Escape goes back to the name rather than out of the editor; Enter asks for the folder again.
+  await expect(page.getByLabel(`Folder for ${name}`)).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByLabel('Project', { exact: true })).toHaveValue(name);
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(`sheds ${mine}`);
+  await expect(page.getByRole('listbox', { name: 'Folders' }).getByRole('option')).toHaveText([`Sheds ${mine}`, 'No folder (top level)']);
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Project', { exact: true })).toBeFocused();
+  await expect(page.locator('.task-editor .project-chip')).toHaveText(`${name}×`);
+
+  await page.keyboard.press('Tab');
+  await page.keyboard.type('workshop');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Title')).toBeHidden();
+  await expect(row).toHaveCount(0);
+
+  await expect.poll(async () => (await server.task(taskId))?.tags.map((t) => t.id)).toEqual([workshop]);
+  const sheds = (await server.organisation()).find((node) => node.id === folderId);
+  const created = sheds?.type === 'folder' ? sheds.children : [];
+  expect(created.map((node) => [node.type, node.name])).toEqual([['project', name]]);
+  expect((await server.task(taskId))?.projectId).toBe(created[0]?.id);
   await expect(status(page)).toContainText('All changes uploaded');
 });

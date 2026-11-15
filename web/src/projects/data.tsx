@@ -1,5 +1,5 @@
 import { useQuery } from '@powersync/react';
-import { buildTree, isProjectKind, placedProjects, ProjectKind, type OrganisationNode, type PlacedProject } from '@salamifocus/domain';
+import { buildTree, isProjectKind, placedFolders, placedProjects, ProjectKind, type OrganisationNode, type PlacedFolder, type PlacedProject } from '@salamifocus/domain';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
 interface FolderRow {
@@ -21,6 +21,8 @@ interface Organisation {
   /** Folders, projects and single-action lists, nested as the Projects sidebar shows them. */
   tree: OrganisationNode[];
   projects: Projects;
+  /** Every folder in sidebar order, with its full path. */
+  folders: PlacedFolder[];
 }
 
 const OrganisationContext = createContext<Organisation | null>(null);
@@ -44,7 +46,7 @@ export function OrganisationProvider({ children }: { children: ReactNode }) {
       })),
     );
     const placed = placedProjects(tree);
-    return { tree, projects: { placed, byId: new Map(placed.map((p) => [p.project.id, p])) } };
+    return { tree, projects: { placed, byId: new Map(placed.map((p) => [p.project.id, p])) }, folders: placedFolders(tree) };
   }, [folders, projects]);
   return <OrganisationContext value={value}>{children}</OrganisationContext>;
 }
@@ -57,6 +59,7 @@ function useOrganisationData(): Organisation {
 
 export const useOrganisation = (): OrganisationNode[] => useOrganisationData().tree;
 export const useProjects = (): Projects => useOrganisationData().projects;
+export const useFolders = (): PlacedFolder[] => useOrganisationData().folders;
 
 export interface Projects {
   /** Every project and single-action list in sidebar order, with its full path. */

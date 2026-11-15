@@ -146,3 +146,20 @@ export function placedProjects(tree: readonly OrganisationNode[]): PlacedProject
     );
   return walk(tree, []);
 }
+
+export interface PlacedFolder {
+  folder: FolderNode;
+  /** Names from the top-level folder down to this one. */
+  path: string[];
+}
+
+/** Every folder in sidebar order (each before the folders inside it), with its full path. */
+export function placedFolders(tree: readonly OrganisationNode[]): PlacedFolder[] {
+  const walk = (nodes: readonly OrganisationNode[], above: string[]): PlacedFolder[] =>
+    nodes.flatMap((node) => {
+      if (node.type !== 'folder') return [];
+      const path = [...above, node.name];
+      return [{ folder: node, path }, ...walk(node.children, path)];
+    });
+  return walk(tree, []);
+}

@@ -92,9 +92,10 @@ The task's fields, in order: title, project, tags, then note. Later tickets add 
 |---|---|
 | Tab / Shift+Tab | Next / previous field, keeping the change (wraps round) |
 | Enter in the title | Save and stop editing (a blank title is refused) |
-| Typing in project | Lists the projects and single-action lists whose name or folder path contains what you typed |
+| Typing in project | Lists the projects and single-action lists whose name or folder path contains what you typed, then **New project** with that name (unless one already has it) |
 | ↑ / ↓ in project | Choose among the listed projects |
 | Enter in project | Put the task in the chosen project, at the end; with nothing typed, save and stop editing |
+| Enter on **New project** | Ask which folder it goes in: type to list folders by name or path, or choose **No folder**. Enter picks one, Escape goes back to the name. The project is created at the end of that folder when you stop editing |
 | Backspace in empty project | Take the task out of its project |
 | Typing in tags | Lists the tags whose name or path contains what you typed |
 | ↑ / ↓ in tags | Choose among the listed tags |

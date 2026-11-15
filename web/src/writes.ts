@@ -1,4 +1,5 @@
-import { operationMetadata, OperationName, positionBetween, type ProjectKind } from '@salamifocus/domain';
+import { operationMetadata, OperationName, positionBetween, ProjectKind } from '@salamifocus/domain';
+import type { Transaction } from '@powersync/web';
 import { db } from './powersync.ts';
 
 // Every local write is one logical operation: its rows are written in one
@@ -30,15 +31,38 @@ export function reorderTask(taskId: string, position: string) {
 }
 
 /** Puts a task at the end of a project or single-action list, or (with null) takes it out of any. */
-export async function moveTask(taskId: string, projectId: string | null) {
-  const metadata = operationMetadata(OperationName.moveTask);
-  await db.writeTransaction(async (tx) => {
-    let position: string | null = null;
-    if (projectId !== null) {
-      const { last } = await tx.get<{ last: string | null }>('SELECT max(position) AS last FROM tasks WHERE project_id = ? AND id != ?', [projectId, taskId]);
-      position = positionBetween(last, null);
-    }
-    await tx.execute('UPDATE tasks SET project_id = ?, position = ?, _metadata = ? WHERE id = ?', [projectId, position, metadata, taskId]);
+export function moveTask(taskId: string, projectId: string | null) {
+  return db.writeTransaction((tx) => moveTaskIn(tx, taskId, projectId, operationMetadata(OperationName.moveTask)));
+}
+
+async function moveTaskIn(tx: Transaction, taskId: string, projectId: string | null, metadata: string) {
+  let position: string | null = null;
+  if (projectId !== null) {
+    const { last } = await tx.get<{ last: string | null }>('SELECT max(position) AS last FROM tasks WHERE project_id = ? AND id != ?', [projectId, taskId]);
+    position = positionBetween(last, null);
+  }
+  await tx.execute('UPDATE tasks SET project_id = ?, position = ?, _metadata = ? WHERE id = ?', [projectId, position, metadata, taskId]);
+}
+
+/**
+ * Creates a project at the end of a folder (or the top level) and puts a task in it. They are two
+ * operations, written together so neither is seen without the other.
+ */
+export function createProjectForTask(taskId: string, project: { id: string; name: string; folderId: string | null }) {
+  return db.writeTransaction(async (tx) => {
+    const { last } = await tx.get<{ last: string | null }>(
+      'SELECT max(position) AS last FROM (SELECT position FROM folders WHERE parent_id IS ? UNION ALL SELECT position FROM projects WHERE folder_id IS ?)',
+      [project.folderId, project.folderId],
+    );
+    await tx.execute('INSERT INTO projects (id, name, kind, folder_id, position, _metadata) VALUES (?, ?, ?, ?, ?, ?)', [
+      project.id,
+      project.name,
+      ProjectKind.project,
+      project.folderId,
+      positionBetween(last, null),
+      operationMetadata(OperationName.createProject),
+    ]);
+    await moveTaskIn(tx, taskId, project.id, operationMetadata(OperationName.moveTask));
   });
 }
 
