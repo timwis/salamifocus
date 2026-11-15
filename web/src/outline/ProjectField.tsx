@@ -50,8 +50,9 @@ export function ProjectField({
   const [naming, setNaming] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
+  // The current project stays listed, so typing its name finds it rather than reporting it missing.
   const existing = bestMatches(
-    projects.placed.filter((p) => p.project.id !== value),
+    projects.placed,
     query,
     (p) => p.project.name,
     (p) => pathText(p.path),
@@ -64,10 +65,10 @@ export function ProjectField({
   ];
   const matchingFolders =
     query.trim() === '' ? folders.slice(0, 7) : bestMatches(folders, query, (f) => f.folder.name, (f) => pathText(f.path));
+  // No folder is offered only before typing, so a folder name that matches nothing is reported, not taken as no folder.
   const folderOptions: FolderOption[] = [
     ...(query.trim() === '' ? [{ kind: 'top' as const }] : []),
     ...matchingFolders.map((placed) => ({ kind: 'folder' as const, placed })),
-    ...(query.trim() === '' ? [] : [{ kind: 'top' as const }]),
   ];
   const projectTypeAhead = useTypeAhead(naming === null ? projectOptions : [], optionKey);
   const folderTypeAhead = useTypeAhead(naming === null ? [] : folderOptions, folderKey);
@@ -109,10 +110,16 @@ export function ProjectField({
     event.stopPropagation();
     if (naming !== null) {
       if (folderTypeAhead.onArrowKey(event)) return;
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        if (folderTypeAhead.highlighted) chooseFolder(folderTypeAhead.highlighted);
-        else setProblem(`There is no folder called “${query.trim()}”.`);
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        // Tab, like Enter, picks the folder; it then moves on to the next field rather than dropping the new project.
+        if (folderTypeAhead.highlighted) {
+          chooseFolder(folderTypeAhead.highlighted);
+          if (event.key === 'Tab') onKeyDown(event);
+          else event.preventDefault();
+        } else {
+          event.preventDefault();
+          setProblem(`There is no folder called “${query.trim()}”.`);
+        }
         return;
       }
       if (event.key === 'Escape') {

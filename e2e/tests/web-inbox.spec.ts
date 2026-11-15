@@ -122,6 +122,15 @@ test('captures are processed from the keyboard, leaving the Inbox only once they
   await expect(trimmer).toBeFocused();
   await expect.poll(async () => (await server.task(hedge.taskId))?.projectId).not.toBeNull();
 
+  // Typing the name of the project it is already in finds that project.
+  await page.keyboard.press('p');
+  await page.keyboard.type(allotment);
+  await expect(page.getByRole('listbox', { name: 'Matching projects' }).getByRole('option')).toHaveText([`Outdoors ${mine} : ${allotment}`]);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(trimmer).toBeFocused();
+
   // With only a tag it stays too.
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('t');
@@ -186,13 +195,22 @@ test('a new project is created in a chosen folder without leaving the row', asyn
   await page.keyboard.press('Escape');
   await expect(page.getByLabel('Project', { exact: true })).toHaveValue(name);
   await page.keyboard.press('Enter');
-  await page.keyboard.type(`sheds ${mine}`);
-  await expect(page.getByRole('listbox', { name: 'Folders' }).getByRole('option')).toHaveText([`Sheds ${mine}`, 'No folder (top level)']);
+  const folders = page.getByRole('listbox', { name: 'Folders' }).getByRole('option');
+  await expect(folders.first()).toHaveText('No folder (top level)');
+
+  // A folder name that matches nothing is reported, rather than quietly meaning no folder.
+  await page.keyboard.type(`shedz ${mine}`);
+  await expect(folders).toHaveCount(0);
   await page.keyboard.press('Enter');
-  await expect(page.getByLabel('Project', { exact: true })).toBeFocused();
+  await expect(page.getByRole('alert')).toHaveText(`There is no folder called “shedz ${mine}”.`);
+
+  // Tab picks the folder, as Enter does, and moves on to the tags.
+  await page.getByLabel(`Folder for ${name}`).fill(`sheds ${mine}`);
+  await expect(folders).toHaveText([`Sheds ${mine}`]);
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('combobox', { name: 'Tags' })).toBeFocused();
   await expect(page.locator('.task-editor .project-chip')).toHaveText(`${name}×`);
 
-  await page.keyboard.press('Tab');
   await page.keyboard.type('workshop');
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');
