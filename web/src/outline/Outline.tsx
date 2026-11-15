@@ -5,17 +5,18 @@ import {
   positionBetween,
   tagPathSeparator,
   titleProblem,
-  unavailability,
   Unavailable,
+  type Visibility,
 } from '@salamifocus/domain';
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { useNow } from '../clock.ts';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
-import type { TaskState } from '../queries.ts';
+import { taskUnavailability, type TaskState } from '../queries.ts';
 import { tagsInOrder, useTags, useTaskTags } from '../tags/data.tsx';
 import { completeTask, createTask, nestTask, reorderTask } from '../writes.ts';
 import { ProjectDatesEditor, type DatedProject } from './ProjectDatesEditor.tsx';
 import { TaskEditor, type Field } from './TaskEditor.tsx';
+import { VisibilitySelector } from './VisibilitySelector.tsx';
 
 export interface OutlineTask extends Partial<TaskState> {
   id: string;
@@ -89,11 +90,14 @@ export function Outline({
   summary,
   groups,
   empty,
+  visibility,
 }: {
   title: string;
   summary?: ReactNode;
   groups: OutlineGroup[];
   empty: ReactNode;
+  /** How much the outline shows, where the perspective offers a choice. */
+  visibility?: { value: Visibility; choose: (visibility: Visibility) => void };
 }) {
   const rows: Row[] = groups.flatMap((group) => [
     ...(group.heading !== null ? [{ key: headingKey(group), group, kind: 'heading' as const }] : []),
@@ -270,12 +274,15 @@ export function Outline({
           <h2 id="perspective-heading">{title}</h2>
           {summary && <p className="summary">{summary}</p>}
         </div>
-        {groups.some((g) => g.newTask) && (
-          // The mouse equivalent of N, kept out of the Tab order so Tab still moves between regions.
-          <button type="button" tabIndex={-1} aria-label="New task" title="New task (N)" aria-keyshortcuts="N" onClick={startDraft}>
-            + New task
-          </button>
-        )}
+        <div className="outline-actions">
+          {visibility && <VisibilitySelector value={visibility.value} choose={visibility.choose} />}
+          {groups.some((g) => g.newTask) && (
+            // The mouse equivalent of N, kept out of the Tab order so Tab still moves between regions.
+            <button type="button" tabIndex={-1} aria-label="New task" title="New task (N)" aria-keyshortcuts="N" onClick={startDraft}>
+              + New task
+            </button>
+          )}
+        </div>
       </div>
       <div
         ref={roving.ref}
@@ -294,11 +301,7 @@ export function Outline({
             const isCurrent = key === focused?.key && !editing;
             const tagIds = taskTags.get(task.id) ?? [];
             const chips = tagsInOrder(tags, tagIds);
-            // Rows show unfinished tasks only, so the reasons that matter here are the ones besides completion.
-            const unavailable = unavailability(
-              { completedAt: null, unfinishedChildren: task.unfinishedChildren ?? 0, deferredUntil: task.deferredUntil ?? null },
-              now,
-            );
+            const unavailable = taskUnavailability(task, now);
             const blocked = unavailable.includes(Unavailable.blocked);
             const deferred = unavailable.includes(Unavailable.deferred) && task.deferredUntil ? task.deferredUntil : null;
             // A defer date that has passed is still worth seeing; a future one shows as the deferral itself.

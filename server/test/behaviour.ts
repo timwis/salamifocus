@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import type { Unavailable } from '@salamifocus/domain';
+import type { Unavailable, Visibility } from '@salamifocus/domain';
 import type { Sql } from '../src/db.ts';
 
 // Loads the client-neutral behaviour fixtures (see fixtures/README.md) and
@@ -10,6 +10,8 @@ type Row = Record<string, unknown> & { id: string };
 export interface ExpectedPerspective {
   perspective: 'projects' | 'tags';
   selection: string[];
+  /** Absent means the perspective's default, Remaining. */
+  visibility?: Visibility;
   groups: { id: string; tasks: { id: string; depth: number }[] }[];
 }
 

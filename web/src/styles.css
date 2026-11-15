@@ -427,6 +427,26 @@ nav:focus-within a[aria-current='page'] {
   align-items: flex-start;
   gap: 1rem;
 }
+.outline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Available / Remaining / Everything */
+.visibility {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  padding: 0.1rem;
+}
+.outline-header .visibility button {
+  color: var(--muted);
+}
+.outline-header .visibility button[aria-checked='true'] {
+  color: #fff;
+  background: var(--accent);
+}
 .outline .hint {
   margin: 0.15rem 0 0.5rem;
 }

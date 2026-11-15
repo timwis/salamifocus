@@ -1,4 +1,4 @@
-import { deferredUntilColumn, dueByColumn } from '@salamifocus/domain';
+import { deferredUntilColumn, dueByColumn, unavailability, type Unavailable } from '@salamifocus/domain';
 
 /**
  * Selects how many of a task's children (the task aliased `t`) are unfinished, as `unfinishedChildren`,
@@ -22,3 +22,8 @@ export interface TaskState {
 
 /** Selects a task's `TaskState`. */
 export const taskStateColumns = `${unfinishedChildrenColumn}, ${deferredUntilColumn}, t.defer_until AS "deferUntil", ${dueByColumn}, t.due_at AS "dueAt"`;
+
+/** Why a task cannot be worked on at `now`, from its `TaskState`. */
+export function taskUnavailability(task: Partial<TaskState>, now: Date): Unavailable[] {
+  return unavailability({ completedAt: null, unfinishedChildren: task.unfinishedChildren ?? 0, deferredUntil: task.deferredUntil ?? null }, now);
+}

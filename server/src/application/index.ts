@@ -8,8 +8,11 @@ import {
   outlineTasks,
   placedTags,
   projectsInSelection,
+  pruneOutline,
+  shownUnder,
   tagBranch,
   unavailability,
+  Visibility,
   type OrganisationNode,
   type TagNode,
 } from '@salamifocus/domain';
@@ -141,11 +144,12 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   }
 
   /**
-   * What the Tags perspective shows for a selected tag: unfinished tasks
-   * carrying the tag or any tag beneath it, grouped under each matching tag
-   * (so a task can appear more than once), oldest first within a group.
+   * What the Tags perspective shows for a selected tag: the tasks the
+   * visibility shows that carry the tag or any tag beneath it, grouped under
+   * each matching tag (so a task can appear more than once), oldest first
+   * within a group.
    */
-  async function tagged(tagId: string): Promise<TagOutline[]> {
+  async function tagged(tagId: string, visibility: Visibility = Visibility.remaining): Promise<TagOutline[]> {
     const tree = await tags();
     const placed = tagBranch(tree, tagId);
     const branch = placed.map((p) => p.tag.id);
@@ -176,7 +180,8 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       if (existing) existing.tagIds.push(rowTag);
       else tasks.set(task.id, { ...task, tagIds: [rowTag], unavailable: unavailability({ completedAt: null, unfinishedChildren, deferredUntil }, now) });
     }
-    return groupByTag(placed, [...tasks.values()], (task) => task.tagIds).map(({ tag, path, tasks }) => ({
+    const shown = [...tasks.values()].filter((task) => shownUnder(visibility, task.unavailable));
+    return groupByTag(placed, shown, (task) => task.tagIds).map(({ tag, path, tasks }) => ({
       tag: { id: tag.id, name: tag.name, path },
       tasks,
     }));
@@ -185,9 +190,10 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   /**
    * What the Projects perspective shows for a sidebar selection: each selected
    * project (every project inside a selected folder), in sidebar order, with
-   * its unfinished tasks in outline order, each followed by its prerequisites.
+   * the tasks the visibility shows in outline order, each followed by its
+   * prerequisites. A task whose parent is not shown is shown at the top level.
    */
-  async function projects(selection: string[]): Promise<ProjectOutline[]> {
+  async function projects(selection: string[], visibility: Visibility = Visibility.remaining): Promise<ProjectOutline[]> {
     const selected = projectsInSelection(await organisation(), selection);
     if (selected.length === 0) return [];
     const now = clock();
@@ -214,6 +220,10 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.parent_id AS "parentId", t.position, t.defer_until AS "deferUntil", t.due_at AS "dueAt",
              ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
       FROM tasks t WHERE t.project_id IN ${sql(ids)} AND t.completed_at IS NULL`;
+    const withAvailability = rows.map((row) => ({
+      ...row,
+      unavailable: unavailability({ completedAt: null, unfinishedChildren: row.unfinishedChildren, deferredUntil: row.deferredUntil }, now),
+    }));
     return selected.map((project) => ({
       project: {
         id: project.id,
@@ -222,7 +232,10 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         deferUntil: dates.get(project.id)?.deferUntil ?? null,
         dueAt: dates.get(project.id)?.dueAt ?? null,
       },
-      tasks: outlineTasks(rows.filter((row) => row.projectId === project.id)).map(({ task, depth, parentId }) => ({
+      tasks: pruneOutline(
+        outlineTasks(withAvailability.filter((row) => row.projectId === project.id)),
+        (row) => shownUnder(visibility, row.unavailable),
+      ).map(({ task, depth, parentId }) => ({
         id: task.id,
         title: task.title,
         note: task.note,
@@ -231,7 +244,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         deferUntil: task.deferUntil,
         dueAt: task.dueAt,
         dueBy: task.dueBy,
-        unavailable: unavailability({ completedAt: null, unfinishedChildren: task.unfinishedChildren, deferredUntil: task.deferredUntil }, now),
+        unavailable: task.unavailable,
       })),
     }));
   }

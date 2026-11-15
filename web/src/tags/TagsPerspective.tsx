@@ -1,8 +1,9 @@
 import { useQuery } from '@powersync/react';
-import { groupByTag, tagBranch, tagPathSeparator, type TagNode } from '@salamifocus/domain';
+import { groupByTag, shownUnder, tagBranch, tagPathSeparator, Visibility, type TagNode } from '@salamifocus/domain';
+import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
-import { taskStateColumns, type TaskState } from '../queries.ts';
+import { taskStateColumns, taskUnavailability, type TaskState } from '../queries.ts';
 import { TreeSidebar, type NewItemKind } from '../sidebar/TreeSidebar.tsx';
 import { createTag, moveTag, renameTag } from '../writes.ts';
 import { useTags, useTaskTags } from './data.tsx';
@@ -19,9 +20,9 @@ interface TaskRow extends TaskState {
 }
 
 /**
- * The tag hierarchy in the sidebar, and for the selected tag, the unfinished
- * tasks carrying it or any tag beneath it. A task appears under each matching
- * tag; completing it removes every appearance.
+ * The tag hierarchy in the sidebar, and for the selected tag, the tasks the
+ * visibility shows that carry it or any tag beneath it. A task appears under
+ * each matching tag; completing it removes every appearance.
  */
 export function TagsPerspective({ place }: { place: Place }) {
   const tags = useTags();
@@ -36,7 +37,11 @@ export function TagsPerspective({ place }: { place: Place }) {
      ORDER BY t.created_at, t.id`,
     branchIds,
   );
-  const groups: OutlineGroup[] = groupByTag(branch, tasks, (task) => taskTags.get(task.id) ?? []).map(
+  const visibility = place.visibility ?? Visibility.remaining;
+  // Under Available, a task joins the outline when its defer date passes.
+  const now = useNow(tasks.map((t) => t.deferredUntil));
+  const shown = tasks.filter((task) => shownUnder(visibility, taskUnavailability(task, now)));
+  const groups: OutlineGroup[] = groupByTag(branch, shown, (task) => taskTags.get(task.id) ?? []).map(
     ({ tag, path, tasks }) => ({
       id: tag.id,
       heading: path.join(tagPathSeparator),
@@ -52,7 +57,7 @@ export function TagsPerspective({ place }: { place: Place }) {
     const { tag, path } = selectedTag;
     groups.push({ id: tag.id, heading: path.join(tagPathSeparator), newTask: { projectId: null, tagId: tag.id }, ordered: false, tasks: [] });
   }
-  const count = tasks.length;
+  const count = shown.length;
 
   return (
     <>
@@ -74,9 +79,10 @@ export function TagsPerspective({ place }: { place: Place }) {
       />
       <Outline
         title="Tags"
-        summary={branch.length === 0 ? 'Select a tag in the sidebar' : `${count} ${count === 1 ? 'task' : 'tasks'} remaining`}
+        summary={branch.length === 0 ? 'Select a tag in the sidebar' : `${count} ${count === 1 ? 'task' : 'tasks'} ${visibility}`}
         groups={groups}
         empty="Nothing selected."
+        visibility={{ value: visibility, choose: (visibility) => go({ ...place, visibility }) }}
       />
     </>
   );

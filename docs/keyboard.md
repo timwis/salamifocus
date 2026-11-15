@@ -19,7 +19,17 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 2 | Go to Projects (focus goes to the sidebar) |
 | 3 | Go to Tags (focus goes to the sidebar) |
 | Tab / Shift+Tab | Next / previous region |
+| V / Shift+V | In Projects and Tags: show the next / previous of **Available** and **Remaining** (see [Visibility](#visibility)) |
 | C | Capture to the Inbox without leaving where you are. Enter saves and clears the box for the next one; Enter on an empty box or Escape closes it, and focus goes back where it was. The **+ Capture** button does the same |
+
+## Visibility
+
+Projects and Tags can show more or less of the system. The choice is shown above the outline, kept in the address (so a reload keeps it), and remembered for each perspective while the app is open. Both start at Remaining.
+
+- **Available**: only tasks that can be worked on now. Blocked and deferred tasks are left out, and a deferred task joins when its date arrives. A prerequisite whose parent is left out is shown where the parent was.
+- **Remaining**: every unfinished task, blocked and deferred ones included.
+
+Clicking a choice does the same as V, without moving keyboard focus.
 
 ## Perspective navigation
 

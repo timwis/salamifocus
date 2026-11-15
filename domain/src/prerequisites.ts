@@ -51,3 +51,20 @@ export function outlineTasks<T extends NestedTask>(tasks: readonly T[]): Outline
   }
   return out;
 }
+
+/**
+ * The outlined tasks `keep` accepts, in the same order, each beneath its nearest kept ancestor (at the top
+ * level if none is kept). A view that hides a blocked parent still shows its prerequisites where it was.
+ */
+export function pruneOutline<T extends { id: string }>(outlined: readonly OutlinedTask<T>[], keep: (task: T) => boolean): OutlinedTask<T>[] {
+  const above: { depth: number; kept: { id: string; depth: number } | null }[] = [];
+  const out: OutlinedTask<T>[] = [];
+  for (const { task, depth } of outlined) {
+    while (above.length > 0 && above.at(-1)!.depth >= depth) above.pop();
+    const parent = above.findLast((a) => a.kept !== null)?.kept ?? null;
+    const kept = keep(task) ? { id: task.id, depth: (parent?.depth ?? 0) + 1 } : null;
+    if (kept) out.push({ task, depth: kept.depth, parentId: parent?.id ?? null });
+    above.push({ depth, kept });
+  }
+  return out;
+}

@@ -1,14 +1,16 @@
+import { isVisibility, Visibility } from '@salamifocus/domain';
 import { useSyncExternalStore } from 'react';
 
-// Where the user is: the perspective, and what is selected in its sidebar, as
-// a path such as /projects/<id>,<id> or /tags/<id>. Kept in the URL so a
+// Where the user is: the perspective, what is selected in its sidebar and,
+// where it offers a choice, how much it shows, as a path such as
+// /projects/<id>,<id> or /tags/<id>?show=available. Kept in the URL so a
 // reload comes back to the same place. The app server answers any page path
 // with the app, so these paths load directly too.
 
 export const perspectives = [
-  { id: 'inbox', name: 'Inbox' },
-  { id: 'projects', name: 'Projects' },
-  { id: 'tags', name: 'Tags' },
+  { id: 'inbox', name: 'Inbox', visibility: null },
+  { id: 'projects', name: 'Projects', visibility: Visibility.remaining },
+  { id: 'tags', name: 'Tags', visibility: Visibility.remaining },
 ] as const;
 
 export type Perspective = (typeof perspectives)[number]['id'];
@@ -16,22 +18,29 @@ export type Perspective = (typeof perspectives)[number]['id'];
 export interface Place {
   perspective: Perspective;
   selection: string[];
+  /** How much the outline shows, where the perspective offers a choice. Left out, it stays as it was. */
+  visibility?: Visibility;
 }
 
+/** The visibility a perspective starts with, or null if it offers no choice. */
+const defaultVisibility = (perspective: Perspective): Visibility | null => perspectives.find((p) => p.id === perspective)?.visibility ?? null;
+
 const listeners = new Set<() => void>();
-let cached: { path: string; place: Place } | null = null;
-// Returning to a perspective brings back what was selected there.
-const lastSelection = new Map<Perspective, string[]>();
+let cached: { url: string; place: Place } | null = null;
+// Returning to a perspective brings back what was selected there, and what it showed.
+const lastPlace = new Map<Perspective, Place>();
 
 function read(): Place {
-  if (cached?.path === location.pathname) return cached.place;
-  const [, perspective = '', selection = ''] = location.pathname.split('/');
-  const place: Place = {
-    perspective: perspectives.some((p) => p.id === perspective) ? (perspective as Perspective) : 'inbox',
-    selection: selection ? selection.split(',').flatMap(decodeOrDrop) : [],
-  };
-  cached = { path: location.pathname, place };
-  lastSelection.set(place.perspective, place.selection);
+  const url = location.pathname + location.search;
+  if (cached?.url === url) return cached.place;
+  const [, name = '', selection = ''] = location.pathname.split('/');
+  const perspective = perspectives.some((p) => p.id === name) ? (name as Perspective) : 'inbox';
+  const show = new URLSearchParams(location.search).get('show');
+  const fallback = defaultVisibility(perspective);
+  const visibility = fallback === null ? undefined : isVisibility(show) ? show : fallback;
+  const place: Place = { perspective, selection: selection ? selection.split(',').flatMap(decodeOrDrop) : [], visibility };
+  cached = { url, place };
+  lastPlace.set(place.perspective, place);
   return place;
 }
 
@@ -46,15 +55,16 @@ function decodeOrDrop(part: string): string[] {
 
 export function pathFor(place: Place): string {
   const selection = place.selection.map(encodeURIComponent).join(',');
-  return `/${place.perspective}${selection ? `/${selection}` : ''}`;
+  const show = place.visibility && place.visibility !== defaultVisibility(place.perspective) ? `?show=${place.visibility}` : '';
+  return `/${place.perspective}${selection ? `/${selection}` : ''}${show}`;
 }
 
 export function perspectivePath(perspective: Perspective): string {
-  return pathFor({ perspective, selection: lastSelection.get(perspective) ?? [] });
+  return pathFor(lastPlace.get(perspective) ?? { perspective, selection: [] });
 }
 
 export function goToPerspective(perspective: Perspective): void {
-  go({ perspective, selection: lastSelection.get(perspective) ?? [] });
+  go(lastPlace.get(perspective) ?? { perspective, selection: [] });
 }
 
 function subscribe(listener: () => void) {
@@ -70,12 +80,13 @@ export function usePlace(): Place {
   return useSyncExternalStore(subscribe, read);
 }
 
-/** Goes to a place. Changing perspective adds a history entry; changing the selection replaces it. */
+/** Goes to a place. Changing perspective adds a history entry; changing the selection or visibility replaces it. */
 export function go(place: Place): void {
   const current = read();
-  const path = pathFor(place);
-  if (path === location.pathname) return;
-  if (place.perspective === current.perspective) history.replaceState(null, '', path);
+  const samePerspective = place.perspective === current.perspective;
+  const path = pathFor(samePerspective && place.visibility === undefined ? { ...place, visibility: current.visibility } : place);
+  if (path === location.pathname + location.search) return;
+  if (samePerspective) history.replaceState(null, '', path);
   else history.pushState(null, '', path);
   read();
   for (const listener of listeners) listener();

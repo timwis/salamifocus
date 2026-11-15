@@ -1,8 +1,9 @@
 import { useQuery } from '@powersync/react';
-import { outlineTasks, projectsInSelection } from '@salamifocus/domain';
+import { outlineTasks, projectsInSelection, pruneOutline, shownUnder, Visibility } from '@salamifocus/domain';
+import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
-import { taskStateColumns, type TaskState } from '../queries.ts';
+import { taskStateColumns, taskUnavailability, type TaskState } from '../queries.ts';
 import { useOrganisation } from './data.tsx';
 import { Sidebar } from './Sidebar.tsx';
 
@@ -29,13 +30,17 @@ export function ProjectsPerspective({ place }: { place: Place }) {
     ids,
   );
   const datesById = new Map(projectDates.map((p) => [p.id, p]));
+  const visibility = place.visibility ?? Visibility.remaining;
+  // Under Available, a task joins the outline when its defer date passes.
+  const now = useNow(tasks.map((t) => t.deferredUntil));
+  const shown = (task: TaskRow) => shownUnder(visibility, taskUnavailability(task, now));
   const groups: OutlineGroup[] = selected.map((project) => ({
     id: project.id,
     heading: project.name,
     newTask: { projectId: project.id, tagId: null },
     ordered: true,
     project: { id: project.id, deferUntil: datesById.get(project.id)?.defer_until ?? null, dueAt: datesById.get(project.id)?.due_at ?? null },
-    tasks: outlineTasks(tasks.filter((t) => t.project_id === project.id).map((t) => ({ ...t, parentId: t.parent_id }))).map(
+    tasks: pruneOutline(outlineTasks(tasks.filter((t) => t.project_id === project.id).map((t) => ({ ...t, parentId: t.parent_id }))), shown).map(
       ({ task, depth, parentId }) => ({ ...task, projectId: task.project_id, depth, parentId }),
     ),
   }));
@@ -53,6 +58,7 @@ export function ProjectsPerspective({ place }: { place: Place }) {
         }
         groups={groups}
         empty="Nothing selected."
+        visibility={{ value: visibility, choose: (visibility) => go({ ...place, visibility }) }}
       />
     </>
   );

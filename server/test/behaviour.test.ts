@@ -13,11 +13,14 @@ after(() => h.close());
 async function shown(expected: ExpectedPerspective, ids: Ids): Promise<ExpectedPerspective['groups']> {
   const name = (uuid: string) => ids.name(uuid) ?? uuid;
   if (expected.perspective === 'projects') {
-    const outline = await h.application.projects(expected.selection.map((id) => ids.uuid(id)));
+    const outline = await h.application.projects(
+      expected.selection.map((id) => ids.uuid(id)),
+      expected.visibility,
+    );
     return outline.map(({ project, tasks }) => ({ id: name(project.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: t.depth })) }));
   }
   const [tagId] = expected.selection;
-  const outline = tagId ? await h.application.tagged(ids.uuid(tagId)) : [];
+  const outline = tagId ? await h.application.tagged(ids.uuid(tagId), expected.visibility) : [];
   return outline.map(({ tag, tasks }) => ({ id: name(tag.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }));
 }
 
@@ -32,7 +35,7 @@ for (const { scenario, file, examples } of loadScenarios()) {
           assert.deepEqual((await h.application.task(ids.uuid(task)))?.unavailable, reasons, `availability of ${task}`);
         }
         for (const perspective of example.expect.perspectives) {
-          assert.deepEqual(await shown(perspective, ids), perspective.groups, `${perspective.perspective} with ${perspective.selection.join(', ')} selected`);
+          assert.deepEqual(await shown(perspective, ids), perspective.groups, `${perspective.perspective} with ${perspective.selection.join(', ')} selected, showing ${perspective.visibility ?? 'the default'}`);
         }
       });
     }
