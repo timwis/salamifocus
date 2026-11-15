@@ -27,11 +27,20 @@ function read(): Place {
   const [, perspective = '', selection = ''] = location.pathname.split('/');
   const place: Place = {
     perspective: perspectives.some((p) => p.id === perspective) ? (perspective as Perspective) : 'inbox',
-    selection: selection ? selection.split(',').map(decodeURIComponent) : [],
+    selection: selection ? selection.split(',').flatMap(decodeOrDrop) : [],
   };
   cached = { path: location.pathname, place };
   lastSelection.set(place.perspective, place.selection);
   return place;
+}
+
+/** A truncated or hand-edited address must not stop the app rendering, so undecodable parts are ignored. */
+function decodeOrDrop(part: string): string[] {
+  try {
+    return [decodeURIComponent(part)];
+  } catch {
+    return [];
+  }
 }
 
 export function pathFor(place: Place): string {

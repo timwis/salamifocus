@@ -286,6 +286,17 @@ test('the mouse works too: clicking a perspective or empty space leaves the keys
   await expect(treeItem(page, `Garage odds and ends ${run}`)).toHaveAttribute('aria-selected', 'true');
 });
 
+test('a mangled address still opens the app', async ({ page }) => {
+  await signIn(page);
+  // The app server answers this path with the app; the Vite dev server used here refuses it, so go there in-page.
+  await page.evaluate(() => {
+    history.pushState(null, '', '/projects/100%');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.getByRole('heading', { name: 'Projects', level: 2 })).toBeVisible();
+  await expect(page.getByText('Select a project in the sidebar')).toBeVisible();
+});
+
 test('a project created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const { folderId } = await phone.createFolder(`Errands ${run}`, { position: 'a2' });
