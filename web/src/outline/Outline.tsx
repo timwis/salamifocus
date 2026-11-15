@@ -1,5 +1,5 @@
 import { normaliseTitle, positionAt, positionBetween, tagPathSeparator, titleProblem } from '@salamifocus/domain';
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
 import { tagsInOrder, useTags, useTaskTags } from '../tags/data.ts';
 import { completeTask, createTask, reorderTask } from '../writes.ts';
@@ -91,6 +91,22 @@ export function Outline({
       const next = group.tasks.slice(focused.index + 1).find((t) => t.position !== null && (after === null || t.position > after));
       setEditing({ mode: 'draft', groupId: group.id, after, before: next?.position ?? null, returnTo: focused.key });
     }
+  }
+
+  function openEditor(key: string) {
+    roving.claim();
+    current.set(key);
+    setEditing({ mode: 'task', rowKey: key, startIn: 'title' });
+  }
+
+  /**
+   * While something is being edited, pressing on another row acts at once rather than on click: closing the
+   * editor reshapes the outline before the button is released, so the click would land elsewhere. The action
+   * waits until the editor's own blur handling has finished, so that does not undo it.
+   */
+  function actOnPress(event: MouseEvent, key: string, action: () => void) {
+    if (!editing || event.button !== 0 || (editing.mode === 'task' && editing.rowKey === key)) return;
+    setTimeout(action);
   }
 
   async function finishDraft(title: string | null, keepGoing: boolean) {
@@ -197,6 +213,7 @@ export function Outline({
                 tabIndex={isCurrent ? 0 : -1}
                 data-current={key === focused?.key || undefined}
                 onClick={() => current.set(key)}
+                onMouseDown={(event) => actOnPress(event, key, () => current.set(key))}
               >
                 <button
                   type="button"
@@ -217,10 +234,10 @@ export function Outline({
                         type="button"
                         tabIndex={-1}
                         className="task-title"
-                        onClick={() => {
-                          roving.claim();
-                          current.set(key);
-                          setEditing({ mode: 'task', rowKey: key, startIn: 'title' });
+                        onClick={() => openEditor(key)}
+                        onMouseDown={(event) => {
+                          event.stopPropagation();
+                          actOnPress(event, key, () => openEditor(key));
                         }}
                       >
                         {task.title}

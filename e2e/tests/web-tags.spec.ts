@@ -204,7 +204,10 @@ test('with the mouse, a tag removed in the editor stays removed when another tas
   await page.getByRole('button', { name: `Remove Quick ${run}` }).click();
   // Focus stays in the editor, so it still notices when the user moves on.
   await expect(page.getByLabel('Title')).toBeFocused();
+  // One click on another task opens its editor, even though closing this one moves that task up.
   await page.getByRole('button', { name: `Empty the bins ${run}`, exact: true }).click();
+  await expect(page.getByLabel('Title')).toHaveValue(`Empty the bins ${run}`);
+  await expect(page.getByLabel('Title')).toBeFocused();
 
   await expect(row.locator('.tag-chip')).toHaveText([`@Home ${run}`]);
   await expect.poll(async () => (await server.task(taskId))?.tags.map((t) => t.name)).toEqual([`@Home ${run}`]);
