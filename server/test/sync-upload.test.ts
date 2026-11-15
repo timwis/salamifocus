@@ -158,7 +158,8 @@ describe('uploading a client transaction', () => {
     assert.equal(added?.outcome, 'applied');
     assert.deepEqual((await h.application.task(capture.taskId))?.tags.map((t) => t.name), ['@Errand']);
 
-    const [removed] = await upload([{ op: 'DELETE', table: 'task_tags', id: taskTagId, metadata: operationMetadata(OperationName.untagTask) }]);
+    const old = { task_id: capture.taskId, tag_id: tagId };
+    const [removed] = await upload([{ op: 'DELETE', table: 'task_tags', id: taskTagId, old, metadata: operationMetadata(OperationName.untagTask) }]);
     assert.equal(removed?.outcome, 'applied');
     assert.deepEqual((await h.application.task(capture.taskId))?.tags, []);
   });

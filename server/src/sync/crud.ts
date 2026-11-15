@@ -197,7 +197,16 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
   },
 
   [OperationName.untagTask](entries) {
-    if (entries.length !== 1) throw new Malformed('Removing a tag deletes exactly one link.');
-    return { taskTagId: single(entries, 'DELETE', 'task_tags').id };
+    // A delete carries no data, but the client sends the link's previous values, which say which tag left which task.
+    const pairs = new Set(
+      entries.map((entry) => {
+        if (entry.op !== 'DELETE' || entry.table !== 'task_tags') throw new Malformed('Removing a tag only deletes links.');
+        const { task_id: taskId, tag_id: tagId } = entry.old ?? {};
+        if (typeof taskId !== 'string' || typeof tagId !== 'string') throw new Malformed('A removed link must say which task and tag it joined.');
+        return JSON.stringify({ taskId, tagId });
+      }),
+    );
+    if (pairs.size !== 1) throw new Malformed('Removing a tag takes one tag off one task.');
+    return JSON.parse([...pairs][0]!);
   },
 };

@@ -62,6 +62,17 @@ describe('organising tags', () => {
     assert.deepEqual(await sidebar(), ['Coding', '@Computer', '@Phone']);
   });
 
+  it('answers, rather than looping, when stored tags already form a cycle, and lets the cycle be broken', async () => {
+    const x = await tag('X', null, 'a0');
+    const y = await tag('Y', x, 'a0');
+    const loose = await tag('Loose', null, 'a1');
+    await h.sql`UPDATE tags SET parent_id = ${y} WHERE id = ${x}`;
+
+    assert.equal(await perform(OperationName.moveTag, { tagId: loose, parentId: x, position: 'a0' }), 'would_nest_in_itself');
+    assert.equal(await perform(OperationName.moveTag, { tagId: x, parentId: null, position: 'a2' }), 'applied');
+    assert.deepEqual(await sidebar(), ['Loose', { X: ['Y'] }]);
+  });
+
   it('refuses to put a tag inside itself or its descendants, or under a tag that does not exist', async () => {
     const outer = await tag('Outer', null, 'a0');
     const inner = await tag('Inner', outer, 'a0');
@@ -121,8 +132,8 @@ describe('tagging tasks', () => {
     const { taskTagId } = await addTag(taskId, phone);
     await addTag(taskId, flat);
 
-    assert.equal(await perform(OperationName.untagTask, { taskTagId }), 'applied');
-    assert.equal(await perform(OperationName.untagTask, { taskTagId }), 'applied');
+    assert.equal(await perform(OperationName.untagTask, { taskId, tagId: phone }), 'applied');
+    assert.equal(await perform(OperationName.untagTask, { taskId, tagId: phone }), 'applied');
 
     assert.deepEqual(await tagNames(taskId), ['@Flat']);
     const removals = (await h.application.history(taskId)).filter((entry) => entry.operation === OperationName.untagTask);
@@ -130,6 +141,19 @@ describe('tagging tasks', () => {
       removals.map((entry) => entry.changes),
       [[{ entity: 'task_tag', entityId: taskTagId, kind: 'delete', before: { task_id: taskId, tag_id: phone }, after: null }]],
     );
+  });
+
+  it('removes a tag added on two offline devices, whichever device removes it', async () => {
+    const errand = await tag('@Errand', null, 'a0');
+    const taskId = await captured('Collect the parcel');
+    // Both devices add the tag; the server keeps the first link and ignores the second.
+    await addTag(taskId, errand);
+    await addTag(taskId, errand);
+
+    // The second device removes the tag before it has heard about the first link.
+    assert.equal(await perform(OperationName.untagTask, { taskId, tagId: errand }), 'applied');
+
+    assert.deepEqual(await tagNames(taskId), []);
   });
 
   it('refuses a tag or task that does not exist', async () => {

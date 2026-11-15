@@ -1,4 +1,4 @@
-import { OperationName } from '@salamifocus/domain';
+import { OperationName, wouldNestInItself } from '@salamifocus/domain';
 import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import type { OperationDefinition } from './operations.ts';
@@ -69,9 +69,9 @@ export const moveTag: OperationDefinition<MoveTagArgs> = {
       // As with folders: two devices nesting tags under each other at once must not form a cycle.
       await mutations.lock('tag-hierarchy');
       await checkTagExists(mutations, parentId);
-      for (let current = parentId; current !== null; ) {
-        if (current === tagId) throw new Rejection('would_nest_in_itself', 'A tag cannot go inside itself.');
-        current = ((await mutations.read('tag', current))?.parent_id as string | null | undefined) ?? null;
+      const parents = new Map((await mutations.list('tag')).map((t) => [t.id as string, t.parent_id as string | null]));
+      if (wouldNestInItself(tagId, parentId, (id) => parents.get(id))) {
+        throw new Rejection('would_nest_in_itself', 'A tag cannot go inside itself.');
       }
       patch.parent_id = parentId;
     }
@@ -96,25 +96,39 @@ export const tagTask: OperationDefinition<TagTaskArgs> = {
   async apply(mutations, { taskTagId, taskId, tagId }) {
     // Locking the task serialises tagging it, so the same tag cannot be added twice at once.
     if (!(await mutations.read('task', taskId))) throw new Rejection('not_found', 'That task no longer exists.');
-    await checkTagExists(mutations, tagId);
-    if (await mutations.exists('task_tag', taskTagId)) throw new Rejection('already_exists', 'Something with that id already exists.');
-    if (await mutations.taskHasTag(taskId, tagId)) return;
-    await mutations.create('task_tag', taskTagId, { task_id: taskId, tag_id: tagId });
+    await addTaskTag(mutations, taskId, { taskTagId, tagId });
   },
 };
 
-export interface UntagTaskArgs {
-  taskTagId: string;
+/** Links a tag to a task, unless the task already has it. Shared by tagging and by creating a task with tags. */
+export async function addTaskTag(mutations: Mutations, taskId: string, { taskTagId, tagId }: { taskTagId: string; tagId: string }): Promise<void> {
+  await checkTagExists(mutations, tagId);
+  if (await mutations.exists('task_tag', taskTagId)) throw new Rejection('already_exists', 'Something with that id already exists.');
+  if ((await mutations.taskTagId(taskId, tagId)) !== null) return;
+  await mutations.create('task_tag', taskTagId, { task_id: taskId, tag_id: tagId });
 }
 
-/** Takes a tag off a task by removing their link. Removing a link that is already gone changes nothing. */
+export interface UntagTaskArgs {
+  taskId: string;
+  tagId: string;
+}
+
+/**
+ * Takes a tag off a task. It removes whichever link the server holds, which
+ * may not be the one the client saw: two offline devices can add the same
+ * tag, and only the first link is kept. Removing a tag the task does not
+ * have changes nothing.
+ */
 export const untagTask: OperationDefinition<UntagTaskArgs> = {
   name: OperationName.untagTask,
   parse(input) {
-    return { taskTagId: args.uuid(args.record(input), 'taskTagId') };
+    const a = args.record(input);
+    return { taskId: args.uuid(a, 'taskId'), tagId: args.uuid(a, 'tagId') };
   },
-  async apply(mutations, { taskTagId }) {
-    await mutations.delete('task_tag', taskTagId);
+  async apply(mutations, { taskId, tagId }) {
+    if (!(await mutations.read('task', taskId))) return;
+    const link = await mutations.taskTagId(taskId, tagId);
+    if (link !== null) await mutations.delete('task_tag', link);
   },
 };
 

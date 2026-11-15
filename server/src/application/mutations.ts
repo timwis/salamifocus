@@ -57,9 +57,10 @@ export class Mutations {
     return row ?? null;
   }
 
-  async taskHasTag(taskId: string, tagId: string): Promise<boolean> {
-    const rows = await this.#tx`SELECT 1 FROM task_tags WHERE task_id = ${taskId} AND tag_id = ${tagId}`;
-    return rows.length > 0;
+  /** The id of the link putting a tag on a task, or null if the task does not have it. */
+  async taskTagId(taskId: string, tagId: string): Promise<string | null> {
+    const [row] = await this.#tx<{ id: string }[]>`SELECT id FROM task_tags WHERE task_id = ${taskId} AND tag_id = ${tagId}`;
+    return row?.id ?? null;
   }
 
   /** Serialises operations that must see each other's effects, such as moves that could form a cycle. */

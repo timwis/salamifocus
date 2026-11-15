@@ -3,7 +3,7 @@ import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import { organisationOperations } from './organisation.ts';
 import { Rejection } from './rejection.ts';
-import { tagOperations } from './tags.ts';
+import { addTaskTag, tagOperations } from './tags.ts';
 
 export interface OperationDefinition<A> {
   name: OperationName;
@@ -103,14 +103,7 @@ export const createTask: OperationDefinition<CreateTaskArgs> = {
     if (await mutations.exists('task', taskId)) throw new Rejection('already_exists', 'Something with that id already exists.');
     if (projectId !== null && !(await mutations.exists('project', projectId))) throw new Rejection('not_found', 'That project no longer exists.');
     await mutations.create('task', taskId, { title: normaliseTitle(title), project_id: projectId, position, created_at: createdAt });
-    const added = new Set<string>();
-    for (const { taskTagId, tagId } of tags) {
-      if (!(await mutations.exists('tag', tagId))) throw new Rejection('not_found', 'That tag no longer exists.');
-      if (await mutations.exists('task_tag', taskTagId)) throw new Rejection('already_exists', 'Something with that id already exists.');
-      if (added.has(tagId)) continue;
-      added.add(tagId);
-      await mutations.create('task_tag', taskTagId, { task_id: taskId, tag_id: tagId });
-    }
+    for (const link of tags) await addTaskTag(mutations, taskId, link);
   },
 };
 
