@@ -256,7 +256,6 @@ export function Sidebar({
               style={indent(depth)}
               onClick={(event) => onRowClick(event, index)}
               onDoubleClick={() => setEditing({ mode: 'rename', id: node.id })}
-              onFocus={(event) => event.target === event.currentTarget && setFocusedId(node.id)}
             >
               <span
                 className={isFolder ? `disclosure ${isCollapsed ? 'closed' : 'open'}` : 'disclosure'}

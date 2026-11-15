@@ -1,4 +1,5 @@
 import { useEffect, type KeyboardEvent } from 'react';
+import { flushSync } from 'react-dom';
 import { isTyping, useRovingFocus } from './focus.ts';
 import { Inbox } from './Inbox.tsx';
 import { goToPerspective, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
@@ -16,16 +17,26 @@ function focusCurrentRow(region: HTMLElement | null) {
 
 /**
  * Focuses the current row of a region straight away, so keys pressed next go
- * there. If the region is still rendering (just after switching perspective),
- * tries again after the next frame, unless the user has moved focus since.
+ * there. Tries again after the next frame in case that row was replaced as
+ * the region's data loaded, unless the user has moved focus since.
  */
 function focusRegion(region: Region) {
   const container = () => document.querySelector<HTMLElement>(`[data-region="${region}"]`);
   focusCurrentRow(container());
   const settled = document.activeElement;
   requestAnimationFrame(() => {
-    if (document.activeElement === settled && !container()?.contains(settled)) focusCurrentRow(container());
+    const active = document.activeElement;
+    const lost = !active || active === document.body || !active.isConnected;
+    if ((active === settled || lost) && !container()?.contains(active)) focusCurrentRow(container());
   });
+}
+
+/** Opens a perspective and puts focus in it (its sidebar if it has one), as the number keys do. */
+function switchTo(perspective: Perspective) {
+  // Render the new perspective now, so the focus below lands on its rows
+  // rather than on the old perspective's, which are about to disappear.
+  flushSync(() => goToPerspective(perspective));
+  focusRegion(perspective === 'projects' ? 'sidebar' : 'outline');
 }
 
 /**
@@ -59,12 +70,7 @@ export function Shell() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('mousedown', onMouseDown);
     };
-  });
-
-  function switchTo(perspective: Perspective) {
-    if (perspective !== place.perspective) goToPerspective(perspective);
-    focusRegion(perspective === 'projects' ? 'sidebar' : 'outline');
-  }
+  }, []);
 
   return (
     <div className="shell">

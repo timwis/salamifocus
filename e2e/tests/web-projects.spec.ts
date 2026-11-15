@@ -156,9 +156,13 @@ test('tasks are added to a project, retitled and reordered from the keyboard, an
   const titles = [`Measure the walls and ceiling ${run}`, `Buy dust sheets ${run}`, `Choose a colour ${run}`];
   await expect.poll(async () => (await server.projects([projectId]))[0]?.tasks.map((t) => t.title)).toEqual(titles);
 
+  // Switching perspective from inside one keeps the keys working in the next.
   await page.keyboard.press('1');
   await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
+  await expect(page.locator('main :focus')).toHaveCount(1);
   for (const title of titles) await expect(page.getByRole('main')).not.toContainText(title);
+  await page.keyboard.press('2');
+  await expect(treeItem(page, kitchen)).toBeFocused();
 });
 
 test('a task’s title and note are edited together; Tab keeps a change and Escape abandons one', async ({ page }) => {

@@ -173,7 +173,6 @@ export function Outline({
                 className="task-row"
                 tabIndex={isCurrent ? 0 : -1}
                 data-current={task.id === focused?.key || undefined}
-                onFocus={(event) => event.target === event.currentTarget && current.set(task.id)}
                 onClick={() => current.set(task.id)}
               >
                 <button
@@ -224,7 +223,6 @@ export function Outline({
                 data-key={key}
                 tabIndex={key === focused?.key && !editing ? 0 : -1}
                 data-current={key === focused?.key || undefined}
-                onFocus={(event) => event.target === event.currentTarget && current.set(key)}
                 onClick={() => current.set(key)}
               >
                 {group.heading}
