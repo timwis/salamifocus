@@ -1,6 +1,6 @@
 import { tagPathSeparator, type PlacedTag } from '@salamifocus/domain';
 import { useId, useState, type KeyboardEvent, type Ref } from 'react';
-import { tagsInOrder, type Tags } from '../tags/data.ts';
+import { tagsInOrder, type Tags } from '../tags/data.tsx';
 
 const maxSuggestions = 8;
 

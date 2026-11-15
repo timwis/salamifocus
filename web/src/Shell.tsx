@@ -5,6 +5,7 @@ import { Inbox } from './Inbox.tsx';
 import { goToPerspective, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
 import { ProjectsPerspective } from './projects/ProjectsPerspective.tsx';
 import { signOut } from './session.ts';
+import { TagsProvider } from './tags/data.tsx';
 import { TagsPerspective } from './tags/TagsPerspective.tsx';
 import { SyncState } from './SyncState.tsx';
 
@@ -84,13 +85,15 @@ export function Shell() {
       </header>
       <div className="regions" data-perspective={place.perspective}>
         <PerspectiveNav current={place.perspective} onBrowse={goToPerspective} onOpen={switchTo} />
-        {place.perspective === 'projects' ? (
-          <ProjectsPerspective place={place} />
-        ) : place.perspective === 'tags' ? (
-          <TagsPerspective place={place} />
-        ) : (
-          <Inbox />
-        )}
+        <TagsProvider>
+          {place.perspective === 'projects' ? (
+            <ProjectsPerspective place={place} />
+          ) : place.perspective === 'tags' ? (
+            <TagsPerspective place={place} />
+          ) : (
+            <Inbox />
+          )}
+        </TagsProvider>
       </div>
     </div>
   );

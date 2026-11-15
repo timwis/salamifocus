@@ -122,7 +122,8 @@ export function createApplication({ sql, clock = () => new Date() }: Application
    */
   async function tagged(tagId: string): Promise<TagOutline[]> {
     const tree = await tags();
-    const branch = tagBranch(tree, tagId).map((p) => p.tag.id);
+    const placed = tagBranch(tree, tagId);
+    const branch = placed.map((p) => p.tag.id);
     if (branch.length === 0) return [];
     const rows = await sql<{ id: string; title: string; note: string; projectId: string | null; tagId: string }[]>`
       SELECT t.id, t.title, t.note, t.project_id AS "projectId", tt.tag_id AS "tagId"
@@ -131,11 +132,11 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       ORDER BY t.created_at, t.id`;
     const tasks = new Map<string, TagOutline['tasks'][number]>();
     for (const { tagId: rowTag, ...task } of rows) {
-      const existing = tasks.get(task.id) ?? { ...task, tagIds: [] };
-      existing.tagIds.push(rowTag);
-      tasks.set(task.id, existing);
+      const existing = tasks.get(task.id);
+      if (existing) existing.tagIds.push(rowTag);
+      else tasks.set(task.id, { ...task, tagIds: [rowTag] });
     }
-    return groupByTag(tree, tagId, [...tasks.values()], (task) => task.tagIds).map(({ tag, path, tasks }) => ({
+    return groupByTag(placed, [...tasks.values()], (task) => task.tagIds).map(({ tag, path, tasks }) => ({
       tag: { id: tag.id, name: tag.name, path },
       tasks,
     }));

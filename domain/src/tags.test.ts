@@ -43,7 +43,7 @@ test('selecting a tag groups tasks under each matching tag in its branch, skippi
     { id: 'write report', tags: ['deep'] },
     { id: 'call mum', tags: ['people'] },
   ];
-  const groups = groupByTag(buildTagTree(tags), 'computer', tasks, (t) => t.tags);
+  const groups = groupByTag(tagBranch(buildTagTree(tags), 'computer'), tasks, (t) => t.tags);
 
   assert.deepEqual(
     groups.map((g) => [g.path.join(' : '), g.tasks.map((t) => t.id)]),

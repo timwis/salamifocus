@@ -4,7 +4,7 @@ import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
 import { TreeSidebar, type NewItemKind } from '../sidebar/TreeSidebar.tsx';
 import { createTag, moveTag, renameTag } from '../writes.ts';
-import { useTags, useTaskTags } from './data.ts';
+import { useTags, useTaskTags } from './data.tsx';
 
 const newKinds: NewItemKind[] = [{ kind: 'tag', key: 'N', button: 'Tag', name: 'tag' }];
 
@@ -25,15 +25,16 @@ export function TagsPerspective({ place }: { place: Place }) {
   const tags = useTags();
   const taskTags = useTaskTags();
   const selected = place.selection[0] ?? null;
-  const branch = selected ? tagBranch(tags.tree, selected).map((p) => p.tag.id) : [];
+  const branch = selected ? tagBranch(tags.tree, selected) : [];
+  const branchIds = branch.map((p) => p.tag.id);
   const { data: tasks } = useQuery<TaskRow>(
     `SELECT t.id, t.title, t.note, t.position, p.name AS project_name
      FROM tasks t LEFT JOIN projects p ON p.id = t.project_id
-     WHERE t.completed_at IS NULL AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN (${branch.map(() => '?').join(', ')}))
+     WHERE t.completed_at IS NULL AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN (${branchIds.map(() => '?').join(', ')}))
      ORDER BY t.created_at, t.id`,
-    branch,
+    branchIds,
   );
-  const groups: OutlineGroup[] = groupByTag(tags.tree, selected ?? '', tasks, (task) => taskTags.get(task.id) ?? []).map(
+  const groups: OutlineGroup[] = groupByTag(branch, tasks, (task) => taskTags.get(task.id) ?? []).map(
     ({ tag, path, tasks }) => ({
       id: tag.id,
       heading: path.join(tagPathSeparator),
@@ -44,7 +45,7 @@ export function TagsPerspective({ place }: { place: Place }) {
     }),
   );
   // With nothing in the branch, the selected tag still gets a heading, so tasks can be added to it.
-  const [selectedTag] = selected ? tagBranch(tags.tree, selected) : [];
+  const [selectedTag] = branch;
   if (groups.length === 0 && selectedTag) {
     const { tag, path } = selectedTag;
     groups.push({ id: tag.id, heading: path.join(tagPathSeparator), newTask: { projectId: null, tagId: tag.id }, ordered: false, tasks: [] });

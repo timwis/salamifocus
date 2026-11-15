@@ -30,7 +30,9 @@ export function buildTagTree(tags: readonly TagRecord[]): TagNode[] {
   const children = new Map<string | null, TagRecord[]>();
   for (const tag of tags) {
     const key = tag.parentId !== null && ids.has(tag.parentId) ? tag.parentId : null;
-    children.set(key, [...(children.get(key) ?? []), tag]);
+    const siblings = children.get(key);
+    if (siblings) siblings.push(tag);
+    else children.set(key, [tag]);
   }
   const visited = new Set<string>();
   const node = (tag: TagRecord): TagNode => {
@@ -80,12 +82,13 @@ export interface TagGroup<T> extends PlacedTag {
 }
 
 /**
- * What selecting a tag shows: one group per tag in its branch that has
- * tasks, in sidebar order. A task carrying several tags in the branch
- * appears under each of them; every appearance is the same task.
+ * What selecting a tag shows: one group per tag in its branch (from
+ * `tagBranch`) that has tasks, in sidebar order. A task carrying several
+ * tags in the branch appears under each of them; every appearance is the
+ * same task.
  */
-export function groupByTag<T>(tree: readonly TagNode[], tagId: string, tasks: readonly T[], tagsOf: (task: T) => readonly string[]): TagGroup<T>[] {
-  return tagBranch(tree, tagId)
+export function groupByTag<T>(branch: readonly PlacedTag[], tasks: readonly T[], tagsOf: (task: T) => readonly string[]): TagGroup<T>[] {
+  return branch
     .map((p) => ({ ...p, tasks: tasks.filter((task) => tagsOf(task).includes(p.tag.id)) }))
     .filter((group) => group.tasks.length > 0);
 }

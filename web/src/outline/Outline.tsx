@@ -1,7 +1,7 @@
 import { normaliseTitle, positionAt, positionBetween, tagPathSeparator, titleProblem } from '@salamifocus/domain';
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
-import { tagsInOrder, useTags, useTaskTags } from '../tags/data.ts';
+import { tagsInOrder, useTags, useTaskTags } from '../tags/data.tsx';
 import { completeTask, createTask, reorderTask } from '../writes.ts';
 import { TaskEditor, type Field } from './TaskEditor.tsx';
 
