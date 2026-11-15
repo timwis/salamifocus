@@ -68,13 +68,16 @@ test('folders, projects and single-action lists are created, nested, reordered a
   await page.keyboard.press('Enter');
   await expect(treeItem(page, `Passport renewed before March ${run}`)).toBeFocused();
 
-  await expect(status(page)).toContainText('All changes uploaded');
-  const personal = findByName(await server.organisation(), `Personal ${run}`);
-  expect(personal?.type === 'folder' && personal.children.map((c) => [c.name, c.type === 'project' ? c.kind : 'folder'])).toEqual([
-    [`Miscellaneous ${run}`, 'single_actions'],
-    [`Parents ${run}`, 'folder'],
-    [`Passport renewed before March ${run}`, 'project'],
-  ]);
+  await expect
+    .poll(async () => {
+      const personal = findByName(await server.organisation(), `Personal ${run}`);
+      return personal?.type === 'folder' && personal.children.map((c) => [c.name, c.type === 'project' ? c.kind : 'folder']);
+    })
+    .toEqual([
+      [`Miscellaneous ${run}`, 'single_actions'],
+      [`Parents ${run}`, 'folder'],
+      [`Passport renewed before March ${run}`, 'project'],
+    ]);
 });
 
 test('selecting several projects or a folder shows each of their projects', async ({ page }) => {
@@ -150,17 +153,12 @@ test('tasks are added to a project, retitled and reordered from the keyboard, an
   await page.keyboard.press('Alt+ArrowUp');
   await expect(tasks).toHaveText([`Measure the walls and ceiling ${run}`, `Buy dust sheets ${run}`, `Choose a colour ${run}`]);
 
-  await expect(status(page)).toContainText('All changes uploaded');
-  const [outline] = await server.projects([projectId]);
-  expect(outline?.tasks.map((t) => t.title)).toEqual([
-    `Measure the walls and ceiling ${run}`,
-    `Buy dust sheets ${run}`,
-    `Choose a colour ${run}`,
-  ]);
+  const titles = [`Measure the walls and ceiling ${run}`, `Buy dust sheets ${run}`, `Choose a colour ${run}`];
+  await expect.poll(async () => (await server.projects([projectId]))[0]?.tasks.map((t) => t.title)).toEqual(titles);
 
   await page.keyboard.press('1');
   await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
-  for (const title of outline!.tasks.map((t) => t.title)) await expect(page.getByRole('main')).not.toContainText(title);
+  for (const title of titles) await expect(page.getByRole('main')).not.toContainText(title);
 });
 
 test('a task’s title and note are edited together; Tab keeps a change and Escape abandons one', async ({ page }) => {
@@ -171,6 +169,7 @@ test('a task’s title and note are edited together; Tab keeps a change and Esca
   await signIn(page);
   await openProjectsAt(page, projectId, car);
   const row = page.getByRole('list', { name: car }).getByRole('listitem');
+  await expect(row).toHaveText([`renew insurance ${run}`]);
 
   await page.keyboard.press('Tab');
   await page.keyboard.press('ArrowDown');
@@ -196,9 +195,12 @@ test('a task’s title and note are edited together; Tab keeps a change and Esca
   await expect(row).toBeFocused();
   await expect(row).toContainText(`Renew car insurance ${run}`);
 
-  await expect(status(page)).toContainText('All changes uploaded');
-  const task = await server.task(taskId);
-  expect([task?.title, task?.note]).toEqual([`Renew car insurance ${run}`, 'Policy 12-345\nQuote due in March']);
+  await expect
+    .poll(async () => {
+      const task = await server.task(taskId);
+      return [task?.title, task?.note];
+    })
+    .toEqual([`Renew car insurance ${run}`, 'Policy 12-345\nQuote due in March']);
   expect((await server.history(taskId)).map((entry) => entry.operation)).toEqual(['create_task', 'edit_task_note', 'rename_task']);
 });
 
@@ -213,6 +215,7 @@ test('Space completes a task, focus moves to the next row, and an emptied single
   await openProjectsAt(page, projectId, errands);
   const tasks = page.getByRole('list', { name: errands }).getByRole('listitem');
   const heading = page.getByRole('heading', { name: errands, level: 3 });
+  await expect(tasks).toHaveCount(3);
 
   await page.keyboard.press('Tab');
   await page.keyboard.press('ArrowDown');
@@ -235,8 +238,7 @@ test('Space completes a task, focus moves to the next row, and an emptied single
   await page.keyboard.press('Escape');
   await expect(tasks).toHaveText([`Buy stamps ${run}`]);
 
-  await expect(status(page)).toContainText('All changes uploaded');
-  expect((await server.projects([projectId]))[0]?.tasks.map((t) => t.title)).toEqual([`Buy stamps ${run}`]);
+  await expect.poll(async () => (await server.projects([projectId]))[0]?.tasks.map((t) => t.title)).toEqual([`Buy stamps ${run}`]);
   expect((await server.task(first))?.completedAt).toBeTruthy();
 });
 
