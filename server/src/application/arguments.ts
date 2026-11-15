@@ -43,11 +43,16 @@ export function optionalText(args: Record<string, unknown>, key: string): string
   return args[key] === undefined ? undefined : text(args, key);
 }
 
+// A full ISO 8601 date and time with its zone, so it names one moment wherever the server runs.
+const isoInstant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/i;
+
 /** A time or null (to clear it). Unlike `timestamp`, an unreadable time is refused rather than replaced. */
 export function nullableTime(args: Record<string, unknown>, key: string): string | null {
   const value = args[key];
   if (value === null) return null;
-  const parsed = typeof value === 'string' ? new Date(value) : null;
-  if (!parsed || Number.isNaN(parsed.getTime())) throw new Rejection('invalid_arguments', `${key} must be a time, or null for none.`);
+  const parsed = typeof value === 'string' && isoInstant.test(value) ? new Date(value) : null;
+  if (!parsed || Number.isNaN(parsed.getTime())) {
+    throw new Rejection('invalid_arguments', `${key} must be an ISO 8601 time with a zone, such as 2026-11-30T09:00:00Z, or null for none.`);
+  }
   return parsed.toISOString();
 }

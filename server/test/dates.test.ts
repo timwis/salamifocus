@@ -82,12 +82,19 @@ describe('defer and due dates', () => {
     assert.equal(await defer(task, null), 'applied');
     assert.deepEqual(await unavailable(task), []);
     assert.equal(await defer(task, 'next tuesday'), 'invalid_arguments');
+    // Only a full time with its zone names one moment.
+    for (const loose of ['1', '2026-11-30', '2026-11-30 09:00', '2026-11-30T09:00:00']) {
+      assert.equal(await defer(task, loose), 'invalid_arguments', loose);
+    }
+    assert.equal(await defer(task, '2026-11-30T09:00:00+01:00'), 'applied');
+    assert.equal((await h.application.task(task))?.deferUntil, '2026-11-30T08:00:00.000Z');
+    assert.equal(await defer(task, null), 'applied');
     assert.equal(await defer(crypto.randomUUID(), null), 'not_found');
 
     const history = await h.application.history(task);
     assert.deepEqual(
       history.filter((e) => e.operation === OperationName.deferTask).map((e) => e.changes[0]?.after),
-      [{ defer_until: '2026-11-30T00:00:00.000Z' }, { defer_until: null }],
+      [{ defer_until: '2026-11-30T00:00:00.000Z' }, { defer_until: null }, { defer_until: '2026-11-30T08:00:00.000Z' }, { defer_until: null }],
     );
   });
 
