@@ -1,9 +1,9 @@
 import { useQuery } from '@powersync/react';
-import { outlineTasks, ProjectStatus, projectsInSelection, pruneOutline, shownUnder, Visibility } from '@salamifocus/domain';
+import { outlineTasks, ProjectStatus, projectsInSelection, pruneOutline, shownUnder, visibilityCondition, Visibility } from '@salamifocus/domain';
 import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
-import { taskStateColumns, taskUnavailability, unfinishedUnless, type TaskState } from '../queries.ts';
+import { taskStateColumns, taskUnavailability, type TaskState } from '../queries.ts';
 import { useOrganisation } from './data.tsx';
 import { Sidebar } from './Sidebar.tsx';
 
@@ -23,7 +23,7 @@ export function ProjectsPerspective({ place }: { place: Place }) {
   const visibility = place.visibility ?? Visibility.remaining;
   const { data: tasks } = useQuery<TaskRow>(
     `SELECT t.id, t.title, t.note, t.project_id, t.parent_id, t.position, ${taskStateColumns}
-     FROM tasks t WHERE t.project_id IN (${ids.map(() => '?').join(', ')}) AND ${unfinishedUnless(visibility)}`,
+     FROM tasks t WHERE t.project_id IN (${ids.map(() => '?').join(', ')}) AND ${visibilityCondition(visibility)}`,
     ids,
   );
   const { data: projectDates } = useQuery<{ id: string; defer_until: string | null; due_at: string | null }>(

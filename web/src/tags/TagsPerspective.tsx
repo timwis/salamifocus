@@ -1,9 +1,9 @@
 import { useQuery } from '@powersync/react';
-import { groupByTag, shownUnder, tagBranch, tagPathSeparator, Visibility, type TagNode } from '@salamifocus/domain';
+import { groupByTag, shownUnder, tagBranch, tagPathSeparator, visibilityCondition, Visibility, type TagNode } from '@salamifocus/domain';
 import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
-import { taskStateColumns, taskUnavailability, unfinishedUnless, type TaskState } from '../queries.ts';
+import { taskStateColumns, taskUnavailability, type TaskState } from '../queries.ts';
 import { TreeSidebar, type NewItemKind } from '../sidebar/TreeSidebar.tsx';
 import { createTag, moveTag, renameTag } from '../writes.ts';
 import { useTags, useTaskTags } from './data.tsx';
@@ -34,7 +34,7 @@ export function TagsPerspective({ place }: { place: Place }) {
   const { data: tasks } = useQuery<TaskRow>(
     `SELECT t.id, t.title, t.note, t.position, t.project_id, p.name AS project_name, ${taskStateColumns}
      FROM tasks t LEFT JOIN projects p ON p.id = t.project_id
-     WHERE ${unfinishedUnless(visibility)} AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN (${branchIds.map(() => '?').join(', ')}))
+     WHERE ${visibilityCondition(visibility)} AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN (${branchIds.map(() => '?').join(', ')}))
      ORDER BY t.created_at, t.id`,
     branchIds,
   );

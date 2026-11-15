@@ -14,6 +14,7 @@ import {
   shownUnder,
   tagBranch,
   unavailability,
+  visibilityCondition,
   Visibility,
   type OrganisationNode,
   type TagNode,
@@ -57,8 +58,8 @@ const dueBy = (sql: Sql) => sql.unsafe(dueByColumn);
 /** The status of a task's (aliased `t`) project, or null when it has none. */
 const projectStatus = (sql: Sql) => sql.unsafe(projectStatusColumn);
 
-/** Limits tasks (aliased `t`) to unfinished ones, except under Everything, which shows completed tasks too. */
-const unfinishedUnless = (sql: Sql, visibility: Visibility) => sql.unsafe(visibility === Visibility.everything ? 'TRUE' : 't.completed_at IS NULL');
+/** Limits tasks (aliased `t`) to unfinished ones, except under Everything, as the clients do. */
+const unfinishedUnless = (sql: Sql, visibility: Visibility) => sql.unsafe(visibilityCondition(visibility));
 
 /**
  * The application's public operations and queries. Every adapter (the sync

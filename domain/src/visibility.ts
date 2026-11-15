@@ -26,3 +26,6 @@ export function shownUnder(visibility: Visibility, unavailable: readonly Unavail
   if (visibility === Visibility.remaining) return !unavailable.includes('completed');
   return true;
 }
+
+/** SQL limiting tasks (aliased `t`) to unfinished ones, except under Everything, which shows completed tasks too. */
+export const visibilityCondition = (visibility: Visibility): string => (visibility === Visibility.everything ? 'TRUE' : 't.completed_at IS NULL');
