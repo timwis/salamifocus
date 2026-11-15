@@ -229,10 +229,14 @@ test('C captures to the Inbox from any perspective and puts focus back where it 
   const phone = await SimulatedDevice.signIn();
   const shed = `Shed ${run}-capture`;
   const { projectId } = await phone.createProject(shed, { position: 'Zw' });
+  const garage = `Garage ${run}-capture`;
+  await phone.createProject(garage, { position: 'Zwk' });
   await signIn(page);
   await page.goto(`/projects/${projectId}`);
   await page.keyboard.press('2');
-  const project = page.getByRole('tree', { name: 'Folders and projects' }).getByRole('treeitem', { name: shed, exact: true });
+  const projectItem = (name: string) => page.getByRole('tree', { name: 'Folders and projects' }).getByRole('treeitem', { name, exact: true });
+  const project = projectItem(shed);
+  const captureBox = page.getByRole('dialog', { name: 'Capture to Inbox' });
   await expect(project).toBeFocused();
 
   await page.keyboard.press('c');
@@ -252,10 +256,28 @@ test('C captures to the Inbox from any perspective and puts focus back where it 
   await page.keyboard.press('Escape');
   await expect(project).toBeFocused();
 
+  // The button while the box is open changes nothing, so focus still goes back to the sidebar.
+  await page.keyboard.press('c');
+  await page.getByRole('button', { name: '+ Capture' }).click();
+  await expect(page.getByRole('textbox', { name: 'Capture', exact: true })).toBeFocused();
+  await page.keyboard.type(`wax the bench ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(project).toBeFocused();
+
+  // Clicking elsewhere saves what was typed and leaves focus on what was clicked.
+  await page.keyboard.press('c');
+  await page.keyboard.type(`sand the door ${run}`);
+  await projectItem(garage).click();
+  await expect(captureBox).toBeHidden();
+  await expect(projectItem(garage)).toBeFocused();
+
   await page.keyboard.press('1');
   const titles = inbox(page).getByRole('listitem').getByRole('button', { name: new RegExp(`${run}$`) });
   await expect(inbox(page).getByRole('button', { name: `oil the hinges ${run}`, exact: true })).toBeVisible();
   await expect(inbox(page).getByRole('button', { name: `buy creosote ${run}`, exact: true })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: `wax the bench ${run}`, exact: true })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: `sand the door ${run}`, exact: true })).toBeVisible();
   await expect(titles.filter({ hasText: 'never mind' })).toHaveCount(0);
 
   const uploaded = async () => (await server.inbox()).find((e) => e.title === `oil the hinges ${run}`)?.id;

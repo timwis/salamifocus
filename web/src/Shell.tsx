@@ -50,17 +50,22 @@ function switchTo(perspective: Perspective) {
 export function Shell() {
   const place = usePlace();
   const [capturing, setCapturing] = useState(false);
-  // Where focus was before capturing, to return to afterwards.
+  // Where focus was before capturing, to return to afterwards; null while not capturing.
   const returnTo = useRef<Element | null>(null);
 
   function startCapture() {
-    returnTo.current = document.activeElement;
+    // Already open (the button keeps focus in the box): keep the original place to return to.
+    if (returnTo.current) return;
+    returnTo.current = document.activeElement ?? document.body;
     setCapturing(true);
   }
 
-  function endCapture() {
+  /** Closes the capture box, putting focus back where it was unless the user has already moved it elsewhere. */
+  function endCapture(focusMoved: boolean) {
     flushSync(() => setCapturing(false));
     const previous = returnTo.current;
+    returnTo.current = null;
+    if (focusMoved) return;
     if (previous instanceof HTMLElement && previous.isConnected && previous !== document.body) previous.focus();
     else focusRegion(place.perspective === 'inbox' ? 'outline' : 'sidebar');
   }
