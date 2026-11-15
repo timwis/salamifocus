@@ -31,4 +31,5 @@ test('only well-formed sort keys are accepted', () => {
   assert.notEqual(positionProblem(''), null);
   assert.notEqual(positionProblem('a10'), null);
   assert.notEqual(positionProblem('!'), null);
+  for (const malformed of ['a0!', 'a0 ', 'a0~x', 'a1é']) assert.notEqual(positionProblem(malformed), null, malformed);
 });

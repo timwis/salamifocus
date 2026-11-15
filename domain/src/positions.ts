@@ -23,6 +23,8 @@ export function comparePositions(a: Positioned, b: Positioned): number {
 /** Returns a reason the position is not a usable sort key, or null if it is fine. */
 export function positionProblem(position: string): string | null {
   if (position.length === 0 || position.length > 200) return 'A position must be a short sort key.';
+  // The library checks only how a key starts; keys are made of base-62 digits throughout.
+  if (!/^[0-9A-Za-z]+$/.test(position)) return 'A position must be a valid sort key.';
   try {
     generateKeyBetween(position, null);
     return null;
