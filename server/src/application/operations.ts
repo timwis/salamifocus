@@ -69,9 +69,8 @@ export interface CreateTaskArgs {
 }
 
 /**
- * Adds a task, with any tags, as one operation. A task added to a project or
- * single-action list never passes through the Inbox; one added without a
- * project (from a tag, say) waits there until it has one.
+ * Adds a task, with any tags, as one operation. Like any task, it waits in
+ * the Inbox until it has both a project and a tag.
  */
 export const createTask: OperationDefinition<CreateTaskArgs> = {
   name: OperationName.createTask,

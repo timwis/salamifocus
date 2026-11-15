@@ -2,8 +2,10 @@ import { operationMetadata, OperationName, positionBetween, ProjectKind, titleFr
 import type { Transaction } from '@powersync/web';
 import { db } from './powersync.ts';
 
-// Every local write is one logical operation: its rows are written in one
-// transaction, each tagged with the operation, and uploaded when online.
+// Every local write is a logical operation: its rows are written in one
+// transaction, each tagged with the operation, and uploaded when online. A
+// transaction can hold more than one operation when they belong together,
+// such as creating a project and moving a task into it.
 
 async function write(op: OperationName, sql: string, params: (metadata: string) => unknown[]): Promise<void> {
   const metadata = operationMetadata(op);
