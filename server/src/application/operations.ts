@@ -153,6 +153,24 @@ export const completeTask: OperationDefinition<CompleteTaskArgs> = {
   },
 };
 
+export interface DeferTaskArgs {
+  taskId: string;
+  /** When the task comes back to attention, or null to stop deferring it. */
+  deferUntil: string | null;
+}
+
+/** Sets when a task (and every task beneath it) becomes available again. Separate from any due date. */
+export const deferTask: OperationDefinition<DeferTaskArgs> = {
+  name: OperationName.deferTask,
+  parse(input) {
+    const a = args.record(input);
+    return { taskId: args.uuid(a, 'taskId'), deferUntil: args.nullableTime(a, 'deferUntil') };
+  },
+  async apply(mutations, { taskId, deferUntil }) {
+    await mutations.update('task', taskId, { defer_until: deferUntil });
+  },
+};
+
 export interface ReorderTaskArgs {
   taskId: string;
   position: string;
@@ -210,7 +228,7 @@ export const moveTask: OperationDefinition<MoveTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, deferTask, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

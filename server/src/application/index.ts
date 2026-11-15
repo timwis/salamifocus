@@ -1,6 +1,7 @@
 import {
   buildTagTree,
   buildTree,
+  deferredUntilColumn,
   groupByTag,
   inboxCondition,
   outlineTasks,
@@ -40,6 +41,9 @@ export type Application = ReturnType<typeof createApplication>;
 /** How many of a task's children (aliased `t`) are unfinished, which is what makes it blocked. The web client counts them the same way, in web/src/queries.ts. */
 const unfinishedChildren = (sql: Sql) =>
   sql`(SELECT count(*) FROM tasks c WHERE c.parent_id = t.id AND c.completed_at IS NULL)::int AS "unfinishedChildren"`;
+
+/** The latest defer date among a task (aliased `t`) and the tasks it is beneath, as the clients work it out. */
+const deferredUntil = (sql: Sql) => sql.unsafe(deferredUntilColumn);
 
 /**
  * The application's public operations and queries. Every adapter (the sync
@@ -142,16 +146,29 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     const placed = tagBranch(tree, tagId);
     const branch = placed.map((p) => p.tag.id);
     if (branch.length === 0) return [];
-    const rows = await sql<{ id: string; title: string; note: string; projectId: string | null; tagId: string; unfinishedChildren: number }[]>`
-      SELECT t.id, t.title, t.note, t.project_id AS "projectId", tt.tag_id AS "tagId", ${unfinishedChildren(sql)}
+    const now = clock();
+    const rows = await sql<
+      {
+        id: string;
+        title: string;
+        note: string;
+        projectId: string | null;
+        deferUntil: string | null;
+        tagId: string;
+        unfinishedChildren: number;
+        deferredUntil: string | null;
+      }[]
+    >`
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.defer_until AS "deferUntil", tt.tag_id AS "tagId",
+             ${unfinishedChildren(sql)}, ${deferredUntil(sql)}
       FROM tasks t JOIN task_tags tt ON tt.task_id = t.id
       WHERE t.completed_at IS NULL AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN ${sql(branch)})
       ORDER BY t.created_at, t.id`;
     const tasks = new Map<string, TagOutline['tasks'][number]>();
-    for (const { tagId: rowTag, unfinishedChildren, ...task } of rows) {
+    for (const { tagId: rowTag, unfinishedChildren, deferredUntil, ...task } of rows) {
       const existing = tasks.get(task.id);
       if (existing) existing.tagIds.push(rowTag);
-      else tasks.set(task.id, { ...task, tagIds: [rowTag], unavailable: unavailability({ completedAt: null, unfinishedChildren }) });
+      else tasks.set(task.id, { ...task, tagIds: [rowTag], unavailable: unavailability({ completedAt: null, unfinishedChildren, deferredUntil }, now) });
     }
     return groupByTag(placed, [...tasks.values()], (task) => task.tagIds).map(({ tag, path, tasks }) => ({
       tag: { id: tag.id, name: tag.name, path },
@@ -167,10 +184,22 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   async function projects(selection: string[]): Promise<ProjectOutline[]> {
     const selected = projectsInSelection(await organisation(), selection);
     if (selected.length === 0) return [];
+    const now = clock();
     const rows = await sql<
-      { id: string; title: string; note: string; projectId: string; parentId: string | null; position: string | null; unfinishedChildren: number }[]
+      {
+        id: string;
+        title: string;
+        note: string;
+        projectId: string;
+        parentId: string | null;
+        position: string | null;
+        deferUntil: string | null;
+        unfinishedChildren: number;
+        deferredUntil: string | null;
+      }[]
     >`
-      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.parent_id AS "parentId", t.position, ${unfinishedChildren(sql)}
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.parent_id AS "parentId", t.position, t.defer_until AS "deferUntil",
+             ${unfinishedChildren(sql)}, ${deferredUntil(sql)}
       FROM tasks t WHERE t.project_id IN ${sql(selected.map((p) => p.id))} AND t.completed_at IS NULL`;
     return selected.map((project) => ({
       project: { id: project.id, name: project.name, kind: project.kind },
@@ -180,7 +209,8 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         note: task.note,
         parentId,
         depth,
-        unavailable: unavailability({ completedAt: null, unfinishedChildren: task.unfinishedChildren }),
+        deferUntil: task.deferUntil,
+        unavailable: unavailability({ completedAt: null, unfinishedChildren: task.unfinishedChildren, deferredUntil: task.deferredUntil }, now),
       })),
     }));
   }
@@ -188,8 +218,8 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   async function task(id: string): Promise<TaskView | null> {
     const [[row], tagRows, tree] = await Promise.all([
       sql`
-        SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.parent_id, t.completed_at, c.id AS capture_id, c.text, c.captured_at,
-               ${unfinishedChildren(sql)}
+        SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.parent_id, t.completed_at, t.defer_until, c.id AS capture_id, c.text, c.captured_at,
+               ${unfinishedChildren(sql)}, ${deferredUntil(sql)}
         FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
         WHERE t.id = ${id}::uuid`,
       sql<{ tag_id: string }[]>`SELECT tag_id FROM task_tags WHERE task_id = ${id}::uuid`,
@@ -205,7 +235,11 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       projectId: row.project_id,
       parentId: row.parent_id,
       completedAt: row.completed_at,
-      unavailable: unavailability({ completedAt: row.completed_at, unfinishedChildren: row.unfinishedChildren }),
+      deferUntil: row.defer_until,
+      unavailable: unavailability(
+        { completedAt: row.completed_at, unfinishedChildren: row.unfinishedChildren, deferredUntil: row.deferredUntil },
+        clock(),
+      ),
       tags: placedTags(tree)
         .filter((p) => tagIds.has(p.tag.id))
         .map((p) => ({ id: p.tag.id, name: p.tag.name, path: p.path })),

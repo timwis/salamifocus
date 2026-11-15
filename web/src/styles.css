@@ -307,6 +307,43 @@ button.check:hover {
   display: grid;
   gap: 0.15rem;
 }
+/* Defer and due dates, typed in words, each with the date it resolves to */
+.date-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.1rem 0.4rem;
+}
+.date-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.date-field input {
+  font: inherit;
+  font-size: 0.85rem;
+  width: 9rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  background: transparent;
+  outline: none;
+}
+.date-field input:focus {
+  border-color: var(--accent);
+  background: #fff;
+}
+.date-field input[aria-invalid='true'] {
+  border-color: #b00020;
+}
+.resolved {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.resolved.invalid {
+  color: #b00020;
+}
 .note-field {
   font: inherit;
   font-size: 0.9rem;
@@ -402,8 +439,14 @@ nav:focus-within a[aria-current='page'] {
   color: #9a5b00;
   line-height: 1.35rem;
 }
-/* A blocked task is waiting on a prerequisite, so it reads as not yet actionable. */
-.task-row[data-unavailable~='blocked'] .task-title {
+.task-date {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.35rem;
+}
+/* A blocked or deferred task reads as not yet actionable. */
+.task-row[data-unavailable~='blocked'] .task-title,
+.task-row[data-unavailable~='deferred'] .task-title {
   color: var(--muted);
 }
 .tag-chip,

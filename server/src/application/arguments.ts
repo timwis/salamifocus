@@ -42,3 +42,12 @@ export function nullableUuid(args: Record<string, unknown>, key: string): string
 export function optionalText(args: Record<string, unknown>, key: string): string | undefined {
   return args[key] === undefined ? undefined : text(args, key);
 }
+
+/** A time or null (to clear it). Unlike `timestamp`, an unreadable time is refused rather than replaced. */
+export function nullableTime(args: Record<string, unknown>, key: string): string | null {
+  const value = args[key];
+  if (value === null) return null;
+  const parsed = typeof value === 'string' ? new Date(value) : null;
+  if (!parsed || Number.isNaN(parsed.getTime())) throw new Rejection('invalid_arguments', `${key} must be a time, or null for none.`);
+  return parsed.toISOString();
+}

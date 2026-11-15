@@ -96,6 +96,12 @@ export class SimulatedDevice {
     ]);
   }
 
+  async defer(taskId: string, deferUntil: string | null): Promise<void> {
+    await this.upload([
+      { op: 'PATCH', table: 'tasks', id: taskId, data: { defer_until: deferUntil }, metadata: operationMetadata(OperationName.deferTask) },
+    ]);
+  }
+
   async createTag(name: string, options: { parentId?: string; position?: string } = {}): Promise<{ tagId: string }> {
     const tagId = crypto.randomUUID();
     await this.upload([

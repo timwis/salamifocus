@@ -224,6 +224,20 @@ describe('uploading a client transaction', () => {
     assert.deepEqual(outline?.tasks.map((t) => [t.title, t.depth]), [['Compile the report', 1], ['Email Steve', 2], ['Find the document', 3]]);
   });
 
+  it('defers a task and clears its defer date, and refuses a defer that changes anything else', async () => {
+    const { taskId, entries } = captureTransaction('chase the insurer');
+    await upload(entries);
+    const defer = (data: Record<string, unknown>) => ({ op: 'PATCH', table: 'tasks', id: taskId, data, metadata: operationMetadata(OperationName.deferTask) });
+
+    // PowerSync sends the time as the client stored it.
+    assert.deepEqual((await upload([defer({ defer_until: '2026-11-30T00:00:00.000Z' })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.task(taskId))?.deferUntil, '2026-11-30T00:00:00.000Z');
+    assert.deepEqual((await upload([defer({ defer_until: null })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.task(taskId))?.deferUntil, null);
+    const [rejected] = await upload([defer({ defer_until: '2026-11-30T00:00:00.000Z', title: 'something else' })]);
+    assert.equal(rejected?.code, 'malformed_operation');
+  });
+
   it('moves a task with its children, the client sending its own copy of their move', async () => {
     const [from, to] = [crypto.randomUUID(), crypto.randomUUID()];
     const [parent, child] = [crypto.randomUUID(), crypto.randomUUID()];

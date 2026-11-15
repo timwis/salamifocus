@@ -24,6 +24,7 @@ export const schema = new Schema({
       position: column.text,
       note: column.text,
       completed_at: column.text,
+      defer_until: column.text,
     },
     { ...synced, indexes: { parent: ['parent_id'] } },
   ),

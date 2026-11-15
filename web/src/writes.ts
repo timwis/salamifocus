@@ -46,6 +46,11 @@ export function completeTask(taskId: string) {
   ]);
 }
 
+/** Defers a task (and the tasks beneath it) until a time, or with null stops deferring it. */
+export function deferTask(taskId: string, deferUntil: string | null) {
+  return write(OperationName.deferTask, 'UPDATE tasks SET defer_until = ?, _metadata = ? WHERE id = ?', (m) => [deferUntil, m, taskId]);
+}
+
 export function reorderTask(taskId: string, position: string) {
   return write(OperationName.reorderTask, 'UPDATE tasks SET position = ?, _metadata = ? WHERE id = ?', (m) => [position, m, taskId]);
 }

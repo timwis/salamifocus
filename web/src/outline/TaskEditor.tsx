@@ -3,7 +3,8 @@ import { normaliseNote, normaliseTitle, titleFromCapture, titleProblem } from '@
 import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { useFolders, useProjects } from '../projects/data.tsx';
 import type { Tags } from '../tags/data.tsx';
-import { createProjectForTask, editTaskNote, moveTask, renameTask, tagTask, untagTask } from '../writes.ts';
+import { createProjectForTask, deferTask, editTaskNote, moveTask, renameTask, tagTask, untagTask } from '../writes.ts';
+import { DateField, dateFieldMeaning, dateText } from './DateField.tsx';
 import { ProjectField, type NewProject } from './ProjectField.tsx';
 import { TagsField } from './TagsField.tsx';
 
@@ -13,11 +14,20 @@ export interface EditableTask {
   note: string | null;
   projectId: string | null;
   tagIds: readonly string[];
+  deferUntil?: string | null;
 }
 
-export type Field = 'title' | 'project' | 'tags' | 'note';
+type DateFieldName = 'defer';
 
-const fieldOrder: Field[] = ['title', 'project', 'tags', 'note'];
+export type Field = 'title' | 'project' | 'tags' | DateFieldName | 'note';
+
+const fieldOrder: Field[] = ['title', 'project', 'tags', 'defer', 'note'];
+
+const dateFields: Record<DateFieldName, { label: string; placeholder: string; write: (taskId: string, value: string | null) => Promise<void> }> = {
+  defer: { label: 'Defer until', placeholder: 'Defer', write: deferTask },
+};
+
+const sameTime = (a: string | null, b: string | null) => (a === null || b === null ? a === b : Date.parse(a) === Date.parse(b));
 
 // Written on closing rather than on leaving the field: either can take the task, and this editor, out of the
 // outline (out of the Inbox once it has both, or out of the selected project or tag).
@@ -25,7 +35,7 @@ const savedOnClose = new Set<Field>(['project', 'tags']);
 
 /**
  * Edits a task in place. Each field's change is kept when the user leaves it
- * (the title and note are saved then, the project and tags on closing), so
+ * (the title, dates and note are saved then, the project and tags on closing), so
  * Tab moves on with the change kept, and Escape abandons only the field being
  * edited. Leaving the editor (Enter in the title or an empty project or tags
  * field, Cmd/Ctrl+Enter in the note, or focus moving elsewhere) closes it.
@@ -36,6 +46,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
   const [projectId, setProjectId] = useState(task.projectId);
   const [newProject, setNewProject] = useState<NewProject | null>(null);
   const [tagIds, setTagIds] = useState<string[]>([...task.tagIds]);
+  const [dates, setDates] = useState<Record<DateFieldName, string>>(() => ({ defer: dateText(task.deferUntil ?? null, 'defer') }));
   const [problem, setProblem] = useState<string | null>(null);
   const projects = useProjects();
   const folders = useFolders();
@@ -48,11 +59,27 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
     title: useRef<HTMLInputElement>(null),
     project: useRef<HTMLInputElement>(null),
     tags: useRef<HTMLInputElement>(null),
+    defer: useRef<HTMLInputElement>(null),
     note: useRef<HTMLTextAreaElement>(null),
   };
   // What is typed, and what has been saved, without waiting for a re-render.
-  const typed = useRef({ title: task.title, note: task.note ?? '', projectId: task.projectId, newProject: null as NewProject | null, tags: [...task.tagIds] });
-  const saved = useRef({ title: task.title, note: normaliseNote(task.note ?? ''), projectId: task.projectId, tags: [...task.tagIds] });
+  const typed = useRef({
+    title: task.title,
+    note: task.note ?? '',
+    projectId: task.projectId,
+    newProject: null as NewProject | null,
+    tags: [...task.tagIds],
+    dates: { ...dates },
+  });
+  const saved = useRef({
+    title: task.title,
+    note: normaliseNote(task.note ?? ''),
+    projectId: task.projectId,
+    tags: [...task.tagIds],
+    dates: { defer: task.deferUntil ?? null } as Record<DateFieldName, string | null>,
+  });
+  // The text each date field showed for its saved date, so text left as it was is not read again.
+  const shownDates = useRef({ ...dates });
   const closed = useRef(false);
 
   useLayoutEffect(() => fields[startIn].current?.focus(), []);
@@ -78,6 +105,16 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
       if (next === saved.current.note) return;
       saved.current.note = next;
       void editTaskNote(task.id, next);
+    } else if (field === 'defer') {
+      const meaning = dateFieldMeaning(typed.current.dates[field], shownDates.current[field], field);
+      if (meaning.kind !== 'date') return;
+      // Show what was saved in full, which also reads back as itself.
+      const text = dateText(meaning.value, field);
+      typed.current.dates[field] = shownDates.current[field] = text;
+      setDates((current) => ({ ...current, [field]: text }));
+      if (sameTime(meaning.value, saved.current.dates[field])) return;
+      saved.current.dates[field] = meaning.value;
+      void dateFields[field].write(task.id, meaning.value);
     } else if (field === 'project') {
       const next = typed.current.projectId;
       if (next === saved.current.projectId) return;
@@ -124,6 +161,18 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
       if (event.key === 'Enter') return event.stopPropagation(), close();
     }
     onFieldKeyDown('title', event);
+  }
+
+  function onDateKeyDown(field: DateFieldName, event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      // The field already says it is not a date; leaving it waits until it is one, or is emptied or abandoned.
+      if (dateFieldMeaning(typed.current.dates[field], shownDates.current[field], field).kind === 'invalid') {
+        event.stopPropagation();
+        return event.preventDefault();
+      }
+      if (event.key === 'Enter') return event.stopPropagation(), close();
+    }
+    onFieldKeyDown(field, event);
   }
 
   function onChipsKeyDown(field: 'project' | 'tags', event: KeyboardEvent<HTMLInputElement>) {
@@ -182,6 +231,24 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
         }}
         onKeyDown={(event) => onChipsKeyDown('tags', event)}
       />
+      <span className="date-fields">
+        {(Object.keys(dateFields) as DateFieldName[]).map((field) => (
+          <DateField
+            key={field}
+            kind={field}
+            label={dateFields[field].label}
+            placeholder={dateFields[field].placeholder}
+            text={dates[field]}
+            initialText={shownDates.current[field]}
+            inputRef={fields[field]}
+            onChange={(text) => {
+              typed.current.dates[field] = text;
+              setDates((current) => ({ ...current, [field]: text }));
+            }}
+            onKeyDown={(event) => onDateKeyDown(field, event)}
+          />
+        ))}
+      </span>
       <textarea
         ref={fields.note}
         aria-label="Note"

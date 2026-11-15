@@ -7,13 +7,14 @@
   },
   "scripts": {
     "typecheck": "tsc -p .",
-    "test": "node --test 'src/**/*.test.ts'"
+    "test": "TZ=Europe/London node --test 'src/**/*.test.ts'"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "chrono-node": "^2.10.3",
     "fractional-indexing": "^4.0.0"
   }
 }

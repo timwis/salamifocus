@@ -7,6 +7,7 @@ export const OperationName = {
   createTask: 'create_task',
   editTaskNote: 'edit_task_note',
   completeTask: 'complete_task',
+  deferTask: 'defer_task',
   reorderTask: 'reorder_task',
   moveTask: 'move_task',
   nestTask: 'nest_task',

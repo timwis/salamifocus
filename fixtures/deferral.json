@@ -1,0 +1,508 @@
+{
+  "scenario": "Deferral",
+  "description": "“Email Steve to request the document” is sent, left unfinished and deferred to the chase date, a week on, while “Compile the report” waits on it. See “Dates and waiting”, “Availability” and the “Prerequisite and deferral scenario” in the spec.",
+  "examples": [
+    {
+      "name": "A deferred prerequisite still blocks its parent, and both stay in Projects and Tags",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-23T00:00:00.000Z"
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [
+            "deferred"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "tags",
+            "selection": [
+              "people"
+            ],
+            "groups": [
+              {
+                "id": "steve",
+                "tasks": [
+                  {
+                    "id": "email-steve",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "The prerequisite is still deferred just before its date arrives",
+      "clock": "2026-11-22T23:59:59.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-23T00:00:00.000Z"
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [
+            "deferred"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "When its defer date arrives the prerequisite becomes available and its parent stays blocked",
+      "clock": "2026-11-23T00:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-23T00:00:00.000Z"
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": []
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "tags",
+            "selection": [
+              "people"
+            ],
+            "groups": [
+              {
+                "id": "steve",
+                "tasks": [
+                  {
+                    "id": "email-steve",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "A task beneath a deferred task is deferred with it",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-30T00:00:00.000Z"
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked",
+            "deferred"
+          ],
+          "email-steve": [
+            "deferred"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "tags",
+            "selection": [
+              "people"
+            ],
+            "groups": [
+              {
+                "id": "steve",
+                "tasks": [
+                  {
+                    "id": "email-steve",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "The latest defer date among a task and those it is beneath holds it back",
+      "clock": "2026-11-25T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-30T00:00:00.000Z"
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-23T00:00:00.000Z"
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked",
+            "deferred"
+          ],
+          "email-steve": [
+            "deferred"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

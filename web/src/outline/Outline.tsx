@@ -1,11 +1,22 @@
-import { normaliseTitle, positionAt, positionBetween, tagPathSeparator, titleProblem, unavailability, Unavailable } from '@salamifocus/domain';
+import {
+  describeDate,
+  normaliseTitle,
+  positionAt,
+  positionBetween,
+  tagPathSeparator,
+  titleProblem,
+  unavailability,
+  Unavailable,
+} from '@salamifocus/domain';
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { useNow } from '../clock.ts';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
+import type { TaskState } from '../queries.ts';
 import { tagsInOrder, useTags, useTaskTags } from '../tags/data.tsx';
 import { completeTask, createTask, nestTask, reorderTask } from '../writes.ts';
 import { TaskEditor, type Field } from './TaskEditor.tsx';
 
-export interface OutlineTask {
+export interface OutlineTask extends Partial<TaskState> {
   id: string;
   title: string;
   note: string | null;
@@ -17,8 +28,6 @@ export interface OutlineTask {
   depth?: number;
   /** The task it is shown beneath, if any. */
   parentId?: string | null;
-  /** How many of its children are unfinished; it is blocked while there are any. */
-  unfinishedChildren?: number;
 }
 
 /** A run of tasks, under a heading when it is a project or tag, in outline order. One task can appear in several groups. */
@@ -91,6 +100,8 @@ export function Outline({
   const current = useCurrentRow(rows.map((r) => r.key));
   const [editing, setEditing] = useState<Editing | null>(null);
   const focused = rows[current.index] ?? null;
+  // Rows change when a defer date passes, with nothing in the data changing.
+  const now = useNow(groups.flatMap((g) => g.tasks.map((t) => t.deferredUntil)));
 
   // The task being edited can disappear, for example when another device completes it.
   const editedTaskGone = editing?.mode === 'task' && !rows.some((r) => r.key === editing.rowKey);
@@ -273,8 +284,14 @@ export function Outline({
             const tagIds = taskTags.get(task.id) ?? [];
             const chips = tagsInOrder(tags, tagIds);
             // Rows show unfinished tasks only, so the reasons that matter here are the ones besides completion.
-            const unavailable = unavailability({ completedAt: null, unfinishedChildren: task.unfinishedChildren ?? 0 });
+            const unavailable = unavailability(
+              { completedAt: null, unfinishedChildren: task.unfinishedChildren ?? 0, deferredUntil: task.deferredUntil ?? null },
+              now,
+            );
             const blocked = unavailable.includes(Unavailable.blocked);
+            const deferred = unavailable.includes(Unavailable.deferred) && task.deferredUntil ? task.deferredUntil : null;
+            // A defer date that has passed is still worth seeing; a future one shows as the deferral itself.
+            const pastDefer = !deferred && task.deferUntil ? task.deferUntil : null;
             return (
               <li
                 key={key}
@@ -315,13 +332,22 @@ export function Outline({
                       >
                         {task.title}
                       </button>
-                      {(chips.length > 0 || task.projectName || blocked) && (
+                      {(chips.length > 0 || task.projectName || blocked || deferred || pastDefer) && (
                         <span className="task-meta">
                           {blocked && (
                             <span className="availability" title="Waiting on an unfinished task beneath it">
                               Blocked
                             </span>
                           )}
+                          {deferred && (
+                            <span
+                              className="availability"
+                              title={deferred === task.deferUntil ? undefined : 'Deferred with a task it is beneath'}
+                            >
+                              Deferred until {describeDate(deferred, 'defer', now)}
+                            </span>
+                          )}
+                          {pastDefer && <span className="task-date">Deferred until {describeDate(pastDefer, 'defer', now)}</span>}
                           {task.projectName && <span className="task-project">{task.projectName}</span>}
                           {chips.map(({ tag, path }) => (
                             <span key={tag.id} className="tag-chip" title={path.join(tagPathSeparator)}>

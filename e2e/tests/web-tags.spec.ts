@@ -116,7 +116,7 @@ test('tags are added to a task from its row with type-ahead, shown on the row, a
   await page.keyboard.press('t');
   await page.keyboard.press('Backspace');
   await page.keyboard.press('Tab');
-  await expect(page.getByLabel('Note')).toBeFocused();
+  await expect(page.getByLabel('Defer until')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(row.locator('.tag-chip')).toHaveText([`Dad ${run}`]);
 
@@ -268,6 +268,8 @@ test('in Tags, removing the selected tag while editing keeps the editor open unt
   await page.keyboard.press('Tab');
   // Give a premature write time to reach the outline: the editor must stay put.
   await page.waitForTimeout(500);
+  await expect(page.getByLabel('Defer until')).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByLabel('Note')).toBeFocused();
   await page.keyboard.type('After flowering');
   await page.keyboard.press('ControlOrMeta+Enter');

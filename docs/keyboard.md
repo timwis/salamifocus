@@ -73,7 +73,7 @@ With the mouse, click selects and double-click renames. The **+ Tag** button doe
 
 ## Outline
 
-The task rows of the current perspective. Inbox lists every unfinished task that still lacks a project (a single-action list counts) or a tag, oldest first; once it has both it leaves, and the row now in its place becomes current. In Projects, each selected project has a heading row, and a task nested beneath another (one of its prerequisites) is indented under it, to any depth. Nesting only happens within a project, so indenting does nothing in Tags or the Inbox. A task with an unfinished task beneath it waits on it: its row is marked **Blocked**. Completing its last unfinished child makes it available, but it still needs completing itself. Siblings never wait on each other, whatever their order, and a child never waits on its parent. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
+The task rows of the current perspective. Inbox lists every unfinished task that still lacks a project (a single-action list counts) or a tag, oldest first; once it has both it leaves, and the row now in its place becomes current. In Projects, each selected project has a heading row, and a task nested beneath another (one of its prerequisites) is indented under it, to any depth. Nesting only happens within a project, so indenting does nothing in Tags or the Inbox. A task with an unfinished task beneath it waits on it: its row is marked **Blocked**. Completing its last unfinished child makes it available, but it still needs completing itself. Siblings never wait on each other, whatever their order, and a child never waits on its parent. A deferred task is marked **Deferred until** its date, and so is every task beneath it; it comes back by itself when the date arrives, even with the app left open or offline. A deferred child still blocks its parent. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
 
 | Key | Action |
 |---|---|
@@ -89,7 +89,7 @@ The task rows of the current perspective. Inbox lists every unfinished task that
 
 ### Editing a task
 
-The task's fields, in order: title, project, tags, then note. Later tickets add defer and due dates before the note. Each field is saved when you leave it, except the project and tags, which are kept when you leave them and saved when you stop editing (so a task you are editing does not vanish from the outline when it gets both in the Inbox, or loses the selected tag in Tags).
+The task's fields, in order: title, project, tags, defer until, then note. Each field is saved when you leave it, except the project and tags, which are kept when you leave them and saved when you stop editing (so a task you are editing does not vanish from the outline when it gets both in the Inbox, or loses the selected tag in Tags).
 
 | Key | Action |
 |---|---|
@@ -104,6 +104,9 @@ The task's fields, in order: title, project, tags, then note. Later tickets add 
 | ↑ / ↓ in tags | Choose among the listed tags |
 | Enter in tags | Add the chosen tag; with nothing typed, save and stop editing |
 | Backspace in empty tags | Remove the last tag |
+| Typing in defer until | Shows the date it means beside the field, or **Not a date**. Counts from today: "1 week", "3 days", or 3d, 2w, 1m (a month), 1y. Also "today", "tomorrow", a weekday ("fri", "next friday") and dates ("1 Dec", "1/12", "2027-01-04"), each with an optional time ("tomorrow 9am"). Without a time it means the start of that day, in your time zone |
+| Enter or Tab in defer until | Save the date (and, with Enter, stop editing). Not a date: stays in the field until it is one, is emptied, or Escape abandons it |
+| Empty defer until | Clears the date |
 | Enter in the note | New line |
 | Cmd+Enter on macOS, Ctrl+Enter on Linux, in the note | Save and stop editing |
 | Escape | Abandon the field you are in and stop editing; fields you already left stay saved |
