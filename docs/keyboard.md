@@ -105,7 +105,7 @@ The task's fields, in order: title, project, tags, defer until, due, then note. 
 | Enter in tags | Add the chosen tag; with nothing typed, save and stop editing |
 | Backspace in empty tags | Remove the last tag |
 | Typing in defer until or due | Shows the date it means beside the field, or **Not a date**. Counts from today: "1 week", "3 days", or 3d, 2w, 1m (a month), 1y. Also "today", "tomorrow", a weekday ("fri", "next friday") and dates ("1 Dec", "1/12", "2027-01-04"), each with an optional time ("tomorrow 9am"). Without a time, a defer date means the start of that day and a due date 17:00, in your time zone |
-| Enter or Tab in defer until or due | Save the date (and, with Enter, stop editing). Not a date: stays in the field until it is one, is emptied, or Escape abandons it |
+| Enter or Tab in defer until or due | Save the date (and, with Enter, stop editing). Not a date: stays in the field until it is one, is emptied, or Escape abandons it. Clicking away from the editor discards it, keeping the date the field had |
 | Empty defer until or due | Clears the date |
 | Enter in the note | New line |
 | Cmd+Enter on macOS, Ctrl+Enter on Linux, in the note | Save and stop editing |
@@ -118,6 +118,6 @@ A project's heading shows its own defer and due dates. Enter on the heading (or 
 | Key | Action |
 |---|---|
 | Tab / Shift+Tab | The other field, saving this one |
-| Enter | Save and stop editing |
+| Enter | Save and stop editing. Not a date: stays in the field, as in a task's date fields |
 | Empty field | Clears that date |
 | Escape | Abandon the field you are in and stop editing |

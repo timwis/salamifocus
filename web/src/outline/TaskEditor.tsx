@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type Key
 import { useFolders, useProjects } from '../projects/data.tsx';
 import type { Tags } from '../tags/data.tsx';
 import { createProjectForTask, deferTask, editTaskNote, moveTask, renameTask, setTaskDue, tagTask, untagTask } from '../writes.ts';
-import { DateField, dateFieldMeaning, dateText, sameTime } from './DateField.tsx';
+import { DateField, useDateFields } from './DateField.tsx';
 import { ProjectField, type NewProject } from './ProjectField.tsx';
 import { TagsField } from './TagsField.tsx';
 
@@ -46,10 +46,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
   const [projectId, setProjectId] = useState(task.projectId);
   const [newProject, setNewProject] = useState<NewProject | null>(null);
   const [tagIds, setTagIds] = useState<string[]>([...task.tagIds]);
-  const [dates, setDates] = useState<Record<DateFieldName, string>>(() => ({
-    defer: dateText(task.deferUntil ?? null, 'defer'),
-    due: dateText(task.dueAt ?? null, 'due'),
-  }));
+  const dates = useDateFields({ defer: task.deferUntil ?? null, due: task.dueAt ?? null }, (field, value) => void dateFields[field].write(task.id, value));
   const [problem, setProblem] = useState<string | null>(null);
   const projects = useProjects();
   const folders = useFolders();
@@ -73,17 +70,13 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
     projectId: task.projectId,
     newProject: null as NewProject | null,
     tags: [...task.tagIds],
-    dates: { ...dates },
   });
   const saved = useRef({
     title: task.title,
     note: normaliseNote(task.note ?? ''),
     projectId: task.projectId,
     tags: [...task.tagIds],
-    dates: { defer: task.deferUntil ?? null, due: task.dueAt ?? null } as Record<DateFieldName, string | null>,
   });
-  // The text each date field showed for its saved date, so text left as it was is not read again.
-  const shownDates = useRef({ ...dates });
   const closed = useRef(false);
 
   useLayoutEffect(() => fields[startIn].current?.focus(), []);
@@ -110,15 +103,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
       saved.current.note = next;
       void editTaskNote(task.id, next);
     } else if (field === 'defer' || field === 'due') {
-      const meaning = dateFieldMeaning(typed.current.dates[field], shownDates.current[field], field);
-      if (meaning.kind !== 'date') return;
-      // Show what was saved in full, which also reads back as itself.
-      const text = dateText(meaning.value, field);
-      typed.current.dates[field] = shownDates.current[field] = text;
-      setDates((current) => ({ ...current, [field]: text }));
-      if (sameTime(meaning.value, saved.current.dates[field])) return;
-      saved.current.dates[field] = meaning.value;
-      void dateFields[field].write(task.id, meaning.value);
+      dates.save(field);
     } else if (field === 'project') {
       const next = typed.current.projectId;
       if (next === saved.current.projectId) return;
@@ -170,7 +155,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
   function onDateKeyDown(field: DateFieldName, event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter' || event.key === 'Tab') {
       // The field already says it is not a date; leaving it waits until it is one, or is emptied or abandoned.
-      if (dateFieldMeaning(typed.current.dates[field], shownDates.current[field], field).kind === 'invalid') {
+      if (dates.invalid(field)) {
         event.stopPropagation();
         return event.preventDefault();
       }
@@ -242,13 +227,10 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
             kind={field}
             label={dateFields[field].label}
             placeholder={dateFields[field].placeholder}
-            text={dates[field]}
-            initialText={shownDates.current[field]}
+            text={dates.text[field]}
+            initialText={dates.shownText(field)}
             inputRef={fields[field]}
-            onChange={(text) => {
-              typed.current.dates[field] = text;
-              setDates((current) => ({ ...current, [field]: text }));
-            }}
+            onChange={(text) => dates.change(field, text)}
             onKeyDown={(event) => onDateKeyDown(field, event)}
           />
         ))}
