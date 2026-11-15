@@ -12,7 +12,7 @@ const tables = {
 
 export type Entity = keyof typeof tables;
 
-type Row = Record<string, string | number | boolean | null>;
+export type Row = Record<string, string | number | boolean | null>;
 
 interface PendingChange {
   entity: Entity;

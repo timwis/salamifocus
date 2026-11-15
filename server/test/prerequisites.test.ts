@@ -105,6 +105,30 @@ describe('nested prerequisites', () => {
     assert.equal(await perform(OperationName.createTask, child), 'parent_completed');
   });
 
+  it('takes a task’s children with it to another project, and takes a moved child out of its parent', async () => {
+    const office = await project('Office move');
+    const home = await project('Home office');
+    const desk = await addTask(office, 'Set up the desk', 'a0');
+    const chair = await addTask(office, 'Order a chair', 'a0', desk);
+    await addTask(office, 'Measure the room', 'a0', chair);
+    const lamp = await addTask(office, 'Buy a lamp', 'a1', desk);
+    const move = (taskId: string, projectId: string | null, position: string | null) => perform(OperationName.moveTask, { taskId, projectId, position });
+
+    assert.equal(await move(desk, home, 'a0'), 'applied');
+    assert.deepEqual(await outline(home), ['Set up the desk', '  Order a chair', '    Measure the room', '  Buy a lamp']);
+    assert.deepEqual(await outline(office), []);
+
+    assert.equal(await move(lamp, office, 'a0'), 'applied');
+    assert.equal((await h.application.task(lamp))?.parentId, null);
+    assert.deepEqual(await outline(home), ['Set up the desk', '  Order a chair', '    Measure the room']);
+
+    // Out of any project, into the Inbox, and back: the children follow, still beneath it.
+    assert.equal(await move(desk, null, null), 'applied');
+    assert.deepEqual(await outline(home), []);
+    assert.equal(await move(desk, office, 'a1'), 'applied');
+    assert.deepEqual(await outline(office), ['Buy a lamp', 'Set up the desk', '  Order a chair', '    Measure the room']);
+  });
+
   it('records nesting in the task’s history', async () => {
     const id = await project('Car serviced');
     const book = await addTask(id, 'Book the service', 'a0');

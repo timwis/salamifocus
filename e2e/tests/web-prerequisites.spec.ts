@@ -111,3 +111,33 @@ test('a parent shows as blocked until its last prerequisite is completed, and th
   await expect.poll(async () => (await server.task(compile))?.unavailable).toEqual([]);
   expect((await server.task(compile))?.completedAt).toBeNull();
 });
+
+test('moving a task to another project takes its prerequisites with it', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const office = `Office move (${run})`;
+  const home = `Home office (${run})`;
+  const { projectId: from } = await phone.createProject(office, { position: 'a8V' });
+  const { projectId: to } = await phone.createProject(home, { position: 'a9V' });
+  const { taskId: desk } = await phone.createTask(from, `Set up the desk ${run}`, 'a0');
+  const { taskId: chair } = await phone.createTask(from, `Order a chair ${run}`, 'a0', desk);
+  await phone.createTask(from, `Measure the room ${run}`, 'a0', chair);
+  await phone.createTask(from, `Book the van ${run}`, 'a1');
+  await signIn(page);
+  await page.goto(`/projects/${from},${to}`);
+  await page.keyboard.press('2');
+  await page.keyboard.press('Tab');
+  await expect.poll(() => shownOutline(page, office)).toEqual(['Set up the desk', '  Order a chair', '    Measure the room', 'Book the van']);
+
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('p');
+  await page.keyboard.type(home);
+  await expect(page.getByRole('listbox', { name: 'Matching projects' }).getByRole('option').first()).toHaveText(home);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+
+  const moved = ['Set up the desk', '  Order a chair', '    Measure the room'];
+  await expect.poll(() => shownOutline(page, office)).toEqual(['Book the van']);
+  await expect.poll(() => shownOutline(page, home)).toEqual(moved);
+  await expect.poll(() => serverOutline(to)).toEqual(moved);
+  expect(await serverOutline(from)).toEqual(['Book the van']);
+});

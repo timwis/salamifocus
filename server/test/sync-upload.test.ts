@@ -224,6 +224,34 @@ describe('uploading a client transaction', () => {
     assert.deepEqual(outline?.tasks.map((t) => [t.title, t.depth]), [['Compile the report', 1], ['Email Steve', 2], ['Find the document', 3]]);
   });
 
+  it('moves a task with its children, the client sending its own copy of their move', async () => {
+    const [from, to] = [crypto.randomUUID(), crypto.randomUUID()];
+    const [parent, child] = [crypto.randomUUID(), crypto.randomUUID()];
+    for (const [id, name, position] of [[from, 'Office move', 'a0'], [to, 'Home office', 'a1']] as const) {
+      await upload([{ op: 'PUT', table: 'projects', id, data: { name, kind: 'project', position }, metadata: operationMetadata(OperationName.createProject) }]);
+    }
+    const createdAt = '2026-11-13T09:00:00.000Z';
+    await upload([{ op: 'PUT', table: 'tasks', id: parent, data: { title: 'Set up the desk', project_id: from, position: 'a0', created_at: createdAt }, metadata: operationMetadata(OperationName.createTask) }]);
+    await upload([
+      { op: 'PUT', table: 'tasks', id: child, data: { title: 'Order a chair', project_id: from, parent_id: parent, position: 'a0', created_at: createdAt }, metadata: operationMetadata(OperationName.createTask) },
+    ]);
+    const move = (childData: Record<string, unknown>) => {
+      const metadata = operationMetadata(OperationName.moveTask);
+      return [
+        { op: 'PATCH', table: 'tasks', id: parent, data: { project_id: to }, metadata },
+        { op: 'PATCH', table: 'tasks', id: child, data: childData, metadata },
+      ];
+    };
+
+    const [sneaky] = await upload(move({ project_id: to, title: 'Renamed' }));
+    assert.equal(sneaky?.code, 'malformed_operation');
+    const [moved] = await upload(move({ project_id: to }));
+
+    assert.equal(moved?.outcome, 'applied');
+    const [outline] = await h.application.projects([to]);
+    assert.deepEqual(outline?.tasks.map((t) => [t.title, t.depth]), [['Set up the desk', 1], ['Order a chair', 2]]);
+  });
+
   it('rejects a move that also renames', async () => {
     const projectId = crypto.randomUUID();
     await upload([

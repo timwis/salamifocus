@@ -155,9 +155,18 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
   },
 
   [OperationName.moveTask](entries) {
-    const { id, data } = onlyUpdate(entries, 'tasks', ['project_id', 'position']);
+    // The moved task comes first; then the client's own copy of its children following it, which the
+    // server works out for itself.
+    const [move, ...children] = entries;
+    const { id, data } = onlyUpdate(move ? [move] : [], 'tasks', ['project_id', 'parent_id', 'position']);
     // Clients send only the columns that changed, so the position is absent when it stays the same.
     if (!('project_id' in data)) throw new Malformed('A move must change the project.');
+    if ((data.parent_id ?? null) !== null) throw new Malformed('A moved task leaves its parent.');
+    for (const child of children) {
+      if (child.op !== 'PATCH' || child.table !== 'tasks' || onlyColumns(child, ['project_id']).project_id !== data.project_id) {
+        throw new Malformed('A move changes only the project of the moved task’s children.');
+      }
+    }
     return { taskId: id, projectId: data.project_id ?? null, position: changed(data, 'position') };
   },
 

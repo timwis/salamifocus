@@ -50,7 +50,10 @@ export function reorderTask(taskId: string, position: string) {
   return write(OperationName.reorderTask, 'UPDATE tasks SET position = ?, _metadata = ? WHERE id = ?', (m) => [position, m, taskId]);
 }
 
-/** Puts a task at the end of a project or single-action list, or (with null) takes it out of any. */
+/**
+ * Puts a task at the end of a project or single-action list, or (with null) takes it out of any. It leaves
+ * its parent, and its own children, to any depth, go with it.
+ */
 export function moveTask(taskId: string, projectId: string | null) {
   return db.writeTransaction((tx) => moveTaskIn(tx, taskId, projectId, operationMetadata(OperationName.moveTask)));
 }
@@ -61,7 +64,15 @@ async function moveTaskIn(tx: Transaction, taskId: string, projectId: string | n
     const { last } = await tx.get<{ last: string | null }>('SELECT max(position) AS last FROM tasks WHERE project_id = ? AND id != ?', [projectId, taskId]);
     position = positionBetween(last, null);
   }
-  await tx.execute('UPDATE tasks SET project_id = ?, position = ?, _metadata = ? WHERE id = ?', [projectId, position, metadata, taskId]);
+  await tx.execute('UPDATE tasks SET project_id = ?, parent_id = NULL, position = ?, _metadata = ? WHERE id = ?', [projectId, position, metadata, taskId]);
+  const descendants = await tx.getAll<{ id: string }>(
+    `WITH RECURSIVE beneath(id) AS (SELECT id FROM tasks WHERE parent_id = ? UNION SELECT t.id FROM tasks t JOIN beneath b ON t.parent_id = b.id)
+     SELECT id FROM beneath WHERE id != ?`,
+    [taskId, taskId],
+  );
+  for (const { id } of descendants) {
+    await tx.execute('UPDATE tasks SET project_id = ?, _metadata = ? WHERE id = ?', [projectId, metadata, id]);
+  }
 }
 
 /**

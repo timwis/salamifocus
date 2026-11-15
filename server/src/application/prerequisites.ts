@@ -1,6 +1,6 @@
 import { OperationName, wouldNestInItself } from '@salamifocus/domain';
 import * as args from './arguments.ts';
-import type { Mutations } from './mutations.ts';
+import type { Mutations, Row } from './mutations.ts';
 import type { OperationDefinition } from './operations.ts';
 import { checkPosition } from './organisation.ts';
 import { Rejection } from './rejection.ts';
@@ -13,6 +13,31 @@ export async function checkParent(mutations: Mutations, projectId: string | null
   if (parent.completed_at !== null) throw new Rejection('parent_completed', 'That task has already been completed.');
   if (projectId === null || parent.project_id !== projectId) {
     throw new Rejection('different_project', 'A task can only go beneath another task in the same project.');
+  }
+}
+
+/**
+ * Moves a task out of its parent and into another project (or none), taking its own children, to any depth,
+ * with it: a task's prerequisites go wherever it goes, keeping their places beneath it. The caller holds the
+ * 'task-hierarchy' lock, taken before reading the task.
+ */
+export async function moveWithChildren(mutations: Mutations, task: Row, projectId: string | null, position: string | null) {
+  const from = task.project_id as string | null;
+  const children = new Map<string, string[]>();
+  if (from !== projectId) {
+    for (const t of await mutations.list('task', { column: 'project_id', value: from })) {
+      const parent = t.parent_id as string | null;
+      if (parent !== null) children.set(parent, [...(children.get(parent) ?? []), t.id as string]);
+    }
+  }
+  await mutations.update('task', task.id as string, { project_id: projectId, parent_id: null, position });
+  const moved = new Set([task.id as string]);
+  const queue = [...(children.get(task.id as string) ?? [])];
+  for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
+    if (moved.has(id)) continue;
+    moved.add(id);
+    await mutations.update('task', id, { project_id: projectId });
+    queue.push(...(children.get(id) ?? []));
   }
 }
 

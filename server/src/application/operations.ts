@@ -3,7 +3,7 @@ import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import { organisationOperations } from './organisation.ts';
 import { Rejection } from './rejection.ts';
-import { checkParent, nestTask } from './prerequisites.ts';
+import { checkParent, moveWithChildren, nestTask } from './prerequisites.ts';
 import { addTaskTag, tagOperations } from './tags.ts';
 
 export interface OperationDefinition<A> {
@@ -180,7 +180,7 @@ export interface MoveTaskArgs {
   position: string | null | undefined;
 }
 
-/** Puts a task in a project or single-action list, or takes it out of one. */
+/** Puts a task in a project or single-action list, or takes it out of one, at the top level; its children go with it. */
 export const moveTask: OperationDefinition<MoveTaskArgs> = {
   name: OperationName.moveTask,
   parse(input) {
@@ -194,18 +194,19 @@ export const moveTask: OperationDefinition<MoveTaskArgs> = {
     };
   },
   async apply(mutations, { taskId, projectId, position }) {
+    await mutations.lock('task-hierarchy');
     const task = await mutations.read('task', taskId);
     if (!task) throw new Rejection('not_found', 'That task no longer exists.');
     if (projectId === null) {
       if (position) throw new Rejection('invalid_position', 'Only tasks in a project have a position.');
-      await mutations.update('task', taskId, { project_id: null, position: null });
+      await moveWithChildren(mutations, task, null, null);
       return;
     }
     const next = position === undefined ? (task.position as string | null) : position;
     const badPosition = next === null ? 'A task in a project needs a position.' : positionProblem(next);
     if (badPosition) throw new Rejection('invalid_position', badPosition);
     if (!(await mutations.exists('project', projectId))) throw new Rejection('not_found', 'That project no longer exists.');
-    await mutations.update('task', taskId, { project_id: projectId, position: next });
+    await moveWithChildren(mutations, task, projectId, next);
   },
 };
 
