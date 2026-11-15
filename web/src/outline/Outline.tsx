@@ -10,6 +10,8 @@ export interface OutlineTask {
   title: string;
   note: string | null;
   position: string | null;
+  /** Shown on the row where the project is not already the heading. */
+  projectName?: string | null;
 }
 
 /** A run of tasks, under a heading when it is a project or tag, in outline order. One task can appear in several groups. */
@@ -220,8 +222,9 @@ export function Outline({
                       >
                         {task.title}
                       </button>
-                      {chips.length > 0 && (
+                      {(chips.length > 0 || task.projectName) && (
                         <span className="task-meta">
+                          {task.projectName && <span className="task-project">{task.projectName}</span>}
                           {chips.map(({ tag, path }) => (
                             <span key={tag.id} className="tag-chip" title={path.join(tagPathSeparator)}>
                               {tag.name}

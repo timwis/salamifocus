@@ -392,6 +392,11 @@ nav:focus-within a[aria-current='page'] {
   padding: 0 0.4rem 0.3rem;
   margin-top: -0.2rem;
 }
+.task-project {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.35rem;
+}
 .tag-chip {
   display: inline-flex;
   align-items: center;

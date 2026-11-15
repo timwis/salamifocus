@@ -72,7 +72,7 @@ With the mouse, click selects and double-click renames. The **+ Tag** button doe
 
 ## Outline
 
-The task rows of the current perspective. In Projects, each selected project has a heading row.
+The task rows of the current perspective. In Projects, each selected project has a heading row. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
 
 | Key | Action |
 |---|---|

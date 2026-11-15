@@ -1,4 +1,4 @@
-import { buildTagTree, buildTree, placedTags, comparePositions, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
+import { buildTagTree, buildTree, groupByTag, placedTags, tagBranch, comparePositions, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
 import type { Sql } from '../db.ts';
 import { Mutations } from './mutations.ts';
 import { findOperation } from './operations.ts';
@@ -11,6 +11,7 @@ import type {
   OperationRequest,
   OperationResult,
   ProjectOutline,
+  TagOutline,
   TaskView,
 } from './types.ts';
 
@@ -115,6 +116,32 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   }
 
   /**
+   * What the Tags perspective shows for a selected tag: unfinished tasks
+   * carrying the tag or any tag beneath it, grouped under each matching tag
+   * (so a task can appear more than once), oldest first within a group.
+   */
+  async function tagged(tagId: string): Promise<TagOutline[]> {
+    const tree = await tags();
+    const branch = tagBranch(tree, tagId).map((p) => p.tag.id);
+    if (branch.length === 0) return [];
+    const rows = await sql<{ id: string; title: string; note: string; projectId: string | null; tagId: string }[]>`
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", tt.tag_id AS "tagId"
+      FROM tasks t JOIN task_tags tt ON tt.task_id = t.id
+      WHERE t.completed_at IS NULL AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN ${sql(branch)})
+      ORDER BY t.created_at, t.id`;
+    const tasks = new Map<string, TagOutline['tasks'][number]>();
+    for (const { tagId: rowTag, ...task } of rows) {
+      const existing = tasks.get(task.id) ?? { ...task, tagIds: [] };
+      existing.tagIds.push(rowTag);
+      tasks.set(task.id, existing);
+    }
+    return groupByTag(tree, tagId, [...tasks.values()], (task) => task.tagIds).map(({ tag, path, tasks }) => ({
+      tag: { id: tag.id, name: tag.name, path },
+      tasks,
+    }));
+  }
+
+  /**
    * What the Projects perspective shows for a sidebar selection: each selected
    * project (every project inside a selected folder), in sidebar order, with
    * its unfinished tasks in outline order.
@@ -205,5 +232,5 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     };
   }
 
-  return { execute, inbox, organisation, projects, tags, task, history, operation };
+  return { execute, inbox, organisation, projects, tags, tagged, task, history, operation };
 }

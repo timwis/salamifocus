@@ -141,3 +141,58 @@ describe('tagging tasks', () => {
     assert.deepEqual(await tagNames(taskId), []);
   });
 });
+
+describe('the Tags perspective', () => {
+  async function project(name: string) {
+    const projectId = crypto.randomUUID();
+    assert.equal(await perform(OperationName.createProject, { projectId, name, kind: 'single_actions', folderId: null, position: 'a0' }), 'applied');
+    return projectId;
+  }
+
+  let created = 0;
+  async function task(projectId: string, title: string, tagIds: string[]) {
+    const taskId = crypto.randomUUID();
+    const createdAt = new Date(Date.parse('2026-11-13T10:00:00.000Z') + ++created * 1000).toISOString();
+    assert.equal(await perform(OperationName.createTask, { taskId, projectId, title, position: 'a0', createdAt }), 'applied');
+    for (const tagId of tagIds) assert.equal(await perform(OperationName.tagTask, { taskTagId: crypto.randomUUID(), taskId, tagId }), 'applied');
+    return taskId;
+  }
+
+  const outline = async (tagId: string) =>
+    (await h.application.tagged(tagId)).map(({ tag, tasks }) => ({ [tag.path.join(' : ')]: tasks.map((t) => t.title) }));
+
+  it('shows unfinished tasks from the tag and its descendants, under full-path headings, once per matching tag', async () => {
+    const people = await tag('People', null, 'a0');
+    const dad = await tag('Dad', people, 'a0');
+    const computer = await tag('@Computer', null, 'a1');
+    const shallow = await tag('Shallow work', computer, 'a0');
+    const lowEnergy = await tag('Low energy', shallow, 'a0');
+    const shopping = await tag('Online shopping', shallow, 'a1');
+    const deep = await tag('Deep work', computer, 'a2');
+    const misc = await project('Miscellaneous');
+
+    await task(misc, 'Order water pick', [shopping]);
+    await task(misc, 'Ask Dad about AAA checkup', [dad, lowEnergy]);
+    await task(misc, 'Tidy downloads', [shallow, lowEnergy]);
+    await task(misc, 'Write the report', [deep]);
+    const done = await task(misc, 'Book weightlifting class', [lowEnergy]);
+    assert.equal(await perform(OperationName.completeTask, { taskId: done, completedAt: '2026-11-13T11:00:00.000Z' }), 'applied');
+
+    assert.deepEqual(await outline(shallow), [
+      { '@Computer : Shallow work': ['Tidy downloads'] },
+      { '@Computer : Shallow work : Low energy': ['Ask Dad about AAA checkup', 'Tidy downloads'] },
+      { '@Computer : Shallow work : Online shopping': ['Order water pick'] },
+    ]);
+    assert.deepEqual(await outline(people), [{ 'People : Dad': ['Ask Dad about AAA checkup'] }]);
+
+    // A task keeps all its tags, including those outside the selected branch.
+    const [lowEnergyGroup] = (await h.application.tagged(lowEnergy)).map((g) => g.tasks);
+    assert.deepEqual(new Set(lowEnergyGroup?.[0]?.tagIds), new Set([dad, lowEnergy]));
+  });
+
+  it('shows nothing for a tag without tasks or one that does not exist', async () => {
+    const empty = await tag('Empty', null, 'a0');
+    assert.deepEqual(await outline(empty), []);
+    assert.deepEqual(await outline(crypto.randomUUID()), []);
+  });
+});

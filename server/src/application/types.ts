@@ -45,6 +45,11 @@ export interface TagView {
   path: string[];
 }
 
+export interface TagOutline {
+  tag: TagView;
+  tasks: { id: string; title: string; note: string; projectId: string | null; tagIds: string[] }[];
+}
+
 export interface ProjectOutline {
   project: { id: string; name: string; kind: string };
   tasks: { id: string; title: string; note: string }[];

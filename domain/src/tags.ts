@@ -63,3 +63,29 @@ export function placedTags(tree: readonly TagNode[]): PlacedTag[] {
     });
   return walk(tree, []);
 }
+
+/** A tag and every tag beneath it, in sidebar order, with full paths. Empty if the tag is not in the tree. */
+export function tagBranch(tree: readonly TagNode[], tagId: string): PlacedTag[] {
+  const placed = placedTags(tree);
+  const start = placed.findIndex((p) => p.tag.id === tagId);
+  if (start === -1) return [];
+  const depth = placed[start]!.path.length;
+  let end = start + 1;
+  while (end < placed.length && placed[end]!.path.length > depth) end++;
+  return placed.slice(start, end);
+}
+
+export interface TagGroup<T> extends PlacedTag {
+  tasks: T[];
+}
+
+/**
+ * What selecting a tag shows: one group per tag in its branch that has
+ * tasks, in sidebar order. A task carrying several tags in the branch
+ * appears under each of them; every appearance is the same task.
+ */
+export function groupByTag<T>(tree: readonly TagNode[], tagId: string, tasks: readonly T[], tagsOf: (task: T) => readonly string[]): TagGroup<T>[] {
+  return tagBranch(tree, tagId)
+    .map((p) => ({ ...p, tasks: tasks.filter((task) => tagsOf(task).includes(p.tag.id)) }))
+    .filter((group) => group.tasks.length > 0);
+}

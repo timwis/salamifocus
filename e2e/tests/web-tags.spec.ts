@@ -125,6 +125,68 @@ test('tags are added to a task from its row with type-ahead, shown on the row, a
   expect(operations.filter((op) => op.endsWith('tag_task'))).toEqual(['tag_task', 'tag_task', 'tag_task', 'untag_task', 'untag_task']);
 });
 
+test('selecting a tag shows its branch’s remaining tasks under full-path headings, once per matching tag', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const { tagId: people } = await phone.createTag(`Family ${run}`, { position: 'a4' });
+  const { tagId: mum } = await phone.createTag(`Mum ${run}`, { parentId: people });
+  const { tagId: desk } = await phone.createTag(`@Desk ${run}`, { position: 'a5' });
+  const { tagId: light } = await phone.createTag(`Light work ${run}`, { parentId: desk });
+  const { tagId: tired } = await phone.createTag(`Tired ${run}`, { parentId: light, position: 'a0' });
+  const { tagId: buying } = await phone.createTag(`Buying ${run}`, { parentId: light, position: 'a1' });
+  const { projectId } = await phone.createProject(`Odds and ends ${run}`, { position: 'a8', kind: 'single_actions' });
+  const add = async (title: string, tagIds: string[]) => {
+    const { taskId } = await phone.createTask(projectId, `${title} ${run}`);
+    for (const tagId of tagIds) await phone.tagTask(taskId, tagId);
+    return taskId;
+  };
+  await add('Order a water pick', [buying]);
+  const both = await add('Clear the downloads folder', [light, tired]);
+  await add('Ask Mum about Sunday', [mum, tired]);
+  await signIn(page);
+  await page.goto(`/tags/${light}`);
+  const main = page.getByRole('main');
+  const group = (path: string) => main.getByRole('list', { name: path, exact: true }).getByRole('listitem');
+
+  await expect(main.getByRole('heading', { level: 3 })).toHaveText([
+    `@Desk ${run} : Light work ${run}`,
+    `@Desk ${run} : Light work ${run} : Tired ${run}`,
+    `@Desk ${run} : Light work ${run} : Buying ${run}`,
+  ]);
+  const tiredGroup = group(`@Desk ${run} : Light work ${run} : Tired ${run}`);
+  await expect(tiredGroup.locator('.task-title')).toHaveText([`Clear the downloads folder ${run}`, `Ask Mum about Sunday ${run}`]);
+  // The row shows the task's project and all its tags, including ones outside the branch.
+  await expect(tiredGroup.nth(1)).toContainText(`Odds and ends ${run}`);
+  await expect(tiredGroup.nth(1).locator('.tag-chip')).toHaveText([`Mum ${run}`, `Tired ${run}`]);
+  await expect(main).toContainText('3 tasks remaining');
+
+  // Completing a task that appears twice removes both appearances, and focus stays in the outline.
+  await page.keyboard.press('3');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await expect(group(`@Desk ${run} : Light work ${run}`).first()).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(main.getByRole('heading', { level: 3 })).toHaveText([
+    `@Desk ${run} : Light work ${run} : Tired ${run}`,
+    `@Desk ${run} : Light work ${run} : Buying ${run}`,
+  ]);
+  await expect(tiredGroup.locator('.task-title')).toHaveText([`Ask Mum about Sunday ${run}`]);
+  await expect(page.locator(':focus')).toHaveAttribute('data-key', /.+/);
+  await expect(main.locator(':focus')).toHaveCount(1);
+  await expect.poll(async () => (await server.task(both))?.completedAt).toBeTruthy();
+
+  // Selecting a narrower tag shows only its own tasks.
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('ArrowDown');
+  await expect(tagItem(page, `Tired ${run}`)).toHaveAttribute('aria-selected', 'true');
+  await expect(main.getByRole('heading', { level: 3 })).toHaveText([`@Desk ${run} : Light work ${run} : Tired ${run}`]);
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowUp');
+  await expect(tagItem(page, `Mum ${run}`)).toHaveAttribute('aria-selected', 'true');
+  await expect(main.getByRole('heading', { level: 3 })).toHaveText([`Family ${run} : Mum ${run}`]);
+  expect(await server.tagged(desk)).toHaveLength(2);
+});
+
 test('a tag created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   await signIn(page);
   await page.getByRole('navigation', { name: 'Perspectives' }).getByRole('link', { name: 'Tags' }).click();

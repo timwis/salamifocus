@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildTagTree, placedTags, type TagNode, type TagRecord } from './tags.ts';
+import { buildTagTree, groupByTag, placedTags, tagBranch, type TagNode, type TagRecord } from './tags.ts';
 
 const tag = (id: string, parentId: string | null, position: string): TagRecord => ({ id, name: id, parentId, position });
 
@@ -27,5 +27,30 @@ test('every tag knows its full path, and comes before its descendants', () => {
   assert.deepEqual(
     placedTags(buildTagTree(tags)).map((p) => p.path.join(' : ')),
     ['people', 'computer', 'computer : deep', 'computer : shallow', 'computer : shallow : low-energy'],
+  );
+});
+
+test('a tag’s branch is the tag and everything beneath it', () => {
+  const tree = buildTagTree(tags);
+  assert.deepEqual(tagBranch(tree, 'shallow').map((p) => p.tag.id), ['shallow', 'low-energy']);
+  assert.deepEqual(tagBranch(tree, 'missing'), []);
+});
+
+test('selecting a tag groups tasks under each matching tag in its branch, skipping empty groups', () => {
+  const tasks = [
+    { id: 'water pick', tags: ['low-energy'] },
+    { id: 'tidy inbox', tags: ['shallow', 'low-energy', 'people'] },
+    { id: 'write report', tags: ['deep'] },
+    { id: 'call mum', tags: ['people'] },
+  ];
+  const groups = groupByTag(buildTagTree(tags), 'computer', tasks, (t) => t.tags);
+
+  assert.deepEqual(
+    groups.map((g) => [g.path.join(' : '), g.tasks.map((t) => t.id)]),
+    [
+      ['computer : deep', ['write report']],
+      ['computer : shallow', ['tidy inbox']],
+      ['computer : shallow : low-energy', ['water pick', 'tidy inbox']],
+    ],
   );
 });
