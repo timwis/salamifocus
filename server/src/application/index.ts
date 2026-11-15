@@ -43,10 +43,10 @@ export type Application = ReturnType<typeof createApplication>;
 const unfinishedChildren = (sql: Sql) =>
   sql`(SELECT count(*) FROM tasks c WHERE c.parent_id = t.id AND c.completed_at IS NULL)::int AS "unfinishedChildren"`;
 
-/** The latest defer date among a task (aliased `t`) and the tasks it is beneath, as the clients work it out. */
+/** The latest defer date among a task (aliased `t`), the unfinished tasks it is beneath and its project, as the clients work it out. */
 const deferredUntil = (sql: Sql) => sql.unsafe(deferredUntilColumn);
 
-/** The earliest due date among a task (aliased `t`) and the tasks it is beneath. */
+/** The earliest due date among a task (aliased `t`), the unfinished tasks it is beneath and its project. */
 const dueBy = (sql: Sql) => sql.unsafe(dueByColumn);
 
 /**

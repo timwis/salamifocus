@@ -10,13 +10,13 @@ const unfinishedChildrenColumn =
 /** What a task row (aliased `t`) needs to show its availability and dates. */
 export interface TaskState {
   unfinishedChildren: number;
-  /** The latest defer date among the task and the tasks it is beneath. */
+  /** The latest defer date among the task, the unfinished tasks it is beneath and its project. */
   deferredUntil: string | null;
   /** The task's own defer date. */
   deferUntil: string | null;
   /** The task's own due date. */
   dueAt: string | null;
-  /** The earliest due date among the task and the tasks it is beneath. */
+  /** The earliest due date among the task, the unfinished tasks it is beneath and its project. */
   dueBy: string | null;
 }
 

@@ -42,7 +42,7 @@ export interface TaskView {
   deferUntil: string | null;
   /** The task's own due date, or null. It never changes availability. */
   dueAt: string | null;
-  /** The earliest due date among the task and the tasks it is beneath. */
+  /** The earliest due date among the task, the unfinished tasks it is beneath and its project. */
   dueBy: string | null;
   /** Why the task cannot be worked on now; empty when it is available. */
   unavailable: Unavailable[];

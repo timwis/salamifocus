@@ -719,6 +719,90 @@
           }
         ]
       }
+    },
+    {
+      "name": "A completed task no longer defers the unfinished tasks beneath it",
+      "clock": "2026-11-21T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": "2026-11-20T10:00:00.000Z",
+            "defer_until": "2026-12-01T00:00:00.000Z"
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "completed"
+          ],
+          "email-steve": []
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "email-steve",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
