@@ -76,3 +76,26 @@ export function moveProject(projectId: string, folderId: string | null, position
     (m) => [folderId, position, m, projectId],
   );
 }
+
+export function createTag(tagId: string, name: string, parentId: string | null, position: string) {
+  return write(OperationName.createTag, 'INSERT INTO tags (id, name, parent_id, position, _metadata) VALUES (?, ?, ?, ?, ?)', (m) => [
+    tagId,
+    name,
+    parentId,
+    position,
+    m,
+  ]);
+}
+
+export function renameTag(tagId: string, name: string) {
+  return write(OperationName.renameTag, 'UPDATE tags SET name = ?, _metadata = ? WHERE id = ?', (m) => [name, m, tagId]);
+}
+
+export function moveTag(tagId: string, parentId: string | null, position: string) {
+  return write(OperationName.moveTag, 'UPDATE tags SET parent_id = ?, position = ?, _metadata = ? WHERE id = ?', (m) => [
+    parentId,
+    position,
+    m,
+    tagId,
+  ]);
+}

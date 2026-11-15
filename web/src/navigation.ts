@@ -1,13 +1,14 @@
 import { useSyncExternalStore } from 'react';
 
-// Where the user is: the perspective, and for Projects the selected folders
-// and projects, as a path such as /projects/<id>,<id>. Kept in the URL so a
+// Where the user is: the perspective, and what is selected in its sidebar, as
+// a path such as /projects/<id>,<id> or /tags/<id>. Kept in the URL so a
 // reload comes back to the same place. The app server answers any page path
 // with the app, so these paths load directly too.
 
 export const perspectives = [
   { id: 'inbox', name: 'Inbox' },
   { id: 'projects', name: 'Projects' },
+  { id: 'tags', name: 'Tags' },
 ] as const;
 
 export type Perspective = (typeof perspectives)[number]['id'];

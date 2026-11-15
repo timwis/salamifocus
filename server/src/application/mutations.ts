@@ -6,6 +6,7 @@ const tables = {
   capture: 'captures',
   folder: 'folders',
   project: 'projects',
+  tag: 'tags',
 } as const;
 
 export type Entity = keyof typeof tables;

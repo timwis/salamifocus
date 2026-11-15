@@ -4,13 +4,13 @@ import type { Mutations } from './mutations.ts';
 import type { OperationDefinition } from './operations.ts';
 import { Rejection } from './rejection.ts';
 
-function checkName(name: string): string {
+export function checkName(name: string): string {
   const problem = nameProblem(name);
   if (problem) throw new Rejection('invalid_name', problem);
   return normaliseName(name);
 }
 
-function checkPosition(position: string): string {
+export function checkPosition(position: string): string {
   const problem = positionProblem(position);
   if (problem) throw new Rejection('invalid_position', problem);
   return position;

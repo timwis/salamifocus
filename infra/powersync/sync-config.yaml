@@ -10,3 +10,4 @@ streams:
       - SELECT * FROM captures
       - SELECT * FROM folders
       - SELECT * FROM projects
+      - SELECT * FROM tags

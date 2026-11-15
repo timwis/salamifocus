@@ -128,6 +128,23 @@ describe('uploading a client transaction', () => {
     assert.deepEqual(home?.type === 'folder' && home.children.map((child) => child.name), ['Boiler serviced']);
   });
 
+  it('applies tag changes', async () => {
+    const parent = crypto.randomUUID();
+    const child = crypto.randomUUID();
+    const createTag = operationMetadata(OperationName.createTag);
+
+    const results = await upload([
+      { op: 'PUT', table: 'tags', id: parent, data: { name: '@Computer', position: 'a0' }, metadata: createTag },
+      { op: 'PUT', table: 'tags', id: child, data: { name: 'Shallow', position: 'a1' }, metadata: operationMetadata(OperationName.createTag) },
+      { op: 'PATCH', table: 'tags', id: child, data: { parent_id: parent }, metadata: operationMetadata(OperationName.moveTag) },
+      { op: 'PATCH', table: 'tags', id: child, data: { name: 'Shallow work' }, metadata: operationMetadata(OperationName.renameTag) },
+    ]);
+
+    assert.deepEqual(results.map((r) => r.outcome), ['applied', 'applied', 'applied', 'applied']);
+    const computer = (await h.application.tags()).find((node) => node.id === parent);
+    assert.deepEqual(computer?.children.map((c) => c.name), ['Shallow work']);
+  });
+
   it('rejects a move that also renames', async () => {
     const projectId = crypto.randomUUID();
     await upload([

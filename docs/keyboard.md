@@ -17,6 +17,7 @@ The web client is meant to be used from the keyboard. This is the reference for 
 |---|---|
 | 1 | Go to Inbox |
 | 2 | Go to Projects (focus goes to the sidebar) |
+| 3 | Go to Tags (focus goes to the sidebar) |
 | Tab / Shift+Tab | Next / previous region |
 
 ## Perspective navigation
@@ -49,6 +50,25 @@ Folders, projects and single-action lists. Selecting a folder shows every projec
 A new item goes at the end of the focused folder, or just after the focused project or list.
 
 With the mouse, click selects, Cmd/Ctrl+click adds or removes an item, and Shift+click selects a range. Double-click renames. The **+ Project**, **+ List** and **+ Folder** buttons below the sidebar do the same as N, S and F.
+
+## Tags sidebar
+
+Tags nest to any depth. One tag is selected at a time; selecting it covers its descendants too.
+
+| Key | Action |
+|---|---|
+| ↑ / ↓, Home / End | Move and select that tag |
+| Cmd+↑ / Cmd+↓ on macOS, Ctrl+↑ / Ctrl+↓ on Linux | Move without changing the selection |
+| Space | Select the tag, or clear the selection if it is already selected |
+| → | Expand a tag, or go to its first child |
+| ← | Collapse a tag, or go to its parent |
+| Enter or F2 | Rename |
+| N | New tag, just after the current one (after its children, if it has any) |
+| Alt+↑ / Alt+↓ | Move the tag up or down among its siblings |
+| Alt+→ | Move the tag inside the tag just above it |
+| Alt+← | Move the tag out of its parent |
+
+With the mouse, click selects and double-click renames. The **+ Tag** button does the same as N.
 
 ## Outline
 

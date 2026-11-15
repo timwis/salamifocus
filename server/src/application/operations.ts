@@ -3,6 +3,7 @@ import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import { organisationOperations } from './organisation.ts';
 import { Rejection } from './rejection.ts';
+import { tagOperations } from './tags.ts';
 
 export interface OperationDefinition<A> {
   name: OperationName;
@@ -144,7 +145,7 @@ export const reorderTask: OperationDefinition<ReorderTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reorderTask, ...organisationOperations] as OperationDefinition<unknown>[];
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reorderTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

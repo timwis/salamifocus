@@ -1,4 +1,4 @@
-import { buildTree, comparePositions, projectsInSelection, type OrganisationNode } from '@salamifocus/domain';
+import { buildTagTree, buildTree, comparePositions, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
 import type { Sql } from '../db.ts';
 import { Mutations } from './mutations.ts';
 import { findOperation } from './operations.ts';
@@ -108,6 +108,12 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     );
   }
 
+  /** Tags as the Tags sidebar nests them. */
+  async function tags(): Promise<TagNode[]> {
+    const rows = await sql`SELECT id, name, parent_id, position FROM tags`;
+    return buildTagTree(rows.map((t) => ({ id: t.id, name: t.name, parentId: t.parent_id, position: t.position })));
+  }
+
   /**
    * What the Projects perspective shows for a sidebar selection: each selected
    * project (every project inside a selected folder), in sidebar order, with
@@ -190,5 +196,5 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     };
   }
 
-  return { execute, inbox, organisation, projects, task, history, operation };
+  return { execute, inbox, organisation, projects, tags, task, history, operation };
 }

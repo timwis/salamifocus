@@ -96,6 +96,20 @@ export class SimulatedDevice {
     ]);
   }
 
+  async createTag(name: string, options: { parentId?: string; position?: string } = {}): Promise<{ tagId: string }> {
+    const tagId = crypto.randomUUID();
+    await this.upload([
+      {
+        op: 'PUT',
+        table: 'tags',
+        id: tagId,
+        data: { name, parent_id: options.parentId ?? null, position: options.position ?? 'a0' },
+        metadata: operationMetadata(OperationName.createTag),
+      },
+    ]);
+    return { tagId };
+  }
+
   private async upload(entries: unknown[]): Promise<void> {
     const response = await fetch(`${serverUrl}/api/sync/upload`, {
       method: 'POST',

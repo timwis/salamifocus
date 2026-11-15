@@ -86,6 +86,11 @@ nav a:focus-visible {
 .perspective-inbox {
   background: #7a7a85;
 }
+.perspective-tags {
+  background: #8a4fd8;
+  clip-path: polygon(0 35%, 35% 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+  border-radius: 0.2rem;
+}
 .perspective-projects {
   background: radial-gradient(circle at 30% 30%, #2f6fdf 22%, transparent 24%), radial-gradient(circle at 70% 30%, #6c9cf0 22%, transparent 24%),
     radial-gradient(circle at 30% 70%, #6c9cf0 22%, transparent 24%), radial-gradient(circle at 70% 70%, #2f6fdf 22%, transparent 24%);
@@ -160,6 +165,14 @@ nav a:focus-visible {
 }
 .icon-single_actions {
   background: radial-gradient(circle, var(--accent) 35%, transparent 40%) center / 33% 33%;
+}
+.icon-tag {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1.5px solid #8a4fd8;
+  border-radius: 0.15rem 50% 0.15rem 0.15rem;
+  box-sizing: border-box;
+  transform: rotate(-45deg) scale(0.85);
 }
 .hint {
   color: var(--muted);

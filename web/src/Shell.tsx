@@ -5,6 +5,7 @@ import { Inbox } from './Inbox.tsx';
 import { goToPerspective, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
 import { ProjectsPerspective } from './projects/ProjectsPerspective.tsx';
 import { signOut } from './session.ts';
+import { TagsPerspective } from './tags/TagsPerspective.tsx';
 import { SyncState } from './SyncState.tsx';
 
 type Region = 'perspectives' | 'sidebar' | 'outline';
@@ -36,7 +37,7 @@ function switchTo(perspective: Perspective) {
   // Render the new perspective now, so the focus below lands on its rows
   // rather than on the old perspective's, which are about to disappear.
   flushSync(() => goToPerspective(perspective));
-  focusRegion(perspective === 'projects' ? 'sidebar' : 'outline');
+  focusRegion(perspective === 'inbox' ? 'outline' : 'sidebar');
 }
 
 /**
@@ -83,7 +84,13 @@ export function Shell() {
       </header>
       <div className="regions" data-perspective={place.perspective}>
         <PerspectiveNav current={place.perspective} onBrowse={goToPerspective} onOpen={switchTo} />
-        {place.perspective === 'projects' ? <ProjectsPerspective place={place} /> : <Inbox />}
+        {place.perspective === 'projects' ? (
+          <ProjectsPerspective place={place} />
+        ) : place.perspective === 'tags' ? (
+          <TagsPerspective place={place} />
+        ) : (
+          <Inbox />
+        )}
       </div>
     </div>
   );

@@ -14,6 +14,9 @@ export const OperationName = {
   createProject: 'create_project',
   renameProject: 'rename_project',
   moveProject: 'move_project',
+  createTag: 'create_tag',
+  renameTag: 'rename_tag',
+  moveTag: 'move_tag',
 } as const;
 
 export type OperationName = (typeof OperationName)[keyof typeof OperationName];

@@ -19,6 +19,7 @@ export const schema = new Schema({
   captures: new Table({ task_id: column.text, text: column.text, captured_at: column.text }, synced),
   folders: new Table({ name: column.text, parent_id: column.text, position: column.text }, synced),
   projects: new Table({ name: column.text, kind: column.text, folder_id: column.text, position: column.text }, synced),
+  tags: new Table({ name: column.text, parent_id: column.text, position: column.text }, synced),
 });
 
 export const db = new PowerSyncDatabase({

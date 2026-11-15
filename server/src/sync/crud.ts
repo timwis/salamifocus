@@ -166,4 +166,19 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     const { id, data } = onlyUpdate(entries, 'projects', ['folder_id', 'position']);
     return { projectId: id, folderId: changed(data, 'folder_id'), position: changed(data, 'position') };
   },
+
+  [OperationName.createTag](entries) {
+    const { id, data } = onlyInsert(entries, 'tags', ['name', 'parent_id', 'position']);
+    return { tagId: id, name: data.name, parentId: data.parent_id ?? null, position: data.position };
+  },
+
+  [OperationName.renameTag](entries) {
+    const { id, data } = onlyUpdate(entries, 'tags', ['name']);
+    return { tagId: id, name: data.name };
+  },
+
+  [OperationName.moveTag](entries) {
+    const { id, data } = onlyUpdate(entries, 'tags', ['parent_id', 'position']);
+    return { tagId: id, parentId: changed(data, 'parent_id'), position: changed(data, 'position') };
+  },
 };
