@@ -16,7 +16,7 @@ A personal GTD application: a native Android client for capture, a desktop web c
 
 ## Running locally
 
-Needs Node 24, pnpm 10 and Docker.
+Needs Node 24, pnpm 10 and Docker (`mise install` sets up Node, pnpm and the JDK).
 
 ```sh
 cp .env.example .env          # development password: salami
@@ -28,7 +28,7 @@ pnpm dev:web                  # web client on http://127.0.0.1:5173
 
 The web client talks only to the app server, which proxies sync traffic to PowerSync under `/powersync`.
 
-For Android, open `android/` in Android Studio, or run `./gradlew installDebug` with an emulator running (JDK 17+). The debug build signs in to `http://10.0.2.2:3100` by default, which is the development machine as seen from the emulator; override it with `-Psalamifocus.serverUrl=…` or on the sign-in screen. Debug builds allow plain HTTP; release builds require HTTPS and have no default address (see [docs/deploy.md](docs/deploy.md#installing-the-android-app)).
+For Android, open `android/` in Android Studio, or run `./gradlew installDebug` with an emulator running (needs JDK 17 and `ANDROID_HOME`). The debug build signs in to `http://10.0.2.2:3100` by default, which is the development machine as seen from the emulator; override it with `-Psalamifocus.serverUrl=…` or on the sign-in screen. Debug builds allow plain HTTP; release builds require HTTPS and have no default address (see [docs/deploy.md](docs/deploy.md#installing-the-android-app)).
 
 To use a different password, put the output of `pnpm --filter @salamifocus/server hash-password` in `OWNER_PASSWORD_HASH`.
 
@@ -51,7 +51,7 @@ The end-to-end tests drive the real clients. Each run starts its own throwaway s
 
 ```sh
 pnpm test:e2e:web       # web client in Chromium; extra arguments go to Playwright
-pnpm test:e2e:android   # Android app on the running emulator; needs JDK 17+
+pnpm test:e2e:android   # Android app on the running emulator; needs JDK 17
 ```
 
 A simulated other client uploads through the real sync endpoint. A small proxy (`e2e/support/network-switch.ts`) stands between each client and the server so the tests can take that client offline.

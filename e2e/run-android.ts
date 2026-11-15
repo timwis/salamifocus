@@ -1,6 +1,6 @@
 // Runs the Android end-to-end tests on the connected emulator against a fresh
 // throwaway stack, with a network switch between the emulator and the server
-// so the tests can take the phone offline. Needs JDK 17 or later.
+// so the tests can take the phone offline. Needs JDK 17.
 import { join } from 'node:path';
 import { ports } from './support/env.ts';
 import { run, startProcess, startStack, waitFor } from './support/stack.ts';
