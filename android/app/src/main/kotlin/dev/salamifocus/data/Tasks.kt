@@ -40,6 +40,11 @@ val AppSchema = Schema(
             columns = listOf(Column.text("task_id"), Column.text("text"), Column.text("captured_at")),
             options = synced,
         ),
+        Table(
+            name = "task_tags",
+            columns = listOf(Column.text("task_id"), Column.text("tag_id")),
+            options = synced,
+        ),
     ),
 )
 
@@ -79,8 +84,16 @@ class Tasks(private val db: PowerSyncDatabase) {
         return taskId
     }
 
+    /**
+     * Unfinished tasks still lacking a project or a tag, oldest first. This
+     * repeats the Inbox rule in domain/src/inbox.ts.
+     */
     fun inbox(): Flow<List<InboxTask>> =
-        db.watch("SELECT id, title FROM tasks WHERE project_id IS NULL AND completed_at IS NULL ORDER BY created_at, id") { cursor ->
+        db.watch(
+            "SELECT t.id, t.title FROM tasks t WHERE t.completed_at IS NULL " +
+                "AND (t.project_id IS NULL OR NOT EXISTS (SELECT 1 FROM task_tags tt WHERE tt.task_id = t.id)) " +
+                "ORDER BY t.created_at, t.id",
+        ) { cursor ->
             InboxTask(id = cursor.getString("id"), title = cursor.getString("title"))
         }
 

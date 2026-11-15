@@ -1,4 +1,4 @@
-import { buildTagTree, buildTree, groupByTag, placedTags, tagBranch, comparePositions, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
+import { buildTagTree, buildTree, groupByTag, inboxCondition, placedTags, tagBranch, comparePositions, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
 import type { Sql } from '../db.ts';
 import { Mutations } from './mutations.ts';
 import { findOperation } from './operations.ts';
@@ -92,9 +92,10 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     }) as Promise<OperationResult>;
   }
 
+  /** Unfinished tasks still lacking a project or a tag, oldest first. */
   async function inbox(): Promise<InboxEntry[]> {
     return sql<InboxEntry[]>`
-      SELECT id, title, created_at AS "createdAt" FROM tasks WHERE project_id IS NULL AND completed_at IS NULL ORDER BY created_at, id`;
+      SELECT t.id, t.title, t.created_at AS "createdAt" FROM tasks t WHERE ${sql.unsafe(inboxCondition)} ORDER BY t.created_at, t.id`;
   }
 
   /** Folders, projects and single-action lists as the Projects sidebar nests them. */

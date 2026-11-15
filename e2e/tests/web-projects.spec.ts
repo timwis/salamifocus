@@ -106,7 +106,7 @@ test('selecting several projects or a folder shows each of their projects', asyn
   await expect(sidebar(page)).toBeHidden();
 });
 
-test('tasks are added to a project, retitled and reordered from the keyboard, and stay out of the Inbox', async ({ page }) => {
+test('tasks are added to a project, retitled and reordered from the keyboard, and wait in the Inbox for a tag', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const kitchen = `Kitchen ${run}`;
   const { projectId } = await phone.createProject(kitchen, { position: 'a3' });
@@ -160,7 +160,8 @@ test('tasks are added to a project, retitled and reordered from the keyboard, an
   await page.keyboard.press('1');
   await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
   await expect(page.locator('main :focus')).toHaveCount(1);
-  for (const title of titles) await expect(page.getByRole('main')).not.toContainText(title);
+  // Without tags they are not fully processed yet, so they also wait in the Inbox, showing their project.
+  for (const title of titles) await expect(page.getByRole('list', { name: 'Inbox' }).getByRole('listitem').filter({ hasText: title })).toContainText(kitchen);
   await page.keyboard.press('2');
   await expect(treeItem(page, kitchen)).toBeFocused();
 });

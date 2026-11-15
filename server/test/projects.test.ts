@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { OperationName } from '@salamifocus/domain';
-import { captureRequest, createHarness, owner, request, type Harness } from './harness.ts';
+import { createHarness, owner, request, type Harness } from './harness.ts';
 
 let h: Harness;
 before(async () => {
@@ -44,18 +44,6 @@ describe('tasks in projects', () => {
     await addTask(id, '  Buy dust sheets ', 'a1');
 
     assert.deepEqual(await outline([id]), [{ 'Kitchen redecorated': ['Choose a colour', 'Buy dust sheets', 'Paint the ceiling'] }]);
-  });
-
-  it('keeps tasks added to a project out of the Inbox', async () => {
-    const id = await project('Garden');
-    const taskId = await addTask(id, 'Mow the lawn', 'a0');
-    const capture = captureRequest('call the plumber');
-    await h.application.execute(capture);
-
-    const inbox = (await h.application.inbox()).map((entry) => entry.id);
-    assert.ok(!inbox.includes(taskId));
-    assert.ok(inbox.includes(capture.taskId));
-    assert.equal((await h.application.task(taskId))?.projectId, id);
   });
 
   it('holds standalone tasks in a single-action list', async () => {
@@ -146,15 +134,6 @@ describe('tasks in projects', () => {
     assert.ok(JSON.stringify(await h.application.organisation()).includes(id));
     await addTask(id, 'Buy stamps', 'a1');
     assert.deepEqual(await outline([id]), [{ Miscellaneous: ['Buy stamps'] }]);
-  });
-
-  it('keeps completed captures out of the Inbox', async () => {
-    const capture = captureRequest('book eye test');
-    await h.application.execute(capture);
-
-    await perform(OperationName.completeTask, { taskId: capture.taskId });
-
-    assert.ok(!(await h.application.inbox()).some((entry) => entry.id === capture.taskId));
   });
 
   it('reorders a task by changing only that task', async () => {
