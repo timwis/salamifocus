@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildTree, projectsInSelection, wouldNestInItself, type FolderRecord, type OrganisationNode, type ProjectRecord } from './organisation.ts';
+import { buildTree, placedProjects, projectsInSelection, wouldNestInItself, type FolderRecord, type OrganisationNode, type ProjectRecord } from './organisation.ts';
 
 const folder = (id: string, parentId: string | null, position: string): FolderRecord => ({ id, name: id, parentId, position });
 const project = (id: string, folderId: string | null, position: string): ProjectRecord => ({
@@ -48,4 +48,11 @@ test('a folder cannot be put inside itself or its descendants', () => {
   assert.equal(wouldNestInItself('personal', 'personal', parentOf), true);
   assert.equal(wouldNestInItself('parents', 'work', parentOf), false);
   assert.equal(wouldNestInItself('parents', null, parentOf), false);
+});
+
+test('every project knows the folders it is in, in sidebar order', () => {
+  assert.deepEqual(
+    placedProjects(buildTree(folders, projects)).map((p) => p.path.join(' : ')),
+    ['personal : miscellaneous', 'personal : parents : tax', 'personal : passport', 'work : work-misc'],
+  );
 });

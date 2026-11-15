@@ -1,36 +1,51 @@
 import { normaliseNote, normaliseTitle, titleProblem } from '@salamifocus/domain';
 import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
+import { useProjects } from '../projects/data.tsx';
 import type { Tags } from '../tags/data.tsx';
-import { editTaskNote, renameTask, tagTask, untagTask } from '../writes.ts';
+import { editTaskNote, moveTask, renameTask, tagTask, untagTask } from '../writes.ts';
+import { ProjectField } from './ProjectField.tsx';
 import { TagsField } from './TagsField.tsx';
 
 export interface EditableTask {
   id: string;
   title: string;
   note: string | null;
+  projectId: string | null;
   tagIds: readonly string[];
 }
 
-export type Field = 'title' | 'tags' | 'note';
+export type Field = 'title' | 'project' | 'tags' | 'note';
 
-const fieldOrder: Field[] = ['title', 'tags', 'note'];
+const fieldOrder: Field[] = ['title', 'project', 'tags', 'note'];
+
+// Written on closing rather than on leaving the field: either can take the task, and this editor, out of the
+// outline (out of the Inbox once it has both, or out of the selected project or tag).
+const savedOnClose = new Set<Field>(['project', 'tags']);
 
 /**
- * Edits a task in place. Each field is saved when the user leaves it, so Tab
- * moves on with the change kept, and Escape abandons only the field being
- * edited. Leaving the editor (Enter in the title or the empty tags field,
- * Cmd/Ctrl+Enter in the note, or focus moving elsewhere) closes it.
+ * Edits a task in place. Each field's change is kept when the user leaves it
+ * (the title and note are saved then, the project and tags on closing), so
+ * Tab moves on with the change kept, and Escape abandons only the field being
+ * edited. Leaving the editor (Enter in the title or an empty project or tags
+ * field, Cmd/Ctrl+Enter in the note, or focus moving elsewhere) closes it.
  */
 export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: EditableTask; tags: Tags; startIn?: Field; onClose: () => void }) {
   const [title, setTitle] = useState(task.title);
   const [note, setNote] = useState(task.note ?? '');
+  const [projectId, setProjectId] = useState(task.projectId);
   const [tagIds, setTagIds] = useState<string[]>([...task.tagIds]);
   const [problem, setProblem] = useState<string | null>(null);
+  const projects = useProjects();
   const container = useRef<HTMLDivElement>(null);
-  const fields = { title: useRef<HTMLInputElement>(null), tags: useRef<HTMLInputElement>(null), note: useRef<HTMLTextAreaElement>(null) };
+  const fields = {
+    title: useRef<HTMLInputElement>(null),
+    project: useRef<HTMLInputElement>(null),
+    tags: useRef<HTMLInputElement>(null),
+    note: useRef<HTMLTextAreaElement>(null),
+  };
   // What is typed, and what has been saved, without waiting for a re-render.
-  const typed = useRef({ title: task.title, note: task.note ?? '', tags: [...task.tagIds] });
-  const saved = useRef({ title: task.title, note: normaliseNote(task.note ?? ''), tags: [...task.tagIds] });
+  const typed = useRef({ title: task.title, note: task.note ?? '', projectId: task.projectId, tags: [...task.tagIds] });
+  const saved = useRef({ title: task.title, note: normaliseNote(task.note ?? ''), projectId: task.projectId, tags: [...task.tagIds] });
   const closed = useRef(false);
 
   useLayoutEffect(() => fields[startIn].current?.focus(), []);
@@ -56,6 +71,11 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
       if (next === saved.current.note) return;
       saved.current.note = next;
       void editTaskNote(task.id, next);
+    } else if (field === 'project') {
+      const next = typed.current.projectId;
+      if (next === saved.current.projectId) return;
+      saved.current.projectId = next;
+      void moveTask(task.id, next);
     } else {
       const before = new Set(saved.current.tags);
       const after = new Set(typed.current.tags);
@@ -78,8 +98,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
     if (event.key === 'Escape') return close(field);
     if (event.key === 'Tab') {
       event.preventDefault();
-      // Tags are kept but written on closing: in Tags, removing the selected tag would otherwise take the task, and this editor, out of the outline.
-      if (field !== 'tags') save(field);
+      if (!savedOnClose.has(field)) save(field);
       const next = fieldOrder[(fieldOrder.indexOf(field) + (event.shiftKey ? -1 : 1) + fieldOrder.length) % fieldOrder.length]!;
       fields[next].current?.focus();
     }
@@ -99,9 +118,9 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
     onFieldKeyDown('title', event);
   }
 
-  function onTagsKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+  function onChipsKeyDown(field: 'project' | 'tags', event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter') return close();
-    onFieldKeyDown('tags', event);
+    onFieldKeyDown(field, event);
   }
 
   function onNoteKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -131,6 +150,16 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
         />
         {problem && <span role="alert">{problem}</span>}
       </span>
+      <ProjectField
+        projects={projects}
+        value={projectId}
+        inputRef={fields.project}
+        onChange={(id) => {
+          typed.current.projectId = id;
+          setProjectId(id);
+        }}
+        onKeyDown={(event) => onChipsKeyDown('project', event)}
+      />
       <TagsField
         tags={tags}
         value={tagIds}
@@ -139,7 +168,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
           typed.current.tags = ids;
           setTagIds(ids);
         }}
-        onKeyDown={onTagsKeyDown}
+        onKeyDown={(event) => onChipsKeyDown('tags', event)}
       />
       <textarea
         ref={fields.note}

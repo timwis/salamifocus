@@ -179,6 +179,24 @@ describe('uploading a client transaction', () => {
     assert.deepEqual((await h.application.task(taskId))?.tags.map((t) => t.name), ['@Phone']);
   });
 
+  it('moves a task into a project, keeping its position when only the project changes', async () => {
+    const garden = crypto.randomUUID();
+    const house = crypto.randomUUID();
+    const projectMetadata = () => operationMetadata(OperationName.createProject);
+    await upload([{ op: 'PUT', table: 'projects', id: garden, data: { name: 'Garden', kind: 'project', position: 'a0' }, metadata: projectMetadata() }]);
+    await upload([{ op: 'PUT', table: 'projects', id: house, data: { name: 'House', kind: 'project', position: 'a1' }, metadata: projectMetadata() }]);
+    const capture = captureTransaction('fix the gate');
+    await upload(capture.entries);
+    const move = (data: Record<string, unknown>) => ({ op: 'PATCH', table: 'tasks', id: capture.taskId, data, metadata: operationMetadata(OperationName.moveTask) });
+
+    const results = await upload([move({ project_id: garden, position: 'a3' }), move({ project_id: house })]);
+
+    assert.deepEqual(results.map((r) => r.outcome), ['applied', 'applied']);
+    assert.deepEqual((await h.application.projects([house]))[0]?.tasks.map((t) => t.title), ['fix the gate']);
+    const [rejected] = await upload([move({ position: 'a4' })]);
+    assert.equal(rejected?.code, 'malformed_operation');
+  });
+
   it('rejects a move that also renames', async () => {
     const projectId = crypto.randomUUID();
     await upload([

@@ -1,4 +1,4 @@
-import { operationMetadata, OperationName, type ProjectKind } from '@salamifocus/domain';
+import { operationMetadata, OperationName, positionBetween, type ProjectKind } from '@salamifocus/domain';
 import { db } from './powersync.ts';
 
 // Every local write is one logical operation: its rows are written in one
@@ -27,6 +27,19 @@ export function completeTask(taskId: string) {
 
 export function reorderTask(taskId: string, position: string) {
   return write(OperationName.reorderTask, 'UPDATE tasks SET position = ?, _metadata = ? WHERE id = ?', (m) => [position, m, taskId]);
+}
+
+/** Puts a task at the end of a project or single-action list, or (with null) takes it out of any. */
+export async function moveTask(taskId: string, projectId: string | null) {
+  const metadata = operationMetadata(OperationName.moveTask);
+  await db.writeTransaction(async (tx) => {
+    let position: string | null = null;
+    if (projectId !== null) {
+      const { last } = await tx.get<{ last: string | null }>('SELECT max(position) AS last FROM tasks WHERE project_id = ? AND id != ?', [projectId, taskId]);
+      position = positionBetween(last, null);
+    }
+    await tx.execute('UPDATE tasks SET project_id = ?, position = ?, _metadata = ? WHERE id = ?', [projectId, position, metadata, taskId]);
+  });
 }
 
 /** Adds a task, in a project at a position or (with no project) in the Inbox, with any tags, as one operation. */

@@ -10,6 +10,7 @@ export interface OutlineTask {
   title: string;
   note: string | null;
   position: string | null;
+  projectId: string | null;
   /** Shown on the row where the project is not already the heading. */
   projectName?: string | null;
 }
@@ -161,6 +162,9 @@ export function Outline({
       case 'Enter':
         if (focused?.kind !== 'task') return;
         return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'title' });
+      case 'p':
+        if (focused?.kind !== 'task') return;
+        return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'project' });
       case 't':
         if (focused?.kind !== 'task') return;
         return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'tags' });

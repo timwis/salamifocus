@@ -146,6 +146,13 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     return { taskId: id, position: data.position };
   },
 
+  [OperationName.moveTask](entries) {
+    const { id, data } = onlyUpdate(entries, 'tasks', ['project_id', 'position']);
+    // Clients send only the columns that changed, so the position is absent when it stays the same.
+    if (!('project_id' in data)) throw new Malformed('A move must change the project.');
+    return { taskId: id, projectId: data.project_id ?? null, position: changed(data, 'position') };
+  },
+
   [OperationName.createFolder](entries) {
     const { id, data } = onlyInsert(entries, 'folders', ['name', 'parent_id', 'position']);
     return { folderId: id, name: data.name, parentId: data.parent_id ?? null, position: data.position };

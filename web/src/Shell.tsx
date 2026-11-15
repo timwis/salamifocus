@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { isTyping, useRovingFocus } from './focus.ts';
 import { Inbox } from './Inbox.tsx';
 import { goToPerspective, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
+import { OrganisationProvider } from './projects/data.tsx';
 import { ProjectsPerspective } from './projects/ProjectsPerspective.tsx';
 import { signOut } from './session.ts';
 import { TagsProvider } from './tags/data.tsx';
@@ -85,15 +86,17 @@ export function Shell() {
       </header>
       <div className="regions" data-perspective={place.perspective}>
         <PerspectiveNav current={place.perspective} onBrowse={goToPerspective} onOpen={switchTo} />
-        <TagsProvider>
-          {place.perspective === 'projects' ? (
-            <ProjectsPerspective place={place} />
-          ) : place.perspective === 'tags' ? (
-            <TagsPerspective place={place} />
-          ) : (
-            <Inbox />
-          )}
-        </TagsProvider>
+        <OrganisationProvider>
+          <TagsProvider>
+            {place.perspective === 'projects' ? (
+              <ProjectsPerspective place={place} />
+            ) : place.perspective === 'tags' ? (
+              <TagsPerspective place={place} />
+            ) : (
+              <Inbox />
+            )}
+          </TagsProvider>
+        </OrganisationProvider>
       </div>
     </div>
   );

@@ -397,7 +397,8 @@ nav:focus-within a[aria-current='page'] {
   color: var(--muted);
   line-height: 1.35rem;
 }
-.tag-chip {
+.tag-chip,
+.project-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
@@ -409,7 +410,8 @@ nav:focus-within a[aria-current='page'] {
   line-height: 1.35rem;
   white-space: nowrap;
 }
-.tag-chip button {
+.tag-chip button,
+.project-chip button {
   font: inherit;
   color: inherit;
   border: none;
@@ -417,19 +419,19 @@ nav:focus-within a[aria-current='page'] {
   padding: 0;
   cursor: pointer;
 }
-.tags-field {
+.chips-field {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.3rem;
   padding: 0.1rem 0.4rem;
 }
-.tags-input {
+.chips-input {
   position: relative;
   flex: 1;
   min-width: 8rem;
 }
-.tags-input input {
+.chips-input input {
   font: inherit;
   font-size: 0.85rem;
   width: 100%;
@@ -440,11 +442,11 @@ nav:focus-within a[aria-current='page'] {
   background: transparent;
   outline: none;
 }
-.tags-input input:focus {
+.chips-input input:focus {
   border-color: var(--accent);
   background: #fff;
 }
-.tag-suggestions {
+.suggestions {
   position: absolute;
   z-index: 1;
   top: 100%;
@@ -458,12 +460,12 @@ nav:focus-within a[aria-current='page'] {
   border-radius: 0.4rem;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
 }
-.tag-suggestions li {
+.suggestions li {
   padding: 0.25rem 0.5rem;
   border-radius: 0.3rem;
   cursor: default;
   white-space: nowrap;
 }
-.tag-suggestions li[aria-selected='true'] {
+.suggestions li[aria-selected='true'] {
   background: var(--selected);
 }

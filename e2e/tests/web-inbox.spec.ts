@@ -79,3 +79,80 @@ test('a blank title is refused without changing anything', async ({ page }) => {
   await expect(inbox(page).getByRole('button', { name: `water plants ${run}`, exact: true })).toBeVisible();
   expect(await server.history(taskId)).toHaveLength(1);
 });
+
+test('captures are processed from the keyboard, leaving the Inbox only once they have a project and a tag', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  // Not ending in the run's suffix, and placed before everything else, so other tests' sidebars can ignore them.
+  const mine = `${run}-inbox`;
+  const { tagId: errand } = await phone.createTag(`@Out and about ${mine}`, { position: 'Zz' });
+  const { folderId } = await phone.createFolder(`Outdoors ${mine}`, { position: 'Zy' });
+  const allotment = `Allotment ${mine}`;
+  await phone.createProject(allotment, { folderId });
+  const { projectId: misc } = await phone.createProject(`Odds and ends ${mine}`, { kind: 'single_actions', position: 'Zz' });
+  const hedge = await phone.capture(`sort hedge ${run}`);
+  const stamps = await phone.capture(`stamps ${run}`);
+  const last = await phone.capture(`ring the vet ${run}`);
+  await signIn(page);
+  await page.keyboard.press('1');
+  const row = (title: string) => inbox(page).getByRole('listitem').filter({ hasText: title });
+  await expect(row(`sort hedge ${run}`)).toBeVisible();
+  await page.keyboard.press('End');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowUp');
+  await expect(row(`sort hedge ${run}`)).toBeFocused();
+
+  // Reword, then Tab to the project and choose it by typing part of its folder path.
+  await page.keyboard.press('Enter');
+  await page.getByLabel('Title').fill(`Book a hedge trimmer ${run}`);
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Project')).toBeFocused();
+  await page.keyboard.type(`outdoors ${mine}`);
+  await expect(page.getByRole('listbox', { name: 'Matching projects' }).getByRole('option')).toHaveText([`Outdoors ${mine} : ${allotment}`]);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+
+  // With only a project it stays, showing the project.
+  const trimmer = row(`Book a hedge trimmer ${run}`);
+  await expect(trimmer).toContainText(allotment);
+  await expect(trimmer).toBeFocused();
+  await expect.poll(async () => (await server.task(hedge.taskId))?.projectId).not.toBeNull();
+
+  // With only a tag it stays too.
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('t');
+  await page.keyboard.type(`out and about ${mine}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(row(`stamps ${run}`).locator('.tag-chip')).toHaveText([`@Out and about ${mine}`]);
+  await expect.poll(async () => (await server.task(stamps.taskId))?.tags.map((t) => t.id)).toEqual([errand]);
+
+  // Giving it a single-action list as well processes it, and focus moves to the next item.
+  await page.keyboard.press('p');
+  await page.keyboard.type(`odds and ends ${mine}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Title')).toBeHidden();
+  await expect(row(`stamps ${run}`)).toHaveCount(0);
+  await expect(row(`ring the vet ${run}`)).toBeFocused();
+
+  // So does tagging the task that already had a project.
+  await page.keyboard.press('ArrowUp');
+  await expect(trimmer).toBeFocused();
+  await page.keyboard.press('t');
+  await page.keyboard.type(`out and about ${mine}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Title')).toBeHidden();
+  await expect(trimmer).toHaveCount(0);
+  await expect(row(`ring the vet ${run}`)).toBeFocused();
+
+  await expect.poll(async () => (await server.task(stamps.taskId))?.projectId).toBe(misc);
+  await expect.poll(async () => (await server.task(hedge.taskId))?.tags.length).toBe(1);
+  const processed = await server.task(hedge.taskId);
+  expect([processed?.title, processed?.capture?.text]).toEqual([`Book a hedge trimmer ${run}`, `sort hedge ${run}`]);
+  const inboxIds = (await server.inbox()).map((entry) => entry.id);
+  expect(inboxIds).not.toContain(hedge.taskId);
+  expect(inboxIds).not.toContain(stamps.taskId);
+  expect(inboxIds).toContain(last.taskId);
+  await expect(status(page)).toContainText('All changes uploaded');
+});

@@ -162,7 +162,44 @@ export const reorderTask: OperationDefinition<ReorderTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reorderTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
+export interface MoveTaskArgs {
+  taskId: string;
+  /** The project or single-action list to move into, or null to take the task out of any. */
+  projectId: string | null;
+  /** Its place among the project's tasks, or undefined to keep the one it has. */
+  position: string | null | undefined;
+}
+
+/** Puts a task in a project or single-action list, or takes it out of one. */
+export const moveTask: OperationDefinition<MoveTaskArgs> = {
+  name: OperationName.moveTask,
+  parse(input) {
+    const a = args.record(input);
+    const projectId = args.nullableUuid(a, 'projectId');
+    if (projectId === undefined) throw new Rejection('invalid_arguments', 'A move needs a project, or null for none.');
+    return {
+      taskId: args.uuid(a, 'taskId'),
+      projectId,
+      position: a.position === undefined ? undefined : a.position === null ? null : args.text(a, 'position'),
+    };
+  },
+  async apply(mutations, { taskId, projectId, position }) {
+    const task = await mutations.read('task', taskId);
+    if (!task) throw new Rejection('not_found', 'That task no longer exists.');
+    if (projectId === null) {
+      if (position) throw new Rejection('invalid_position', 'Only tasks in a project have a position.');
+      await mutations.update('task', taskId, { project_id: null, position: null });
+      return;
+    }
+    const next = position === undefined ? (task.position as string | null) : position;
+    const badPosition = next === null ? 'A task in a project needs a position.' : positionProblem(next);
+    if (badPosition) throw new Rejection('invalid_position', badPosition);
+    if (!(await mutations.exists('project', projectId))) throw new Rejection('not_found', 'That project no longer exists.');
+    await mutations.update('task', taskId, { project_id: projectId, position: next });
+  },
+};
+
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reorderTask, moveTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

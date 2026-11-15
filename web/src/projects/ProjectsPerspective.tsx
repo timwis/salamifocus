@@ -1,43 +1,9 @@
 import { useQuery } from '@powersync/react';
-import { buildTree, comparePositions, isProjectKind, projectsInSelection, ProjectKind } from '@salamifocus/domain';
-import { useMemo } from 'react';
+import { comparePositions, projectsInSelection } from '@salamifocus/domain';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
+import { useOrganisation } from './data.tsx';
 import { Sidebar } from './Sidebar.tsx';
-
-interface FolderRow {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  position: string;
-}
-
-interface ProjectRow {
-  id: string;
-  name: string;
-  kind: string;
-  folder_id: string | null;
-  position: string;
-}
-
-export function useOrganisation() {
-  const { data: folders } = useQuery<FolderRow>('SELECT id, name, parent_id, position FROM folders');
-  const { data: projects } = useQuery<ProjectRow>('SELECT id, name, kind, folder_id, position FROM projects');
-  return useMemo(
-    () =>
-      buildTree(
-        folders.map((f) => ({ id: f.id, name: f.name, parentId: f.parent_id, position: f.position })),
-        projects.map((p) => ({
-          id: p.id,
-          name: p.name,
-          kind: isProjectKind(p.kind) ? p.kind : ProjectKind.project,
-          folderId: p.folder_id,
-          position: p.position,
-        })),
-      ),
-    [folders, projects],
-  );
-}
 
 interface TaskRow {
   id: string;
@@ -60,7 +26,10 @@ export function ProjectsPerspective({ place }: { place: Place }) {
     heading: project.name,
     newTask: { projectId: project.id, tagId: null },
     ordered: true,
-    tasks: tasks.filter((t) => t.project_id === project.id).sort(comparePositions),
+    tasks: tasks
+      .filter((t) => t.project_id === project.id)
+      .sort(comparePositions)
+      .map((t) => ({ ...t, projectId: t.project_id })),
   }));
   const taskCount = groups.reduce((sum, g) => sum + g.tasks.length, 0);
 

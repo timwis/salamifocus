@@ -13,6 +13,7 @@ interface TaskRow {
   title: string;
   note: string | null;
   position: string | null;
+  project_id: string | null;
   project_name: string | null;
 }
 
@@ -28,7 +29,7 @@ export function TagsPerspective({ place }: { place: Place }) {
   const branch = selected ? tagBranch(tags.tree, selected) : [];
   const branchIds = branch.map((p) => p.tag.id);
   const { data: tasks } = useQuery<TaskRow>(
-    `SELECT t.id, t.title, t.note, t.position, p.name AS project_name
+    `SELECT t.id, t.title, t.note, t.position, t.project_id, p.name AS project_name
      FROM tasks t LEFT JOIN projects p ON p.id = t.project_id
      WHERE t.completed_at IS NULL AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN (${branchIds.map(() => '?').join(', ')}))
      ORDER BY t.created_at, t.id`,
@@ -41,7 +42,7 @@ export function TagsPerspective({ place }: { place: Place }) {
       // A task added here gets this tag, and waits in the Inbox until it has a project.
       newTask: { projectId: null, tagId: tag.id },
       ordered: false,
-      tasks: tasks.map((task) => ({ ...task, projectName: task.project_name })),
+      tasks: tasks.map((task) => ({ ...task, projectId: task.project_id, projectName: task.project_name })),
     }),
   );
   // With nothing in the branch, the selected tag still gets a heading, so tasks can be added to it.

@@ -8,6 +8,7 @@ export const OperationName = {
   editTaskNote: 'edit_task_note',
   completeTask: 'complete_task',
   reorderTask: 'reorder_task',
+  moveTask: 'move_task',
   createFolder: 'create_folder',
   renameFolder: 'rename_folder',
   moveFolder: 'move_folder',

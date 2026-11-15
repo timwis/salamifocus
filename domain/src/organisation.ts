@@ -131,3 +131,18 @@ export function wouldNestInItself(
   }
   return false;
 }
+
+export interface PlacedProject {
+  project: ProjectNode;
+  /** Names of the folders it is in, from the top level down, then its own. */
+  path: string[];
+}
+
+/** Every project and single-action list in sidebar order, with its full path. */
+export function placedProjects(tree: readonly OrganisationNode[]): PlacedProject[] {
+  const walk = (nodes: readonly OrganisationNode[], above: string[]): PlacedProject[] =>
+    nodes.flatMap((node) =>
+      node.type === 'project' ? [{ project: node, path: [...above, node.name] }] : walk(node.children, [...above, node.name]),
+    );
+  return walk(tree, []);
+}

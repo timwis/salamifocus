@@ -72,12 +72,13 @@ With the mouse, click selects and double-click renames. The **+ Tag** button doe
 
 ## Outline
 
-The task rows of the current perspective. In Projects, each selected project has a heading row. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
+The task rows of the current perspective. Inbox lists every unfinished task that still lacks a project (a single-action list counts) or a tag, oldest first; once it has both it leaves, and the row now in its place becomes current. In Projects, each selected project has a heading row. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
 
 | Key | Action |
 |---|---|
 | ↑ / ↓, Home / End | Previous / next row, first / last row |
 | Enter | Edit the task, starting in its title |
+| P | Edit the task's project |
 | T | Edit the task's tags |
 | Space | Complete the task. It leaves the outline and the row now in its place becomes current |
 | Alt+↑ / Alt+↓ | Move the task up or down within its project. The order is for your reading only; it never makes one task wait for another |
@@ -85,12 +86,16 @@ The task rows of the current perspective. In Projects, each selected project has
 
 ### Editing a task
 
-The task's fields, in order: title, tags, then note. Later tickets add defer and due dates before the note. Each field is saved when you leave it, except tags, which are kept when you leave them and saved when you stop editing (so in Tags, a task you are editing does not vanish from the outline when you remove the selected tag).
+The task's fields, in order: title, project, tags, then note. Later tickets add defer and due dates before the note. Each field is saved when you leave it, except the project and tags, which are kept when you leave them and saved when you stop editing (so a task you are editing does not vanish from the outline when it gets both in the Inbox, or loses the selected tag in Tags).
 
 | Key | Action |
 |---|---|
 | Tab / Shift+Tab | Next / previous field, keeping the change (wraps round) |
 | Enter in the title | Save and stop editing (a blank title is refused) |
+| Typing in project | Lists the projects and single-action lists whose name or folder path contains what you typed |
+| ↑ / ↓ in project | Choose among the listed projects |
+| Enter in project | Put the task in the chosen project, at the end; with nothing typed, save and stop editing |
+| Backspace in empty project | Take the task out of its project |
 | Typing in tags | Lists the tags whose name or path contains what you typed |
 | ↑ / ↓ in tags | Choose among the listed tags |
 | Enter in tags | Add the chosen tag; with nothing typed, save and stop editing |

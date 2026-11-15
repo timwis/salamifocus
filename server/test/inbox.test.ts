@@ -48,6 +48,10 @@ async function createTask(title: string, projectId: string | null, tagIds: strin
 }
 
 /** Sorted, since captures made in one test share a capture time. */
+async function moveTask(taskId: string, projectId: string | null, position: string | null = 'a0') {
+  return perform(OperationName.moveTask, { taskId, projectId, position });
+}
+
 const inboxTitles = async () => (await h.application.inbox()).map((entry) => entry.title).sort();
 
 describe('the Inbox', () => {
@@ -64,6 +68,67 @@ describe('the Inbox', () => {
     await createTask('Return library books', misc, [errand]);
 
     assert.deepEqual(await inboxTitles(), ['Mow the lawn', 'buy stamps', 'call the plumber']);
+  });
+
+  it('keeps a capture given only a project, or only a tag, and lets it go once it has both', async () => {
+    const errand = await tag('@Errand');
+    const misc = await project('Miscellaneous', 'single_actions');
+    const projectFirst = await capture('post the parcel');
+    const tagFirst = await capture('buy stamps');
+
+    assert.equal(await moveTask(projectFirst, misc), 'applied');
+    await tagTask(tagFirst, errand);
+    assert.deepEqual(await inboxTitles(), ['buy stamps', 'post the parcel']);
+
+    await tagTask(projectFirst, errand);
+    assert.equal(await moveTask(tagFirst, misc, 'a1'), 'applied');
+    assert.deepEqual(await inboxTitles(), []);
+    assert.deepEqual((await h.application.projects([misc]))[0]?.tasks.map((t) => t.title), ['post the parcel', 'buy stamps']);
+  });
+
+  it('records a move as one change to the task, and keeps the original capture', async () => {
+    const garden = await project('Garden');
+    const taskId = await capture('sort out the hedge');
+    assert.equal(await perform(OperationName.renameTask, { taskId, title: 'Book a hedge trimmer' }), 'applied');
+
+    assert.equal(await moveTask(taskId, garden), 'applied');
+
+    const task = await h.application.task(taskId);
+    assert.deepEqual([task?.title, task?.projectId, task?.capture?.text], ['Book a hedge trimmer', garden, 'sort out the hedge']);
+    const moved = (await h.application.history(taskId)).at(-1);
+    assert.equal(moved?.operation, OperationName.moveTask);
+    assert.deepEqual(moved?.changes.map(({ before, after }) => ({ before, after })), [
+      { before: { project_id: null, position: null }, after: { project_id: garden, position: 'a0' } },
+    ]);
+  });
+
+  it('moves a task between projects, keeping its position when none is given, and back out of any', async () => {
+    const garden = await project('Garden');
+    const house = await project('House');
+    const taskId = await createTask('Fix the gate', garden);
+
+    assert.equal(await perform(OperationName.moveTask, { taskId, projectId: house }), 'applied');
+    assert.equal((await h.application.task(taskId))?.projectId, house);
+
+    assert.equal(await moveTask(taskId, null, null), 'applied');
+    assert.deepEqual(await inboxTitles(), ['Fix the gate']);
+    assert.deepEqual((await h.application.projects([house]))[0]?.tasks, []);
+  });
+
+  it('refuses a move to a missing project, without a position, or with a position but no project', async () => {
+    const garden = await project('Garden');
+    const taskId = await capture('water the beds');
+
+    assert.equal(await moveTask(taskId, crypto.randomUUID()), 'not_found');
+    assert.equal(await moveTask(taskId, garden, null), 'invalid_position');
+    assert.equal(await perform(OperationName.moveTask, { taskId, projectId: garden }), 'invalid_position');
+    assert.equal(await moveTask(taskId, garden, 'not a key!'), 'invalid_position');
+    assert.equal(await moveTask(taskId, null, 'a0'), 'invalid_position');
+    assert.equal(await perform(OperationName.moveTask, { taskId }), 'invalid_arguments');
+    assert.equal(await moveTask(crypto.randomUUID(), garden), 'not_found');
+
+    assert.equal((await h.application.task(taskId))?.projectId, null);
+    assert.equal((await h.application.history(taskId)).length, 1);
   });
 
   it('takes a task back when it loses its last tag', async () => {

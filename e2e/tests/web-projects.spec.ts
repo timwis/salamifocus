@@ -182,6 +182,8 @@ test('a task’s title and note are edited together; Tab keeps a change and Esca
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('Title')).toBeFocused();
   await page.keyboard.press('Tab');
+  await expect(page.getByRole('combobox', { name: 'Project' })).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByRole('combobox', { name: 'Tags' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByLabel('Note')).toBeFocused();
