@@ -68,7 +68,9 @@ export function buildTree(folders: readonly FolderRecord[], projects: readonly P
   const children = new Map<string | null, (FolderRecord | ProjectRecord)[]>();
   const add = (parent: string | null, item: FolderRecord | ProjectRecord) => {
     const key = parent !== null && folderIds.has(parent) ? parent : null;
-    children.set(key, [...(children.get(key) ?? []), item]);
+    const siblings = children.get(key);
+    if (siblings) siblings.push(item);
+    else children.set(key, [item]);
   };
   for (const folder of folders) add(folder.parentId, folder);
   for (const project of projects) add(project.folderId, project);
@@ -92,11 +94,6 @@ export function buildTree(folders: readonly FolderRecord[], projects: readonly P
     roots.push({ type: 'folder', id: folder.id, name: folder.name, position: folder.position, children: nodesUnder(folder.id) });
   }
   return roots;
-}
-
-/** Every project in the tree, in sidebar order. */
-export function allProjects(tree: readonly OrganisationNode[]): ProjectNode[] {
-  return tree.flatMap((node) => (node.type === 'project' ? [node] : allProjects(node.children)));
 }
 
 /**

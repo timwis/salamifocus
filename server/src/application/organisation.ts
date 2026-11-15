@@ -1,4 +1,4 @@
-import { isProjectKind, nameProblem, normaliseName, OperationName, positionProblem, type ProjectKind } from '@salamifocus/domain';
+import { isProjectKind, nameProblem, normaliseName, OperationName, positionProblem, wouldNestInItself, type ProjectKind } from '@salamifocus/domain';
 import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import type { OperationDefinition } from './operations.ts';
@@ -96,9 +96,9 @@ export const moveFolder: OperationDefinition<MoveFolderArgs> = {
       // both pass the check below and form a cycle together.
       await mutations.lock('folder-hierarchy');
       await checkFolderExists(mutations, parentId);
-      for (let current = parentId; current !== null; ) {
-        if (current === folderId) throw new Rejection('would_nest_in_itself', 'A folder cannot go inside itself.');
-        current = ((await mutations.read('folder', current))?.parent_id as string | null | undefined) ?? null;
+      const parents = new Map((await mutations.list('folder')).map((f) => [f.id as string, f.parent_id as string | null]));
+      if (wouldNestInItself(folderId, parentId, (id) => parents.get(id))) {
+        throw new Rejection('would_nest_in_itself', 'A folder cannot go inside itself.');
       }
       patch.parent_id = parentId;
     }

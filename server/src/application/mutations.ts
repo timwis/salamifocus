@@ -44,6 +44,11 @@ export class Mutations {
     return rows.length > 0;
   }
 
+  /** Every row of an entity. Meant for small tables such as folders. */
+  async list(entity: Entity): Promise<Row[]> {
+    return this.#tx<Row[]>`SELECT * FROM ${this.#tx(tables[entity])}`;
+  }
+
   /** The current row, locked until the operation finishes so concurrent operations see each other's effects. */
   async read(entity: Entity, id: string): Promise<Row | null> {
     const [row] = await this.#tx<Row[]>`SELECT * FROM ${this.#tx(tables[entity])} WHERE id = ${id} FOR UPDATE`;
