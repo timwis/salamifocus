@@ -1,5 +1,6 @@
-import { useEffect, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { flushSync } from 'react-dom';
+import { CaptureBox } from './Capture.tsx';
 import { isTyping, useRovingFocus } from './focus.ts';
 import { Inbox } from './Inbox.tsx';
 import { goToPerspective, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
@@ -48,10 +49,30 @@ function switchTo(perspective: Perspective) {
  */
 export function Shell() {
   const place = usePlace();
+  const [capturing, setCapturing] = useState(false);
+  // Where focus was before capturing, to return to afterwards.
+  const returnTo = useRef<Element | null>(null);
+
+  function startCapture() {
+    returnTo.current = document.activeElement;
+    setCapturing(true);
+  }
+
+  function endCapture() {
+    flushSync(() => setCapturing(false));
+    const previous = returnTo.current;
+    if (previous instanceof HTMLElement && previous.isConnected && previous !== document.body) previous.focus();
+    else focusRegion(place.perspective === 'inbox' ? 'outline' : 'sidebar');
+  }
 
   useEffect(() => {
     function onKeyDown(event: globalThis.KeyboardEvent) {
       if (isTyping(event) || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.key === 'c') {
+        event.preventDefault();
+        startCapture();
+        return;
+      }
       const perspective = perspectives[Number(event.key) - 1];
       if (!perspective) return;
       event.preventDefault();
@@ -80,6 +101,18 @@ export function Shell() {
       <header>
         <h1>salamifocus</h1>
         <SyncState />
+        <button
+          type="button"
+          className="capture-button"
+          tabIndex={-1}
+          title="Capture to Inbox (C)"
+          aria-keyshortcuts="C"
+          // Keeps focus where it is, so it can go back there after capturing.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={startCapture}
+        >
+          + Capture
+        </button>
         <button type="button" onClick={() => void signOut()}>
           Sign out
         </button>
@@ -98,6 +131,7 @@ export function Shell() {
           </TagsProvider>
         </OrganisationProvider>
       </div>
+      {capturing && <CaptureBox onClose={endCapture} />}
     </div>
   );
 }

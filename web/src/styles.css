@@ -469,3 +469,42 @@ nav:focus-within a[aria-current='page'] {
 .suggestions li[aria-selected='true'] {
   background: var(--selected);
 }
+
+/* Quick capture, over whatever perspective is open */
+header .capture-button {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+}
+.capture-box {
+  position: fixed;
+  z-index: 2;
+  top: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 0.6rem 0.75rem 0.4rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+}
+.capture-box input {
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.35rem;
+  outline: none;
+}
+.capture-box .hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}

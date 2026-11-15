@@ -19,6 +19,7 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 2 | Go to Projects (focus goes to the sidebar) |
 | 3 | Go to Tags (focus goes to the sidebar) |
 | Tab / Shift+Tab | Next / previous region |
+| C | Capture to the Inbox without leaving where you are. Enter saves and clears the box for the next one; Enter on an empty box or Escape closes it, and focus goes back where it was. The **+ Capture** button does the same |
 
 ## Perspective navigation
 

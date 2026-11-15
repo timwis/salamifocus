@@ -204,3 +204,44 @@ test('a new project is created in a chosen folder without leaving the row', asyn
   expect((await server.task(taskId))?.projectId).toBe(created[0]?.id);
   await expect(status(page)).toContainText('All changes uploaded');
 });
+
+test('C captures to the Inbox from any perspective and puts focus back where it was', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const shed = `Shed ${run}-capture`;
+  const { projectId } = await phone.createProject(shed, { position: 'Zw' });
+  await signIn(page);
+  await page.goto(`/projects/${projectId}`);
+  await page.keyboard.press('2');
+  const project = page.getByRole('tree', { name: 'Folders and projects' }).getByRole('treeitem', { name: shed, exact: true });
+  await expect(project).toBeFocused();
+
+  await page.keyboard.press('c');
+  await expect(page.getByRole('dialog', { name: 'Capture to Inbox' })).toBeVisible();
+  await page.keyboard.type(`  oil the hinges ${run} `);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('textbox', { name: 'Capture', exact: true })).toHaveValue('');
+  await page.keyboard.type(`buy creosote ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Capture to Inbox' })).toBeHidden();
+  await expect(project).toBeFocused();
+
+  // Escape abandons what was typed.
+  await page.keyboard.press('c');
+  await page.keyboard.type(`never mind ${run}`);
+  await page.keyboard.press('Escape');
+  await expect(project).toBeFocused();
+
+  await page.keyboard.press('1');
+  const titles = inbox(page).getByRole('listitem').getByRole('button', { name: new RegExp(`${run}$`) });
+  await expect(inbox(page).getByRole('button', { name: `oil the hinges ${run}`, exact: true })).toBeVisible();
+  await expect(inbox(page).getByRole('button', { name: `buy creosote ${run}`, exact: true })).toBeVisible();
+  await expect(titles.filter({ hasText: 'never mind' })).toHaveCount(0);
+
+  const uploaded = async () => (await server.inbox()).find((e) => e.title === `oil the hinges ${run}`)?.id;
+  await expect.poll(uploaded).toBeTruthy();
+  const id = (await uploaded())!;
+  expect((await server.task(id))?.capture?.text).toBe(`  oil the hinges ${run} `);
+  expect((await server.history(id)).map((h) => [h.operation, h.source])).toEqual([['capture_text', 'web']]);
+  await expect(status(page)).toContainText('All changes uploaded');
+});

@@ -1,4 +1,4 @@
-import { operationMetadata, OperationName, positionBetween, ProjectKind } from '@salamifocus/domain';
+import { operationMetadata, OperationName, positionBetween, ProjectKind, titleFromCapture } from '@salamifocus/domain';
 import type { Transaction } from '@powersync/web';
 import { db } from './powersync.ts';
 
@@ -8,6 +8,24 @@ import { db } from './powersync.ts';
 async function write(op: OperationName, sql: string, params: (metadata: string) => unknown[]): Promise<void> {
   const metadata = operationMetadata(op);
   await db.writeTransaction((tx) => tx.execute(sql, params(metadata)));
+}
+
+/** Saves text as a new Inbox task, keeping the text exactly as typed as its original capture. */
+export async function captureText(text: string): Promise<string> {
+  const taskId = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const metadata = operationMetadata(OperationName.captureText);
+  await db.writeTransaction(async (tx) => {
+    await tx.execute('INSERT INTO tasks (id, title, created_at, _metadata) VALUES (?, ?, ?, ?)', [taskId, titleFromCapture(text), now, metadata]);
+    await tx.execute('INSERT INTO captures (id, task_id, text, captured_at, _metadata) VALUES (?, ?, ?, ?, ?)', [
+      crypto.randomUUID(),
+      taskId,
+      text,
+      now,
+      metadata,
+    ]);
+  });
+  return taskId;
 }
 
 export function renameTask(taskId: string, title: string) {
