@@ -238,6 +238,19 @@ describe('uploading a client transaction', () => {
     assert.equal(rejected?.code, 'malformed_operation');
   });
 
+  it('sets and clears a due date', async () => {
+    const { taskId, entries } = captureTransaction('file the tax return');
+    await upload(entries);
+    const due = (data: Record<string, unknown>) => ({ op: 'PATCH', table: 'tasks', id: taskId, data, metadata: operationMetadata(OperationName.setTaskDue) });
+
+    assert.deepEqual((await upload([due({ due_at: '2026-11-20T17:00:00.000Z' })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.task(taskId))?.dueAt, '2026-11-20T17:00:00.000Z');
+    assert.deepEqual((await upload([due({ due_at: null })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.task(taskId))?.dueAt, null);
+    const [rejected] = await upload([due({ due_at: '2026-11-20T17:00:00.000Z', defer_until: null })]);
+    assert.equal(rejected?.code, 'malformed_operation');
+  });
+
   it('moves a task with its children, the client sending its own copy of their move', async () => {
     const [from, to] = [crypto.randomUUID(), crypto.randomUUID()];
     const [parent, child] = [crypto.randomUUID(), crypto.randomUUID()];

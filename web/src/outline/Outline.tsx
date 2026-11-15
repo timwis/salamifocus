@@ -332,7 +332,7 @@ export function Outline({
                       >
                         {task.title}
                       </button>
-                      {(chips.length > 0 || task.projectName || blocked || deferred || pastDefer) && (
+                      {(chips.length > 0 || task.projectName || blocked || deferred || pastDefer || task.dueBy) && (
                         <span className="task-meta">
                           {blocked && (
                             <span className="availability" title="Waiting on an unfinished task beneath it">
@@ -348,6 +348,11 @@ export function Outline({
                             </span>
                           )}
                           {pastDefer && <span className="task-date">Deferred until {describeDate(pastDefer, 'defer', now)}</span>}
+                          {task.dueBy && (
+                            <span className="task-date" title={task.dueBy === task.dueAt ? undefined : 'Due with a task it is beneath'}>
+                              Due {describeDate(task.dueBy, 'due', now)}
+                            </span>
+                          )}
                           {task.projectName && <span className="task-project">{task.projectName}</span>}
                           {chips.map(({ tag, path }) => (
                             <span key={tag.id} className="tag-chip" title={path.join(tagPathSeparator)}>

@@ -154,6 +154,11 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     return { taskId: id, deferUntil: data.defer_until ?? null };
   },
 
+  [OperationName.setTaskDue](entries) {
+    const { id, data } = onlyUpdate(entries, 'tasks', ['due_at']);
+    return { taskId: id, dueAt: data.due_at ?? null };
+  },
+
   [OperationName.reorderTask](entries) {
     const { id, data } = onlyUpdate(entries, 'tasks', ['position']);
     return { taskId: id, position: data.position };

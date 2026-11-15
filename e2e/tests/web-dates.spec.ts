@@ -22,11 +22,11 @@ async function advanceTo(page: Page, time: string) {
   await page.clock.fastForward(Date.parse(time) - (await page.evaluate(() => Date.now())));
 }
 
-/** Opens the current row's editor and tabs from the title, past project and tags, to Defer until. */
-async function tabToDefer(page: Page) {
+/** Opens the current row's editor and tabs from the title, past project and tags, to Defer until (or past it to Due). */
+async function tabTo(page: Page, field: 'Defer until' | 'Due') {
   await page.keyboard.press('Enter');
-  for (let i = 0; i < 3; i++) await page.keyboard.press('Tab');
-  await expect(page.getByLabel('Defer until')).toBeFocused();
+  for (let i = 0; i < (field === 'Due' ? 4 : 3); i++) await page.keyboard.press('Tab');
+  await expect(page.getByLabel(field, { exact: true })).toBeFocused();
 }
 
 test('a prerequisite deferred by a week keeps blocking its parent, and comes back with the app left open', async ({ page }) => {
@@ -46,7 +46,7 @@ test('a prerequisite deferred by a week keeps blocking its parent, and comes bac
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('ArrowDown');
   await expect(child).toBeFocused();
-  await tabToDefer(page);
+  await tabTo(page, 'Defer until');
   await page.keyboard.type('1 week');
   // The resolved date shows before it is committed.
   await expect(page.getByLabel('Defer until')).toHaveAccessibleDescription('Mon 23 Nov 2026');
@@ -107,7 +107,7 @@ test('a defer date that is not a date is refused in place, and an emptied one is
   await expect(row).toContainText('Deferred until Tue 1 Dec');
 
   await page.keyboard.press('ArrowDown');
-  await tabToDefer(page);
+  await tabTo(page, 'Defer until');
   const field = page.getByLabel('Defer until');
   await expect(field).toHaveValue('Tue 1 Dec 2026');
   await field.fill('whenever');
@@ -122,10 +122,10 @@ test('a defer date that is not a date is refused in place, and an emptied one is
   await expect(row).toContainText('Deferred until Tue 1 Dec');
 
   // Short forms work, and leaving the field shows the date in full.
-  await tabToDefer(page);
+  await tabTo(page, 'Defer until');
   await field.fill('3d');
   await page.keyboard.press('Tab');
-  await expect(page.getByLabel('Note')).toBeFocused();
+  await expect(page.getByLabel('Due', { exact: true })).toBeFocused();
   await expect(field).toHaveValue('Thu 19 Nov 2026');
   await page.keyboard.press('Shift+Tab');
   await field.fill('');
@@ -136,4 +136,47 @@ test('a defer date that is not a date is refused in place, and an emptied one is
   await expect.poll(async () => (await server.task(taskId))?.deferUntil).toBeNull();
   const changes = (await server.history(taskId)).filter((e) => e.operation === 'defer_task').map((e) => e.changes[0]?.after);
   expect(changes).toEqual([{ defer_until: '2026-12-01T00:00:00.000Z' }, { defer_until: '2026-11-19T00:00:00.000Z' }, { defer_until: null }]);
+});
+
+test('a due date is kept apart from deferral, shown on the row, and never changes availability', async ({ page }) => {
+  await page.clock.install({ time: monday });
+  const phone = await SimulatedDevice.signIn();
+  const tax = `Tax return (${run})`;
+  const { projectId } = await phone.createProject(tax, { position: 'a7s' });
+  const { taskId } = await phone.createTask(projectId, `File the return ${run}`, 'a0');
+  await openProject(page, projectId);
+  const row = page.getByRole('list', { name: tax }).getByRole('listitem');
+  const due = page.getByLabel('Due', { exact: true });
+  await expect(row).toContainText(`File the return ${run}`);
+
+  await page.keyboard.press('ArrowDown');
+  await tabTo(page, 'Due');
+  await page.keyboard.type('fri');
+  // Without a time, a due date means 17:00.
+  await expect(due).toHaveAccessibleDescription('Fri 20 Nov 2026');
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Note')).toBeFocused();
+  await expect(due).toHaveValue('Fri 20 Nov 2026');
+  await page.keyboard.press('Escape');
+  await expect(row).toContainText('Due Fri 20 Nov');
+  await expect(row).not.toHaveAttribute('data-unavailable');
+  await expect.poll(async () => (await server.task(taskId))?.dueAt).toBe('2026-11-20T17:00:00.000Z');
+
+  await tabTo(page, 'Defer until');
+  await page.keyboard.type('2w');
+  await page.keyboard.press('Enter');
+  await expect(row).toContainText('Deferred until Mon 30 Nov');
+  await expect(row).toContainText('Due Fri 20 Nov');
+
+  // Past its due date it is still deferred, and no more than that.
+  await advanceTo(page, '2026-11-21T09:00:00.000Z');
+  await expect(row).toHaveAttribute('data-unavailable', 'deferred');
+
+  await tabTo(page, 'Due');
+  await due.fill('');
+  await page.keyboard.press('Enter');
+  await expect(row).not.toContainText('Due');
+  await expect(row).toContainText('Deferred until Mon 30 Nov');
+  await expect.poll(async () => (await server.task(taskId))?.dueAt).toBeNull();
+  expect((await server.task(taskId))?.deferUntil).toBe('2026-11-30T00:00:00.000Z');
 });

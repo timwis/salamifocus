@@ -29,7 +29,7 @@ async function addTask(projectId: string, title: string, parentId: string | null
 const defer = (taskId: string, deferUntil: string | null) => perform(OperationName.deferTask, { taskId, deferUntil });
 const unavailable = async (taskId: string) => (await h.application.task(taskId))?.unavailable;
 
-describe('deferral', () => {
+describe('defer and due dates', () => {
   it('keeps a deferred prerequisite blocking its parent, and makes it available when its date arrives', async () => {
     h.clock.set(new Date('2026-11-16T09:00:00.000Z'));
     const id = await project('Quarterly report');
@@ -89,5 +89,29 @@ describe('deferral', () => {
       history.filter((e) => e.operation === OperationName.deferTask).map((e) => e.changes[0]?.after),
       [{ defer_until: '2026-11-30T00:00:00.000Z' }, { defer_until: null }],
     );
+  });
+
+  it('keeps a due date separate from deferral: it never changes availability, and tasks beneath are due by it too', async () => {
+    h.clock.set(new Date('2026-11-16T09:00:00.000Z'));
+    const id = await project('Tax return');
+    const file = await addTask(id, 'File the return');
+    const gather = await addTask(id, 'Gather the receipts', file);
+    const due = (taskId: string, dueAt: string | null) => perform(OperationName.setTaskDue, { taskId, dueAt });
+
+    assert.equal(await due(file, '2026-11-20T17:00:00.000Z'), 'applied');
+    assert.equal(await due(gather, '2026-11-25T17:00:00.000Z'), 'applied');
+    assert.equal(await defer(gather, '2026-11-18T00:00:00.000Z'), 'applied');
+    const task = await h.application.task(gather);
+    assert.deepEqual([task?.dueAt, task?.dueBy, task?.deferUntil], ['2026-11-25T17:00:00.000Z', '2026-11-20T17:00:00.000Z', '2026-11-18T00:00:00.000Z']);
+
+    // Past its due date, a task is still only as unavailable as it was.
+    h.clock.set(new Date('2026-11-30T09:00:00.000Z'));
+    assert.deepEqual(await unavailable(gather), []);
+    assert.deepEqual(await unavailable(file), ['blocked']);
+
+    assert.equal(await due(gather, null), 'applied');
+    assert.equal((await h.application.task(gather))?.dueAt, null);
+    assert.equal((await h.application.task(gather))?.deferUntil, '2026-11-18T00:00:00.000Z');
+    assert.equal(await due(gather, 'friday'), 'invalid_arguments');
   });
 });

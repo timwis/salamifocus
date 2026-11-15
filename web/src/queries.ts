@@ -1,4 +1,4 @@
-import { deferredUntilColumn } from '@salamifocus/domain';
+import { deferredUntilColumn, dueByColumn } from '@salamifocus/domain';
 
 /**
  * Selects how many of a task's children (the task aliased `t`) are unfinished, as `unfinishedChildren`,
@@ -14,7 +14,11 @@ export interface TaskState {
   deferredUntil: string | null;
   /** The task's own defer date. */
   deferUntil: string | null;
+  /** The task's own due date. */
+  dueAt: string | null;
+  /** The earliest due date among the task and the tasks it is beneath. */
+  dueBy: string | null;
 }
 
 /** Selects a task's `TaskState`. */
-export const taskStateColumns = `${unfinishedChildrenColumn}, ${deferredUntilColumn}, t.defer_until AS "deferUntil"`;
+export const taskStateColumns = `${unfinishedChildrenColumn}, ${deferredUntilColumn}, t.defer_until AS "deferUntil", ${dueByColumn}, t.due_at AS "dueAt"`;

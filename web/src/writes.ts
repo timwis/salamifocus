@@ -51,6 +51,11 @@ export function deferTask(taskId: string, deferUntil: string | null) {
   return write(OperationName.deferTask, 'UPDATE tasks SET defer_until = ?, _metadata = ? WHERE id = ?', (m) => [deferUntil, m, taskId]);
 }
 
+/** Sets a task's due date, or with null clears it. */
+export function setTaskDue(taskId: string, dueAt: string | null) {
+  return write(OperationName.setTaskDue, 'UPDATE tasks SET due_at = ?, _metadata = ? WHERE id = ?', (m) => [dueAt, m, taskId]);
+}
+
 export function reorderTask(taskId: string, position: string) {
   return write(OperationName.reorderTask, 'UPDATE tasks SET position = ?, _metadata = ? WHERE id = ?', (m) => [position, m, taskId]);
 }

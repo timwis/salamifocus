@@ -31,10 +31,17 @@ export function unavailability(task: AvailabilityFacts, now: Date): Unavailable[
 }
 
 /**
- * SQL selecting, as `deferredUntil`, the latest defer date among a task (aliased `t`) and the tasks it is
- * beneath, which defer it too. Runs on Postgres and on the clients' SQLite; UNION stops at a cycle.
+ * SQL selecting the latest or earliest value of a date column among a task (aliased `t`) and the tasks it is
+ * beneath. Runs on Postgres and on the clients' SQLite; UNION stops at a cycle.
  */
-export const deferredUntilColumn = `(WITH RECURSIVE up(id, parent_id, defer_until) AS (
-    SELECT t.id, t.parent_id, t.defer_until
-    UNION SELECT p.id, p.parent_id, p.defer_until FROM tasks p JOIN up ON p.id = up.parent_id
-  ) SELECT max(defer_until) FROM up) AS "deferredUntil"`;
+const inheritedDate = (column: 'defer_until' | 'due_at', pick: 'max' | 'min', alias: string) =>
+  `(WITH RECURSIVE up(id, parent_id, value) AS (
+    SELECT t.id, t.parent_id, t.${column}
+    UNION SELECT p.id, p.parent_id, p.${column} FROM tasks p JOIN up ON p.id = up.parent_id
+  ) SELECT ${pick}(value) FROM up) AS "${alias}"`;
+
+/** Selects `deferredUntil`: the latest defer date among a task and the tasks it is beneath, which defer it too. */
+export const deferredUntilColumn = inheritedDate('defer_until', 'max', 'deferredUntil');
+
+/** Selects `dueBy`: the earliest due date among a task and the tasks it is beneath, since it must be done before them. */
+export const dueByColumn = inheritedDate('due_at', 'min', 'dueBy');

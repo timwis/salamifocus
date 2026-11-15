@@ -171,6 +171,24 @@ export const deferTask: OperationDefinition<DeferTaskArgs> = {
   },
 };
 
+export interface SetTaskDueArgs {
+  taskId: string;
+  /** The task's deadline, or null for none. */
+  dueAt: string | null;
+}
+
+/** Sets or clears a task's due date. It never changes whether the task can be worked on. */
+export const setTaskDue: OperationDefinition<SetTaskDueArgs> = {
+  name: OperationName.setTaskDue,
+  parse(input) {
+    const a = args.record(input);
+    return { taskId: args.uuid(a, 'taskId'), dueAt: args.nullableTime(a, 'dueAt') };
+  },
+  async apply(mutations, { taskId, dueAt }) {
+    await mutations.update('task', taskId, { due_at: dueAt });
+  },
+};
+
 export interface ReorderTaskArgs {
   taskId: string;
   position: string;
@@ -228,7 +246,7 @@ export const moveTask: OperationDefinition<MoveTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, deferTask, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, deferTask, setTaskDue, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

@@ -270,6 +270,7 @@ test('in Tags, removing the selected tag while editing keeps the editor open unt
   await page.waitForTimeout(500);
   await expect(page.getByLabel('Defer until')).toBeFocused();
   await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
   await expect(page.getByLabel('Note')).toBeFocused();
   await page.keyboard.type('After flowering');
   await page.keyboard.press('ControlOrMeta+Enter');

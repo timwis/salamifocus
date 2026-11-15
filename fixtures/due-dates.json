@@ -1,0 +1,143 @@
+{
+  "scenario": "Due dates",
+  "description": "A due date is a deadline, kept separate from deferral: it never makes a task available or unavailable. See “Dates and waiting” in the spec.",
+  "examples": [
+    {
+      "name": "A due date, passed or still to come, never changes availability",
+      "clock": "2026-11-30T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-20T17:00:00.000Z"
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-12-10T17:00:00.000Z"
+          },
+          {
+            "id": "book-room",
+            "title": "Book the meeting room",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-27T17:00:00.000Z"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [],
+          "book-room": []
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  },
+                  {
+                    "id": "book-room",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "A deferred task stays deferred until its defer date, even past its due date",
+      "clock": "2026-11-25T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-12-01T00:00:00.000Z",
+            "due_at": "2026-11-20T17:00:00.000Z"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "email-steve": [
+            "deferred"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "email-steve",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -188,6 +188,8 @@ test('a task’s title and note are edited together; Tab keeps a change and Esca
   await page.keyboard.press('Tab');
   await expect(page.getByLabel('Defer until')).toBeFocused();
   await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Due', { exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByLabel('Note')).toBeFocused();
   await page.keyboard.type('Policy 12-345');
   await page.keyboard.press('Enter');
@@ -261,6 +263,8 @@ test('Space completes a task, focus moves to the next row, and an emptied single
 test('the mouse works too: clicking a perspective or empty space leaves the keys working, and buttons add things', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const { folderId } = await phone.createFolder(`Garage ${run}`, { position: 'a6' });
+  // Leaves empty space below the sidebar's items, which earlier tests in the run add to.
+  await page.setViewportSize({ width: 1280, height: 1200 });
   await signIn(page);
 
   // Clicking Projects puts focus in the sidebar, so N works straight away.

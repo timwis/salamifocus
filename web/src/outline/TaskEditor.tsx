@@ -3,7 +3,7 @@ import { normaliseNote, normaliseTitle, titleFromCapture, titleProblem } from '@
 import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { useFolders, useProjects } from '../projects/data.tsx';
 import type { Tags } from '../tags/data.tsx';
-import { createProjectForTask, deferTask, editTaskNote, moveTask, renameTask, tagTask, untagTask } from '../writes.ts';
+import { createProjectForTask, deferTask, editTaskNote, moveTask, renameTask, setTaskDue, tagTask, untagTask } from '../writes.ts';
 import { DateField, dateFieldMeaning, dateText } from './DateField.tsx';
 import { ProjectField, type NewProject } from './ProjectField.tsx';
 import { TagsField } from './TagsField.tsx';
@@ -15,16 +15,18 @@ export interface EditableTask {
   projectId: string | null;
   tagIds: readonly string[];
   deferUntil?: string | null;
+  dueAt?: string | null;
 }
 
-type DateFieldName = 'defer';
+type DateFieldName = 'defer' | 'due';
 
 export type Field = 'title' | 'project' | 'tags' | DateFieldName | 'note';
 
-const fieldOrder: Field[] = ['title', 'project', 'tags', 'defer', 'note'];
+const fieldOrder: Field[] = ['title', 'project', 'tags', 'defer', 'due', 'note'];
 
 const dateFields: Record<DateFieldName, { label: string; placeholder: string; write: (taskId: string, value: string | null) => Promise<void> }> = {
   defer: { label: 'Defer until', placeholder: 'Defer', write: deferTask },
+  due: { label: 'Due', placeholder: 'Due', write: setTaskDue },
 };
 
 const sameTime = (a: string | null, b: string | null) => (a === null || b === null ? a === b : Date.parse(a) === Date.parse(b));
@@ -46,7 +48,10 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
   const [projectId, setProjectId] = useState(task.projectId);
   const [newProject, setNewProject] = useState<NewProject | null>(null);
   const [tagIds, setTagIds] = useState<string[]>([...task.tagIds]);
-  const [dates, setDates] = useState<Record<DateFieldName, string>>(() => ({ defer: dateText(task.deferUntil ?? null, 'defer') }));
+  const [dates, setDates] = useState<Record<DateFieldName, string>>(() => ({
+    defer: dateText(task.deferUntil ?? null, 'defer'),
+    due: dateText(task.dueAt ?? null, 'due'),
+  }));
   const [problem, setProblem] = useState<string | null>(null);
   const projects = useProjects();
   const folders = useFolders();
@@ -60,6 +65,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
     project: useRef<HTMLInputElement>(null),
     tags: useRef<HTMLInputElement>(null),
     defer: useRef<HTMLInputElement>(null),
+    due: useRef<HTMLInputElement>(null),
     note: useRef<HTMLTextAreaElement>(null),
   };
   // What is typed, and what has been saved, without waiting for a re-render.
@@ -76,7 +82,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
     note: normaliseNote(task.note ?? ''),
     projectId: task.projectId,
     tags: [...task.tagIds],
-    dates: { defer: task.deferUntil ?? null } as Record<DateFieldName, string | null>,
+    dates: { defer: task.deferUntil ?? null, due: task.dueAt ?? null } as Record<DateFieldName, string | null>,
   });
   // The text each date field showed for its saved date, so text left as it was is not read again.
   const shownDates = useRef({ ...dates });
@@ -105,7 +111,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
       if (next === saved.current.note) return;
       saved.current.note = next;
       void editTaskNote(task.id, next);
-    } else if (field === 'defer') {
+    } else if (field === 'defer' || field === 'due') {
       const meaning = dateFieldMeaning(typed.current.dates[field], shownDates.current[field], field);
       if (meaning.kind !== 'date') return;
       // Show what was saved in full, which also reads back as itself.
