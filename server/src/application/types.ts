@@ -33,6 +33,8 @@ export interface TaskView {
   note: string;
   createdAt: string;
   projectId: string | null;
+  /** The task this one is a prerequisite of. */
+  parentId: string | null;
   completedAt: string | null;
   /** In sidebar order, each with its full path. */
   tags: TagView[];
@@ -52,7 +54,8 @@ export interface TagOutline {
 
 export interface ProjectOutline {
   project: { id: string; name: string; kind: string };
-  tasks: { id: string; title: string; note: string }[];
+  /** In outline order, each followed by its children. `parentId` is the task it is shown beneath (null at the top level). */
+  tasks: { id: string; title: string; note: string; parentId: string | null; depth: number }[];
 }
 
 export interface ChangeView {

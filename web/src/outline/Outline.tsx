@@ -2,7 +2,7 @@ import { normaliseTitle, positionAt, positionBetween, tagPathSeparator, titlePro
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
 import { tagsInOrder, useTags, useTaskTags } from '../tags/data.tsx';
-import { completeTask, createTask, reorderTask } from '../writes.ts';
+import { completeTask, createTask, nestTask, reorderTask } from '../writes.ts';
 import { TaskEditor, type Field } from './TaskEditor.tsx';
 
 export interface OutlineTask {
@@ -13,6 +13,10 @@ export interface OutlineTask {
   projectId: string | null;
   /** Shown on the row where the project is not already the heading. */
   projectName?: string | null;
+  /** Where the task sits in a project's hierarchy: 1 at the top level, 2 beneath a parent, and so on. */
+  depth?: number;
+  /** The task it is shown beneath, if any. */
+  parentId?: string | null;
 }
 
 /** A run of tasks, under a heading when it is a project or tag, in outline order. One task can appear in several groups. */
@@ -22,24 +26,44 @@ export interface OutlineGroup {
   tasks: OutlineTask[];
   /** Where a task added here goes, or absent if tasks cannot be added here. */
   newTask?: { projectId: string | null; tagId: string | null };
-  /** Whether the tasks are in an order of their own (a project's), which new tasks slot into and Alt+arrows change. */
+  /** Whether the tasks are in an order and hierarchy of their own (a project's), which new tasks slot into and Alt+arrows change. */
   ordered: boolean;
 }
 
 type Row = { key: string; group: OutlineGroup } & ({ kind: 'heading' } | { kind: 'task'; task: OutlineTask; index: number });
 
-type Editing = { mode: 'task'; rowKey: string; startIn: Field } | { mode: 'draft'; groupId: string; after: string | null; before: string | null; returnTo: string | null };
+type Editing =
+  | { mode: 'task'; rowKey: string; startIn: Field }
+  | { mode: 'draft'; groupId: string; parentId: string | null; depth: number; after: string | null; before: string | null; returnTo: string | null };
 
 const EMPTY = 'empty';
 const headingKey = (group: OutlineGroup) => `group:${group.id}`;
 const taskKey = (group: OutlineGroup, taskId: string) => `${group.id}/${taskId}`;
 
-/** Where a draft row sits among a group's tasks: before the first task placed after it, or last where tasks are oldest first. */
-const draftIndex = (group: OutlineGroup, after: string | null) =>
-  !group.ordered ? group.tasks.length : after === null ? 0 : (() => {
-    const index = group.tasks.findIndex((t) => t.position !== null && t.position > after);
-    return index === -1 ? group.tasks.length : index;
-  })();
+const parentOf = (task: OutlineTask) => task.parentId ?? null;
+const depthOf = (task: OutlineTask) => task.depth ?? 1;
+const siblingsOf = (group: OutlineGroup, parentId: string | null) => group.tasks.filter((t) => parentOf(t) === parentId);
+const childrenOf = (group: OutlineGroup, task: OutlineTask) => siblingsOf(group, task.id);
+
+/** The index just past a task's children (and theirs) in the outline. */
+function subtreeEnd(tasks: readonly OutlineTask[], index: number) {
+  let end = index + 1;
+  while (end < tasks.length && depthOf(tasks[end]!) > depthOf(tasks[index]!)) end++;
+  return end;
+}
+
+/**
+ * Where a draft row sits among a group's tasks: before the first sibling placed after it, else after its
+ * parent's last descendant. Last where tasks are oldest first.
+ */
+function draftIndex(group: OutlineGroup, parentId: string | null, after: string | null) {
+  const { tasks } = group;
+  if (!group.ordered) return tasks.length;
+  const next = tasks.findIndex((t) => parentOf(t) === parentId && (after === null || (t.position !== null && t.position > after)));
+  if (next !== -1) return next;
+  const parent = tasks.findIndex((t) => t.id === parentId);
+  return parent === -1 ? tasks.length : subtreeEnd(tasks, parent);
+}
 
 /**
  * The main task outline: compact rows, grouped under project headings where
@@ -85,12 +109,16 @@ export function Outline({
     const { group } = focused;
     roving.claim();
     if (focused.kind === 'heading') {
-      setEditing({ mode: 'draft', groupId: group.id, after: null, before: group.tasks[0]?.position ?? null, returnTo: focused.key });
+      const first = siblingsOf(group, null)[0];
+      setEditing({ mode: 'draft', groupId: group.id, parentId: null, depth: 1, after: null, before: first?.position ?? null, returnTo: focused.key });
     } else {
-      const after = focused.task.position;
+      // A new task goes after the current one and its children, beneath the same parent.
+      const { task } = focused;
+      const after = task.position;
+      const parentId = parentOf(task);
       // Skip siblings sharing this position (two offline devices can create them) so there is room between the bounds.
-      const next = group.tasks.slice(focused.index + 1).find((t) => t.position !== null && (after === null || t.position > after));
-      setEditing({ mode: 'draft', groupId: group.id, after, before: next?.position ?? null, returnTo: focused.key });
+      const next = siblingsOf(group, parentId).find((t) => t.id !== task.id && t.position !== null && (after === null || t.position > after));
+      setEditing({ mode: 'draft', groupId: group.id, parentId, depth: depthOf(task), after, before: next?.position ?? null, returnTo: focused.key });
     }
   }
 
@@ -124,16 +152,42 @@ export function Outline({
     // Enter saves and starts the next task straight after this one.
     setEditing(keepGoing ? { ...editing, after: position, returnTo: taskKey(group, id) } : null);
     current.await(taskKey(group, id));
-    await createTask(id, projectId, title, position, tagId ? [tagId] : []);
+    await createTask(id, projectId, title, position, tagId ? [tagId] : [], editing.parentId);
   }
 
-  /** Moves the current task up or down within its project; it never crosses into another group. */
+  /** The current task, where its group has an order and hierarchy that can be changed. */
+  function movable() {
+    return focused?.kind === 'task' && focused.group.ordered ? focused : null;
+  }
+
+  /** Moves the current task, with its children, up or down among its siblings; it never crosses into another group. */
   function reorder(by: -1 | 1) {
-    if (focused?.kind !== 'task' || !focused.group.ordered) return;
-    const { group, task, index } = focused;
-    const target = index + by;
-    if (target < 0 || target >= group.tasks.length) return;
-    void reorderTask(task.id, positionAt(group.tasks.filter((t) => t.id !== task.id), target));
+    const row = movable();
+    if (!row) return;
+    const siblings = siblingsOf(row.group, parentOf(row.task));
+    const target = siblings.findIndex((t) => t.id === row.task.id) + by;
+    if (target < 0 || target >= siblings.length) return;
+    void reorderTask(row.task.id, positionAt(siblings.filter((t) => t.id !== row.task.id), target));
+  }
+
+  /** Makes the current task the last prerequisite of the sibling above it. */
+  function indent() {
+    const row = movable();
+    if (!row) return;
+    const siblings = siblingsOf(row.group, parentOf(row.task));
+    const above = siblings[siblings.findIndex((t) => t.id === row.task.id) - 1];
+    if (!above) return;
+    const children = childrenOf(row.group, above);
+    void nestTask(row.task.id, above.id, positionAt(children, children.length));
+  }
+
+  /** Moves the current task out of its parent, to just after it. */
+  function outdent() {
+    const row = movable();
+    const parent = row && row.group.tasks.find((t) => t.id === parentOf(row.task));
+    if (!row || !parent) return;
+    const siblings = siblingsOf(row.group, parentOf(parent));
+    void nestTask(row.task.id, parentOf(parent), positionAt(siblings, siblings.indexOf(parent) + 1));
   }
 
   function onKeyDown(event: KeyboardEvent) {
@@ -142,6 +196,8 @@ export function Outline({
     if (event.altKey && !event.ctrlKey && !event.metaKey) {
       if (event.key === 'ArrowUp') return handled(), reorder(-1);
       if (event.key === 'ArrowDown') return handled(), reorder(1);
+      if (event.key === 'ArrowRight') return handled(), indent();
+      if (event.key === 'ArrowLeft') return handled(), outdent();
       return;
     }
     if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -172,7 +228,12 @@ export function Outline({
   }
 
   const draftRow = editing?.mode === 'draft' && (
-    <li key={`draft:${editing.after}:${editing.returnTo}`} className="task-row editing" data-key="draft">
+    <li
+      key={`draft:${editing.after}:${editing.returnTo}`}
+      className="task-row editing"
+      data-key="draft"
+      style={indentBy(editing.depth)}
+    >
       <span className="check" aria-hidden />
       <TitleEditor label="New task title" initial="" onDone={(title, how) => void finishDraft(title, how === 'enter')} />
     </li>
@@ -203,7 +264,7 @@ export function Outline({
       >
         {rows.length === 0 && editing === null && <p className="empty">{empty}</p>}
         {groups.map((group) => {
-          const draftAt = editing?.mode === 'draft' && editing.groupId === group.id ? draftIndex(group, editing.after) : -1;
+          const draftAt = editing?.mode === 'draft' && editing.groupId === group.id ? draftIndex(group, editing.parentId, editing.after) : -1;
           const items = group.tasks.map((task) => {
             const key = taskKey(group, task.id);
             const isCurrent = key === focused?.key && !editing;
@@ -214,6 +275,8 @@ export function Outline({
                 key={key}
                 data-key={key}
                 className="task-row"
+                aria-level={group.ordered ? depthOf(task) : undefined}
+                style={indentBy(depthOf(task))}
                 tabIndex={isCurrent ? 0 : -1}
                 data-current={key === focused?.key || undefined}
                 onClick={() => current.set(key)}
@@ -292,6 +355,8 @@ export function Outline({
     </main>
   );
 }
+
+const indentBy = (depth: number) => (depth > 1 ? { paddingLeft: `${0.5 + (depth - 1) * 1.5}rem` } : undefined);
 
 function TitleEditor({
   label,

@@ -3,6 +3,7 @@ import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import { organisationOperations } from './organisation.ts';
 import { Rejection } from './rejection.ts';
+import { checkParent, nestTask } from './prerequisites.ts';
 import { addTaskTag, tagOperations } from './tags.ts';
 
 export interface OperationDefinition<A> {
@@ -61,6 +62,8 @@ export const renameTask: OperationDefinition<RenameTaskArgs> = {
 export interface CreateTaskArgs {
   taskId: string;
   projectId: string | null;
+  /** The task it is a prerequisite of, in the same project, or null. */
+  parentId: string | null;
   title: string;
   position: string | null;
   createdAt: string;
@@ -81,6 +84,7 @@ export const createTask: OperationDefinition<CreateTaskArgs> = {
     return {
       taskId: args.uuid(a, 'taskId'),
       projectId: args.nullableUuid(a, 'projectId') ?? null,
+      parentId: args.nullableUuid(a, 'parentId') ?? null,
       title: args.text(a, 'title'),
       position: a.position === undefined || a.position === null ? null : args.text(a, 'position'),
       createdAt: args.timestamp(a, 'createdAt', now),
@@ -90,7 +94,7 @@ export const createTask: OperationDefinition<CreateTaskArgs> = {
       }),
     };
   },
-  async apply(mutations, { taskId, projectId, title, position, createdAt, tags }) {
+  async apply(mutations, { taskId, projectId, parentId, title, position, createdAt, tags }) {
     const badTitle = titleProblem(title);
     if (badTitle) throw new Rejection('invalid_title', badTitle);
     if (projectId !== null) {
@@ -101,7 +105,14 @@ export const createTask: OperationDefinition<CreateTaskArgs> = {
     }
     if (await mutations.exists('task', taskId)) throw new Rejection('already_exists', 'Something with that id already exists.');
     if (projectId !== null && !(await mutations.exists('project', projectId))) throw new Rejection('not_found', 'That project no longer exists.');
-    await mutations.create('task', taskId, { title: normaliseTitle(title), project_id: projectId, position, created_at: createdAt });
+    if (parentId !== null) await checkParent(mutations, projectId, parentId);
+    await mutations.create('task', taskId, {
+      title: normaliseTitle(title),
+      project_id: projectId,
+      ...(parentId !== null ? { parent_id: parentId } : {}),
+      position,
+      created_at: createdAt,
+    });
     for (const link of tags) await addTaskTag(mutations, taskId, link);
   },
 };
@@ -198,7 +209,7 @@ export const moveTask: OperationDefinition<MoveTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reorderTask, moveTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

@@ -86,14 +86,35 @@ export function createProjectForTask(taskId: string, project: { id: string; name
   });
 }
 
-/** Adds a task, in a project at a position or (with no project) in the Inbox, with any tags, as one operation. */
-export async function createTask(taskId: string, projectId: string | null, title: string, position: string | null, tagIds: readonly string[] = []) {
+/** Puts a task beneath another in its project (or, with no parent, back at the top level); its children go with it. */
+export function nestTask(taskId: string, parentId: string | null, position: string) {
+  return write(OperationName.nestTask, 'UPDATE tasks SET parent_id = ?, position = ?, _metadata = ? WHERE id = ?', (m) => [
+    parentId,
+    position,
+    m,
+    taskId,
+  ]);
+}
+
+/**
+ * Adds a task, in a project at a position (beneath a parent task, if given) or, with no project, in the Inbox,
+ * with any tags, as one operation.
+ */
+export async function createTask(
+  taskId: string,
+  projectId: string | null,
+  title: string,
+  position: string | null,
+  tagIds: readonly string[] = [],
+  parentId: string | null = null,
+) {
   const metadata = operationMetadata(OperationName.createTask);
   await db.writeTransaction(async (tx) => {
-    await tx.execute('INSERT INTO tasks (id, title, project_id, position, created_at, _metadata) VALUES (?, ?, ?, ?, ?, ?)', [
+    await tx.execute('INSERT INTO tasks (id, title, project_id, parent_id, position, created_at, _metadata) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       taskId,
       title,
       projectId,
+      parentId,
       position,
       new Date().toISOString(),
       metadata,

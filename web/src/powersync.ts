@@ -15,7 +15,18 @@ import { sessionExpired, sessionToken } from './session.ts';
 const synced = { trackMetadata: true, trackPrevious: { onlyWhenChanged: true }, ignoreEmptyUpdates: true };
 
 export const schema = new Schema({
-  tasks: new Table({ title: column.text, created_at: column.text, project_id: column.text, position: column.text, note: column.text, completed_at: column.text }, synced),
+  tasks: new Table(
+    {
+      title: column.text,
+      created_at: column.text,
+      project_id: column.text,
+      parent_id: column.text,
+      position: column.text,
+      note: column.text,
+      completed_at: column.text,
+    },
+    { ...synced, indexes: { parent: ['parent_id'] } },
+  ),
   captures: new Table({ task_id: column.text, text: column.text, captured_at: column.text }, synced),
   folders: new Table({ name: column.text, parent_id: column.text, position: column.text }, synced),
   projects: new Table({ name: column.text, kind: column.text, folder_id: column.text, position: column.text }, synced),

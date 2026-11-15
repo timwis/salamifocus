@@ -1,4 +1,4 @@
-import { buildTagTree, buildTree, groupByTag, inboxCondition, placedTags, tagBranch, comparePositions, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
+import { buildTagTree, buildTree, groupByTag, inboxCondition, outlineTasks, placedTags, tagBranch, projectsInSelection, type OrganisationNode, type TagNode } from '@salamifocus/domain';
 import type { Sql } from '../db.ts';
 import { Mutations } from './mutations.ts';
 import { findOperation } from './operations.ts';
@@ -146,27 +146,30 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   /**
    * What the Projects perspective shows for a sidebar selection: each selected
    * project (every project inside a selected folder), in sidebar order, with
-   * its unfinished tasks in outline order.
+   * its unfinished tasks in outline order, each followed by its prerequisites.
    */
   async function projects(selection: string[]): Promise<ProjectOutline[]> {
     const selected = projectsInSelection(await organisation(), selection);
     if (selected.length === 0) return [];
-    const rows = await sql<{ id: string; title: string; note: string; projectId: string; position: string | null }[]>`
-      SELECT id, title, note, project_id AS "projectId", position FROM tasks
+    const rows = await sql<{ id: string; title: string; note: string; projectId: string; parentId: string | null; position: string | null }[]>`
+      SELECT id, title, note, project_id AS "projectId", parent_id AS "parentId", position FROM tasks
       WHERE project_id IN ${sql(selected.map((p) => p.id))} AND completed_at IS NULL`;
     return selected.map((project) => ({
       project: { id: project.id, name: project.name, kind: project.kind },
-      tasks: rows
-        .filter((row) => row.projectId === project.id)
-        .sort(comparePositions)
-        .map(({ id, title, note }) => ({ id, title, note })),
+      tasks: outlineTasks(rows.filter((row) => row.projectId === project.id)).map(({ task, depth, parentId }) => ({
+        id: task.id,
+        title: task.title,
+        note: task.note,
+        parentId,
+        depth,
+      })),
     }));
   }
 
   async function task(id: string): Promise<TaskView | null> {
     const [[row], tagRows, tree] = await Promise.all([
       sql`
-        SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.completed_at, c.id AS capture_id, c.text, c.captured_at
+        SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.parent_id, t.completed_at, c.id AS capture_id, c.text, c.captured_at
         FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
         WHERE t.id = ${id}::uuid`,
       sql<{ tag_id: string }[]>`SELECT tag_id FROM task_tags WHERE task_id = ${id}::uuid`,
@@ -180,6 +183,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       note: row.note,
       createdAt: row.created_at,
       projectId: row.project_id,
+      parentId: row.parent_id,
       completedAt: row.completed_at,
       tags: placedTags(tree)
         .filter((p) => tagIds.has(p.tag.id))

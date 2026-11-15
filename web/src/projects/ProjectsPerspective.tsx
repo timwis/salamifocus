@@ -1,5 +1,5 @@
 import { useQuery } from '@powersync/react';
-import { comparePositions, projectsInSelection } from '@salamifocus/domain';
+import { outlineTasks, projectsInSelection } from '@salamifocus/domain';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
 import { useOrganisation } from './data.tsx';
@@ -10,6 +10,7 @@ interface TaskRow {
   title: string;
   note: string | null;
   project_id: string;
+  parent_id: string | null;
   position: string | null;
 }
 
@@ -18,7 +19,7 @@ export function ProjectsPerspective({ place }: { place: Place }) {
   const selected = projectsInSelection(tree, place.selection);
   const ids = selected.map((p) => p.id);
   const { data: tasks } = useQuery<TaskRow>(
-    `SELECT id, title, note, project_id, position FROM tasks WHERE project_id IN (${ids.map(() => '?').join(', ')}) AND completed_at IS NULL`,
+    `SELECT id, title, note, project_id, parent_id, position FROM tasks WHERE project_id IN (${ids.map(() => '?').join(', ')}) AND completed_at IS NULL`,
     ids,
   );
   const groups: OutlineGroup[] = selected.map((project) => ({
@@ -26,10 +27,9 @@ export function ProjectsPerspective({ place }: { place: Place }) {
     heading: project.name,
     newTask: { projectId: project.id, tagId: null },
     ordered: true,
-    tasks: tasks
-      .filter((t) => t.project_id === project.id)
-      .sort(comparePositions)
-      .map((t) => ({ ...t, projectId: t.project_id })),
+    tasks: outlineTasks(tasks.filter((t) => t.project_id === project.id).map((t) => ({ ...t, parentId: t.parent_id }))).map(
+      ({ task, depth, parentId }) => ({ ...task, projectId: task.project_id, depth, parentId }),
+    ),
   }));
   const taskCount = groups.reduce((sum, g) => sum + g.tasks.length, 0);
 

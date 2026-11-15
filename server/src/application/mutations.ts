@@ -46,9 +46,10 @@ export class Mutations {
     return rows.length > 0;
   }
 
-  /** Every row of an entity. Meant for small tables such as folders. */
-  async list(entity: Entity): Promise<Row[]> {
-    return this.#tx<Row[]>`SELECT * FROM ${this.#tx(tables[entity])}`;
+  /** Every row of an entity, or those with one column equal to a value. Meant for small sets such as folders. */
+  async list(entity: Entity, where?: { column: string; value: string | null }): Promise<Row[]> {
+    if (!where) return this.#tx<Row[]>`SELECT * FROM ${this.#tx(tables[entity])}`;
+    return this.#tx<Row[]>`SELECT * FROM ${this.#tx(tables[entity])} WHERE ${this.#tx(where.column)} IS NOT DISTINCT FROM ${where.value}`;
   }
 
   /** The current row, locked until the operation finishes so concurrent operations see each other's effects. */

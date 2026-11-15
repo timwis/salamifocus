@@ -197,6 +197,33 @@ describe('uploading a client transaction', () => {
     assert.equal(rejected?.code, 'malformed_operation');
   });
 
+  it('nests a task beneath another and adds a task beneath it', async () => {
+    const projectId = crypto.randomUUID();
+    const [parent, child, added] = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
+    const createdAt = '2026-11-13T09:00:00.000Z';
+    const createProject = operationMetadata(OperationName.createProject);
+    await upload([{ op: 'PUT', table: 'projects', id: projectId, data: { name: 'Report', kind: 'project', position: 'a0' }, metadata: createProject }]);
+    for (const [id, title, position] of [[parent, 'Compile the report', 'a0'], [child, 'Email Steve', 'a1']] as const) {
+      const data = { title, project_id: projectId, position, created_at: createdAt };
+      await upload([{ op: 'PUT', table: 'tasks', id, data, metadata: operationMetadata(OperationName.createTask) }]);
+    }
+
+    const results = await upload([
+      { op: 'PATCH', table: 'tasks', id: child, data: { parent_id: parent, position: 'a0' }, old: { parent_id: null, position: 'a1' }, metadata: operationMetadata(OperationName.nestTask) },
+      {
+        op: 'PUT',
+        table: 'tasks',
+        id: added,
+        data: { title: 'Find the document', project_id: projectId, parent_id: child, position: 'a0', created_at: createdAt },
+        metadata: operationMetadata(OperationName.createTask),
+      },
+    ]);
+
+    assert.deepEqual(results.map((r) => r.outcome), ['applied', 'applied']);
+    const [outline] = await h.application.projects([projectId]);
+    assert.deepEqual(outline?.tasks.map((t) => [t.title, t.depth]), [['Compile the report', 1], ['Email Steve', 2], ['Find the document', 3]]);
+  });
+
   it('rejects a move that also renames', async () => {
     const projectId = crypto.randomUUID();
     await upload([

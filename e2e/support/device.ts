@@ -70,14 +70,14 @@ export class SimulatedDevice {
     return { projectId };
   }
 
-  async createTask(projectId: string, title: string, position = 'a0'): Promise<{ taskId: string }> {
+  async createTask(projectId: string, title: string, position = 'a0', parentId: string | null = null): Promise<{ taskId: string }> {
     const taskId = crypto.randomUUID();
     await this.upload([
       {
         op: 'PUT',
         table: 'tasks',
         id: taskId,
-        data: { title, project_id: projectId, position, created_at: new Date().toISOString() },
+        data: { title, project_id: projectId, parent_id: parentId, position, created_at: new Date().toISOString() },
         metadata: operationMetadata(OperationName.createTask),
       },
     ]);

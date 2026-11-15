@@ -73,7 +73,7 @@ With the mouse, click selects and double-click renames. The **+ Tag** button doe
 
 ## Outline
 
-The task rows of the current perspective. Inbox lists every unfinished task that still lacks a project (a single-action list counts) or a tag, oldest first; once it has both it leaves, and the row now in its place becomes current. In Projects, each selected project has a heading row. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
+The task rows of the current perspective. Inbox lists every unfinished task that still lacks a project (a single-action list counts) or a tag, oldest first; once it has both it leaves, and the row now in its place becomes current. In Projects, each selected project has a heading row, and a task nested beneath another (one of its prerequisites) is indented under it, to any depth. Nesting only happens within a project, so indenting does nothing in Tags or the Inbox. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
 
 | Key | Action |
 |---|---|
@@ -82,8 +82,10 @@ The task rows of the current perspective. Inbox lists every unfinished task that
 | P | Edit the task's project |
 | T | Edit the task's tags |
 | Space | Complete the task. It leaves the outline and the row now in its place becomes current |
-| Alt+↑ / Alt+↓ | Move the task up or down within its project. The order is for your reading only; it never makes one task wait for another |
-| N | New task straight after the current row (on a project heading: at the top of that project). In Tags, it goes at the end of the current row's tag group, carries that tag, and waits in the Inbox until it has a project. Enter saves it and starts another; Enter on an empty row or Escape stops. The **+ New task** button does the same |
+| Alt+↑ / Alt+↓ | Move the task, with its children, up or down among its siblings. The order is for your reading only; it never makes one task wait for another |
+| Alt+→ | Indent: make the task a prerequisite of the task above it at the same level (it becomes that task's last child). Its own children come with it |
+| Alt+← | Outdent: move the task out of its parent, to just after it. Its own children come with it |
+| N | New task straight after the current row and its children, beneath the same parent (on a project heading: at the top of that project). In Tags, it goes at the end of the current row's tag group, carries that tag, and waits in the Inbox until it has a project. Enter saves it and starts another; Enter on an empty row or Escape stops. The **+ New task** button does the same |
 
 ### Editing a task
 
