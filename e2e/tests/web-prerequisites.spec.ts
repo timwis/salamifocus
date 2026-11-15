@@ -84,3 +84,30 @@ test('tasks are indented beneath others as prerequisites and outdented again, ta
   await page.reload();
   await expect.poll(() => shownOutline(page, report)).toEqual(expected);
 });
+
+test('a parent shows as blocked until its last prerequisite is completed, and then still needs completing', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const report = `Report due (${run})`;
+  const { projectId } = await phone.createProject(report, { position: 'a9' });
+  const { taskId: compile } = await phone.createTask(projectId, `Compile the report ${run}`, 'a0');
+  await phone.createTask(projectId, `Email Steve to request the document ${run}`, 'a0', compile);
+  await signIn(page);
+  await page.goto(`/projects/${projectId}`);
+  await page.keyboard.press('2');
+  await page.keyboard.press('Tab');
+  const rows = page.getByRole('list', { name: report }).getByRole('listitem');
+  const parent = rows.filter({ hasText: `Compile the report ${run}` });
+  const child = rows.filter({ hasText: `Email Steve to request the document ${run}` });
+  await expect(parent).toContainText('Blocked');
+  await expect(child).not.toContainText('Blocked');
+
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect(child).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(rows).toHaveCount(1);
+  await expect(parent).not.toContainText('Blocked');
+  await expect(parent).toBeFocused();
+  await expect.poll(async () => (await server.task(compile))?.unavailable).toEqual([]);
+  expect((await server.task(compile))?.completedAt).toBeNull();
+});

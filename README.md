@@ -11,6 +11,7 @@ A personal GTD application: a native Android client for capture, a desktop web c
 | `web/` | Desktop web client (React, Vite, PowerSync web SDK) |
 | `android/` | Android client (Kotlin, Jetpack Compose, PowerSync Kotlin SDK) |
 | `e2e/` | End-to-end tests that drive the real web client in Chromium against the real stack |
+| `fixtures/` | Client-neutral behaviour examples (records, clock, expected availability and perspective contents) that every client's tests run |
 | `infra/` | Postgres initialisation for `compose.yaml`, and PowerSync's configuration and sync rules (also built into the deployed PowerSync image) |
 | `deploy/` | The deployed stack's Compose file, example environment, and reverse proxy and backup snippets |
 
@@ -47,7 +48,7 @@ pnpm dev:infra
 pnpm test
 ```
 
-The server tests create a throwaway database per test file on the Postgres from `compose.yaml` (`TEST_DATABASE_URL`) and drive the application's public operations and queries, or its HTTP endpoints as a client would.
+The server tests create a throwaway database per test file on the Postgres from `compose.yaml` (`TEST_DATABASE_URL`) and drive the application's public operations and queries, or its HTTP endpoints as a client would. Both the server tests and the web end-to-end tests also run every example in `fixtures/`, so the clients are held to the same expected behaviour.
 
 The end-to-end tests drive the real clients. Each run starts its own throwaway stack (a second Compose project, `salamifocus-e2e`, from `compose.e2e.yaml`) with an in-memory Postgres, its own PowerSync and its own app server on port 3101. It removes the stack afterwards, so development data is never touched. Docker must be running; the development stack need not be.
 

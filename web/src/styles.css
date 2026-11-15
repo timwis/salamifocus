@@ -397,6 +397,15 @@ nav:focus-within a[aria-current='page'] {
   color: var(--muted);
   line-height: 1.35rem;
 }
+.availability {
+  font-size: 0.8rem;
+  color: #9a5b00;
+  line-height: 1.35rem;
+}
+/* A blocked task is waiting on a prerequisite, so it reads as not yet actionable. */
+.task-row[data-unavailable~='blocked'] .task-title {
+  color: var(--muted);
+}
 .tag-chip,
 .project-chip {
   display: inline-flex;

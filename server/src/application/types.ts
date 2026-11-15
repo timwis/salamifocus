@@ -1,3 +1,5 @@
+import type { Unavailable } from '@salamifocus/domain';
+
 export interface Actor {
   type: 'user';
   id: string;
@@ -36,6 +38,8 @@ export interface TaskView {
   /** The task this one is a prerequisite of. */
   parentId: string | null;
   completedAt: string | null;
+  /** Why the task cannot be worked on now; empty when it is available. */
+  unavailable: Unavailable[];
   /** In sidebar order, each with its full path. */
   tags: TagView[];
   capture: { id: string; text: string; capturedAt: string } | null;
@@ -49,13 +53,13 @@ export interface TagView {
 
 export interface TagOutline {
   tag: TagView;
-  tasks: { id: string; title: string; note: string; projectId: string | null; tagIds: string[] }[];
+  tasks: { id: string; title: string; note: string; projectId: string | null; tagIds: string[]; unavailable: Unavailable[] }[];
 }
 
 export interface ProjectOutline {
   project: { id: string; name: string; kind: string };
   /** In outline order, each followed by its children. `parentId` is the task it is shown beneath (null at the top level). */
-  tasks: { id: string; title: string; note: string; parentId: string | null; depth: number }[];
+  tasks: { id: string; title: string; note: string; parentId: string | null; depth: number; unavailable: Unavailable[] }[];
 }
 
 export interface ChangeView {

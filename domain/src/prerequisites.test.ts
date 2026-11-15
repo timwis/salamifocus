@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { unavailability } from './availability.ts';
 import { outlineTasks, type NestedTask } from './prerequisites.ts';
 
 const task = (id: string, parentId: string | null, position: string): NestedTask => ({ id, parentId, position });
@@ -14,4 +15,10 @@ test('children follow their parent, to any depth, each level in sibling order', 
 
 test('a task whose parent is not shown, or that is caught in a cycle, is still shown', () => {
   assert.deepEqual(rows([task('x', 'y', 'a1'), task('y', 'x', 'a2'), task('orphan', 'completed', 'a0')]), ['orphan', 'x', '  y']);
+});
+
+test('a task waits only on its own unfinished children', () => {
+  assert.deepEqual(unavailability({ completedAt: null, unfinishedChildren: 1 }), ['blocked']);
+  assert.deepEqual(unavailability({ completedAt: null, unfinishedChildren: 0 }), []);
+  assert.deepEqual(unavailability({ completedAt: '2026-11-13T09:00:00.000Z', unfinishedChildren: 1 }), ['completed']);
 });

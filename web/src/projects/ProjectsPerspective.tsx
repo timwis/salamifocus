@@ -1,7 +1,7 @@
 import { useQuery } from '@powersync/react';
 import { outlineTasks, projectsInSelection } from '@salamifocus/domain';
 import { go, type Place } from '../navigation.ts';
-import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
+import { Outline, unfinishedChildrenColumn, type OutlineGroup } from '../outline/Outline.tsx';
 import { useOrganisation } from './data.tsx';
 import { Sidebar } from './Sidebar.tsx';
 
@@ -12,6 +12,7 @@ interface TaskRow {
   project_id: string;
   parent_id: string | null;
   position: string | null;
+  unfinishedChildren: number;
 }
 
 export function ProjectsPerspective({ place }: { place: Place }) {
@@ -19,7 +20,8 @@ export function ProjectsPerspective({ place }: { place: Place }) {
   const selected = projectsInSelection(tree, place.selection);
   const ids = selected.map((p) => p.id);
   const { data: tasks } = useQuery<TaskRow>(
-    `SELECT id, title, note, project_id, parent_id, position FROM tasks WHERE project_id IN (${ids.map(() => '?').join(', ')}) AND completed_at IS NULL`,
+    `SELECT t.id, t.title, t.note, t.project_id, t.parent_id, t.position, ${unfinishedChildrenColumn}
+     FROM tasks t WHERE t.project_id IN (${ids.map(() => '?').join(', ')}) AND t.completed_at IS NULL`,
     ids,
   );
   const groups: OutlineGroup[] = selected.map((project) => ({

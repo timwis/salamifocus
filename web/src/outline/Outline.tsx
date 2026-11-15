@@ -1,4 +1,4 @@
-import { normaliseTitle, positionAt, positionBetween, tagPathSeparator, titleProblem } from '@salamifocus/domain';
+import { normaliseTitle, positionAt, positionBetween, tagPathSeparator, titleProblem, unavailability, Unavailable } from '@salamifocus/domain';
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
 import { tagsInOrder, useTags, useTaskTags } from '../tags/data.tsx';
@@ -17,7 +17,16 @@ export interface OutlineTask {
   depth?: number;
   /** The task it is shown beneath, if any. */
   parentId?: string | null;
+  /** How many of its children are unfinished; it is blocked while there are any. */
+  unfinishedChildren?: number;
 }
+
+/**
+ * The column that says how many of a task's children (the task aliased `t`) are unfinished,
+ * selected as `unfinishedChildren` for `OutlineTask`.
+ */
+export const unfinishedChildrenColumn =
+  '(SELECT count(*) FROM tasks c WHERE c.parent_id = t.id AND c.completed_at IS NULL) AS "unfinishedChildren"';
 
 /** A run of tasks, under a heading when it is a project or tag, in outline order. One task can appear in several groups. */
 export interface OutlineGroup {
@@ -270,6 +279,9 @@ export function Outline({
             const isCurrent = key === focused?.key && !editing;
             const tagIds = taskTags.get(task.id) ?? [];
             const chips = tagsInOrder(tags, tagIds);
+            // Rows show unfinished tasks only, so the reasons that matter here are the ones besides completion.
+            const unavailable = unavailability({ completedAt: null, unfinishedChildren: task.unfinishedChildren ?? 0 });
+            const blocked = unavailable.includes(Unavailable.blocked);
             return (
               <li
                 key={key}
@@ -279,6 +291,7 @@ export function Outline({
                 style={indentBy(depthOf(task))}
                 tabIndex={isCurrent ? 0 : -1}
                 data-current={key === focused?.key || undefined}
+                data-unavailable={unavailable.join(' ') || undefined}
                 onClick={() => current.set(key)}
                 onMouseDown={(event) => actOnPress(event, key, () => current.set(key))}
               >
@@ -309,8 +322,13 @@ export function Outline({
                       >
                         {task.title}
                       </button>
-                      {(chips.length > 0 || task.projectName) && (
+                      {(chips.length > 0 || task.projectName || blocked) && (
                         <span className="task-meta">
+                          {blocked && (
+                            <span className="availability" title="Waiting on an unfinished task beneath it">
+                              Blocked
+                            </span>
+                          )}
                           {task.projectName && <span className="task-project">{task.projectName}</span>}
                           {chips.map(({ tag, path }) => (
                             <span key={tag.id} className="tag-chip" title={path.join(tagPathSeparator)}>
@@ -328,7 +346,7 @@ export function Outline({
           });
           if (draftAt !== -1 && draftRow) items.splice(draftAt, 0, draftRow);
           const list = (
-            <ul className="tasks" aria-label={group.heading ?? title}>
+            <ul className="tasks" aria-label={group.heading ?? title} data-group={group.id}>
               {items}
             </ul>
           );

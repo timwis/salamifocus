@@ -11,6 +11,9 @@ export class TestClock {
   advance(ms: number) {
     this.#now = new Date(this.#now.getTime() + ms);
   }
+  set(time: Date) {
+    this.#now = new Date(time);
+  }
 }
 
 /**

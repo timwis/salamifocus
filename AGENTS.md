@@ -32,6 +32,7 @@ The TypeScript runs directly on Node with no build step. That rules out paramete
 - Schema: add `server/migrations/NNNN_name.sql`. The server applies it when it starts.
 - Sync rules: `infra/powersync/sync-config.yaml`. Restart the dev PowerSync container to pick them up. The deployed PowerSync image is built from this file.
 - Task rules: `domain/` (shared by the server and the web client). Android repeats the operation names and the rules it needs in `android/app/src/main/kotlin/dev/salamifocus/data/Tasks.kt`, so keep the two in step.
+- Behaviour every client must reproduce (availability, what a perspective shows): add examples to `fixtures/` (see its README). The server tests and the web end-to-end tests run every fixture file.
 
 ## Worktrees
 

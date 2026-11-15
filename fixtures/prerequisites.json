@@ -1,0 +1,426 @@
+{
+  "scenario": "Nested prerequisites",
+  "description": "“Compile the report” waits on “Email Steve to request the document” beneath it. See “Parallel tasks and nested prerequisites” and “Availability” in the spec.",
+  "examples": [
+    {
+      "name": "A prerequisite is available while the task waiting on it is blocked",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": []
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "tags",
+            "selection": [
+              "people"
+            ],
+            "groups": [
+              {
+                "id": "steve",
+                "tasks": [
+                  {
+                    "id": "email-steve",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Siblings are independent whatever their order",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "sales",
+            "title": "Collect the sales figures",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a1",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "book",
+            "title": "Book the meeting room",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [],
+          "sales": [],
+          "book": []
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  },
+                  {
+                    "id": "sales",
+                    "depth": 2
+                  },
+                  {
+                    "id": "book",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Nesting goes to any depth, and each task waits only on its own children",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "find-address",
+            "title": "Find Steve’s email address",
+            "project_id": "report",
+            "parent_id": "email-steve",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [
+            "blocked"
+          ],
+          "find-address": []
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 2
+                  },
+                  {
+                    "id": "find-address",
+                    "depth": 3
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "A parent stays blocked while any child is unfinished",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": "2026-11-15T16:00:00.000Z"
+          },
+          {
+            "id": "sales",
+            "title": "Collect the sales figures",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a1",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [
+            "completed"
+          ],
+          "sales": []
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "sales",
+                    "depth": 2
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Completing the last child makes the parent available, and it still needs completing itself",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-13T10:00:00.000Z",
+            "completed_at": "2026-11-15T16:00:00.000Z"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [],
+          "email-steve": [
+            "completed"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "report"
+            ],
+            "groups": [
+              {
+                "id": "report",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
