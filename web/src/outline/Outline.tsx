@@ -72,8 +72,10 @@ export function Outline({
     if (focused.kind === 'heading') {
       setEditing({ mode: 'draft', groupId: group.id, after: null, before: group.tasks[0]?.position ?? null, returnTo: focused.key });
     } else {
-      const next = group.tasks[focused.index + 1];
-      setEditing({ mode: 'draft', groupId: group.id, after: focused.task.position, before: next?.position ?? null, returnTo: focused.key });
+      const after = focused.task.position;
+      // Skip siblings sharing this position (two offline devices can create them) so there is room between the bounds.
+      const next = group.tasks.slice(focused.index + 1).find((t) => t.position !== null && (after === null || t.position > after));
+      setEditing({ mode: 'draft', groupId: group.id, after, before: next?.position ?? null, returnTo: focused.key });
     }
   }
 

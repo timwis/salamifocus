@@ -286,6 +286,30 @@ test('the mouse works too: clicking a perspective or empty space leaves the keys
   await expect(treeItem(page, `Garage odds and ends ${run}`)).toHaveAttribute('aria-selected', 'true');
 });
 
+test('a new task goes after tasks that two devices gave the same position', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const shed = `Shed ${run}`;
+  const { projectId } = await phone.createProject(shed, { position: 'a7' });
+  await phone.createTask(projectId, `Oil the hinges ${run}`, 'a1');
+  await phone.createTask(projectId, `Fix the lock ${run}`, 'a1');
+  await phone.createTask(projectId, `Paint the door ${run}`, 'a2');
+  await signIn(page);
+  await openProjectsAt(page, projectId, shed);
+  const tasks = page.getByRole('list', { name: shed }).getByRole('listitem');
+  await expect(tasks).toHaveCount(3);
+
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('n');
+  await page.keyboard.type(`Sweep the floor ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+
+  await expect(tasks).toHaveCount(4);
+  await expect(tasks.nth(2)).toHaveText(`Sweep the floor ${run}`);
+  await expect(tasks.nth(3)).toHaveText(`Paint the door ${run}`);
+});
+
 test('a mangled address still opens the app', async ({ page }) => {
   await signIn(page);
   // The app server answers this path with the app; the Vite dev server used here refuses it, so go there in-page.
