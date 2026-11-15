@@ -191,6 +191,11 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     const selected = projectsInSelection(await organisation(), selection);
     if (selected.length === 0) return [];
     const now = clock();
+    const ids = selected.map((p) => p.id);
+    const dates = new Map(
+      (await sql<{ id: string; deferUntil: string | null; dueAt: string | null }[]>`
+        SELECT id, defer_until AS "deferUntil", due_at AS "dueAt" FROM projects WHERE id IN ${sql(ids)}`).map((p) => [p.id, p]),
+    );
     const rows = await sql<
       {
         id: string;
@@ -208,9 +213,15 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     >`
       SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.parent_id AS "parentId", t.position, t.defer_until AS "deferUntil", t.due_at AS "dueAt",
              ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
-      FROM tasks t WHERE t.project_id IN ${sql(selected.map((p) => p.id))} AND t.completed_at IS NULL`;
+      FROM tasks t WHERE t.project_id IN ${sql(ids)} AND t.completed_at IS NULL`;
     return selected.map((project) => ({
-      project: { id: project.id, name: project.name, kind: project.kind },
+      project: {
+        id: project.id,
+        name: project.name,
+        kind: project.kind,
+        deferUntil: dates.get(project.id)?.deferUntil ?? null,
+        dueAt: dates.get(project.id)?.dueAt ?? null,
+      },
       tasks: outlineTasks(rows.filter((row) => row.projectId === project.id)).map(({ task, depth, parentId }) => ({
         id: task.id,
         title: task.title,

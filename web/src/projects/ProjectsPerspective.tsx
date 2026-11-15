@@ -24,11 +24,17 @@ export function ProjectsPerspective({ place }: { place: Place }) {
      FROM tasks t WHERE t.project_id IN (${ids.map(() => '?').join(', ')}) AND t.completed_at IS NULL`,
     ids,
   );
+  const { data: projectDates } = useQuery<{ id: string; defer_until: string | null; due_at: string | null }>(
+    `SELECT id, defer_until, due_at FROM projects WHERE id IN (${ids.map(() => '?').join(', ')})`,
+    ids,
+  );
+  const datesById = new Map(projectDates.map((p) => [p.id, p]));
   const groups: OutlineGroup[] = selected.map((project) => ({
     id: project.id,
     heading: project.name,
     newTask: { projectId: project.id, tagId: null },
     ordered: true,
+    project: { id: project.id, deferUntil: datesById.get(project.id)?.defer_until ?? null, dueAt: datesById.get(project.id)?.due_at ?? null },
     tasks: outlineTasks(tasks.filter((t) => t.project_id === project.id).map((t) => ({ ...t, parentId: t.parent_id }))).map(
       ({ task, depth, parentId }) => ({ ...task, projectId: task.project_id, depth, parentId }),
     ),

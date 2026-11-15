@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type Key
 import { useFolders, useProjects } from '../projects/data.tsx';
 import type { Tags } from '../tags/data.tsx';
 import { createProjectForTask, deferTask, editTaskNote, moveTask, renameTask, setTaskDue, tagTask, untagTask } from '../writes.ts';
-import { DateField, dateFieldMeaning, dateText } from './DateField.tsx';
+import { DateField, dateFieldMeaning, dateText, sameTime } from './DateField.tsx';
 import { ProjectField, type NewProject } from './ProjectField.tsx';
 import { TagsField } from './TagsField.tsx';
 
@@ -28,8 +28,6 @@ const dateFields: Record<DateFieldName, { label: string; placeholder: string; wr
   defer: { label: 'Defer until', placeholder: 'Defer', write: deferTask },
   due: { label: 'Due', placeholder: 'Due', write: setTaskDue },
 };
-
-const sameTime = (a: string | null, b: string | null) => (a === null || b === null ? a === b : Date.parse(a) === Date.parse(b));
 
 // Written on closing rather than on leaving the field: either can take the task, and this editor, out of the
 // outline (out of the Inbox once it has both, or out of the selected project or tag).

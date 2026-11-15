@@ -180,3 +180,54 @@ test('a due date is kept apart from deferral, shown on the row, and never change
   await expect.poll(async () => (await server.task(taskId))?.dueAt).toBeNull();
   expect((await server.task(taskId))?.deferUntil).toBe('2026-11-30T00:00:00.000Z');
 });
+
+test('a project deferred from its heading defers every task in it, and its due date is theirs too', async ({ page }) => {
+  await page.clock.install({ time: monday });
+  const phone = await SimulatedDevice.signIn();
+  const conference = `Conference (${run})`;
+  const { projectId } = await phone.createProject(conference, { position: 'a7w' });
+  const { taskId: book } = await phone.createTask(projectId, `Book the venue ${run}`, 'a0');
+  const { taskId: call } = await phone.createTask(projectId, `Call the caterer ${run}`, 'a0', book);
+  await openProject(page, projectId);
+  const heading = page.getByRole('heading', { name: conference, level: 3 });
+  const rows = page.getByRole('list', { name: conference }).getByRole('listitem');
+  const parent = rows.filter({ hasText: `Book the venue ${run}` });
+  const child = rows.filter({ hasText: `Call the caterer ${run}` });
+  await expect(heading).toBeFocused();
+
+  // Enter on the heading edits the project's dates.
+  await page.keyboard.press('Enter');
+  const defer = page.getByLabel('Defer project until');
+  await expect(defer).toBeFocused();
+  await page.keyboard.type('fri');
+  await expect(defer).toHaveAccessibleDescription('Fri 20 Nov 2026');
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Project due')).toBeFocused();
+  await page.keyboard.type('1 Dec');
+  await page.keyboard.press('Enter');
+
+  await expect(heading).toBeFocused();
+  await expect(heading).toHaveAccessibleDescription('Deferred until Fri 20 Nov Due Tue 1 Dec');
+  await expect(parent).toHaveAttribute('data-unavailable', 'blocked deferred');
+  await expect(child).toHaveAttribute('data-unavailable', 'deferred');
+  await expect(child).toContainText('Due Tue 1 Dec');
+  await expect.poll(async () => (await server.projects([projectId]))[0]?.project).toMatchObject({
+    deferUntil: '2026-11-20T00:00:00.000Z',
+    dueAt: '2026-12-01T17:00:00.000Z',
+  });
+  expect((await server.task(call))?.dueBy).toBe('2026-12-01T17:00:00.000Z');
+
+  // When the project's date arrives its tasks come back, the parent still waiting on its child.
+  await advanceTo(page, '2026-11-20T00:00:00.000Z');
+  await expect(child).not.toHaveAttribute('data-unavailable');
+  await expect(parent).toHaveAttribute('data-unavailable', 'blocked');
+
+  // Emptying a field clears the project's date.
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Tab');
+  await page.getByLabel('Project due').fill('');
+  await page.keyboard.press('Enter');
+  await expect(heading).not.toContainText('Due');
+  await expect(child).not.toContainText('Due');
+  await expect.poll(async () => (await server.task(call))?.dueBy).toBeNull();
+});

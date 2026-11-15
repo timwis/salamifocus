@@ -114,4 +114,34 @@ describe('defer and due dates', () => {
     assert.equal((await h.application.task(gather))?.deferUntil, '2026-11-18T00:00:00.000Z');
     assert.equal(await due(gather, 'friday'), 'invalid_arguments');
   });
+
+  it("defers a project's tasks with it and makes them due by its due date, a task's own dates still counting", async () => {
+    h.clock.set(new Date('2026-11-16T09:00:00.000Z'));
+    const id = await project('Conference');
+    const book = await addTask(id, 'Book the venue');
+    const call = await addTask(id, 'Call the caterer', book);
+    const deferProject = (deferUntil: string | null) => perform(OperationName.deferProject, { projectId: id, deferUntil });
+    const projectDue = (dueAt: string | null) => perform(OperationName.setProjectDue, { projectId: id, dueAt });
+
+    assert.equal(await deferProject('2026-11-20T00:00:00.000Z'), 'applied');
+    assert.equal(await defer(call, '2026-11-25T00:00:00.000Z'), 'applied');
+    assert.deepEqual(await unavailable(book), ['blocked', 'deferred']);
+    assert.equal((await h.application.projects([id]))[0]?.project.deferUntil, '2026-11-20T00:00:00.000Z');
+
+    h.clock.set(new Date('2026-11-21T09:00:00.000Z'));
+    assert.deepEqual(await unavailable(book), ['blocked']);
+    assert.deepEqual(await unavailable(call), ['deferred']);
+
+    assert.equal(await perform(OperationName.setTaskDue, { taskId: call, dueAt: '2026-12-05T17:00:00.000Z' }), 'applied');
+    assert.equal(await projectDue('2026-12-01T17:00:00.000Z'), 'applied');
+    assert.deepEqual(
+      [(await h.application.task(book))?.dueBy, (await h.application.task(call))?.dueBy],
+      ['2026-12-01T17:00:00.000Z', '2026-12-01T17:00:00.000Z'],
+    );
+    assert.equal(await projectDue(null), 'applied');
+    assert.equal((await h.application.task(call))?.dueBy, '2026-12-05T17:00:00.000Z');
+
+    assert.equal(await deferProject('soon'), 'invalid_arguments');
+    assert.equal(await perform(OperationName.deferProject, { projectId: crypto.randomUUID(), deferUntil: null }), 'not_found');
+  });
 });

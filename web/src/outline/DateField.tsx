@@ -7,6 +7,9 @@ export type DateFieldMeaning = { kind: 'unchanged' } | { kind: 'date'; value: st
 /** The text a date field starts with for a stored date: the date in full, so it reads back as itself. */
 export const dateText = (value: string | null, kind: DateKind) => (value ? describeDate(value, kind, new Date(), { year: true }) : '');
 
+/** Whether two stored dates are the same moment, however each is written. */
+export const sameTime = (a: string | null, b: string | null) => (a === null || b === null ? a === b : Date.parse(a) === Date.parse(b));
+
 /** Reads a date field's text, typed relative to now, against the text it started with. */
 export function dateFieldMeaning(text: string, initialText: string, kind: DateKind): DateFieldMeaning {
   if (text === initialText) return { kind: 'unchanged' };

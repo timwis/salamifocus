@@ -63,7 +63,8 @@ export interface TagOutline {
 }
 
 export interface ProjectOutline {
-  project: { id: string; name: string; kind: string };
+  /** The project's own defer and due dates; which its tasks inherit. */
+  project: { id: string; name: string; kind: string; deferUntil: string | null; dueAt: string | null };
   /** In outline order, each followed by its children. `parentId` is the task it is shown beneath (null at the top level). */
   tasks: { id: string; title: string; note: string; parentId: string | null; depth: number; deferUntil: string | null; dueAt: string | null; dueBy: string | null; unavailable: Unavailable[] }[];
 }

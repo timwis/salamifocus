@@ -14,6 +14,7 @@ import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
 import type { TaskState } from '../queries.ts';
 import { tagsInOrder, useTags, useTaskTags } from '../tags/data.tsx';
 import { completeTask, createTask, nestTask, reorderTask } from '../writes.ts';
+import { ProjectDatesEditor, type DatedProject } from './ProjectDatesEditor.tsx';
 import { TaskEditor, type Field } from './TaskEditor.tsx';
 
 export interface OutlineTask extends Partial<TaskState> {
@@ -39,12 +40,15 @@ export interface OutlineGroup {
   newTask?: { projectId: string | null; tagId: string | null };
   /** Whether the tasks are in an order and hierarchy of their own (a project's), which new tasks slot into and Alt+arrows change. */
   ordered: boolean;
+  /** The project the group is, whose dates can be edited from its heading. */
+  project?: DatedProject;
 }
 
 type Row = { key: string; group: OutlineGroup } & ({ kind: 'heading' } | { kind: 'task'; task: OutlineTask; index: number });
 
 type Editing =
   | { mode: 'task'; rowKey: string; startIn: Field }
+  | { mode: 'project'; rowKey: string }
   | { mode: 'draft'; groupId: string; parentId: string | null; depth: number; after: string | null; before: string | null; returnTo: string | null };
 
 const EMPTY = 'empty';
@@ -101,10 +105,10 @@ export function Outline({
   const [editing, setEditing] = useState<Editing | null>(null);
   const focused = rows[current.index] ?? null;
   // Rows change when a defer date passes, with nothing in the data changing.
-  const now = useNow(groups.flatMap((g) => g.tasks.map((t) => t.deferredUntil)));
+  const now = useNow(groups.flatMap((g) => [g.project?.deferUntil, ...g.tasks.map((t) => t.deferredUntil)]));
 
-  // The task being edited can disappear, for example when another device completes it.
-  const editedTaskGone = editing?.mode === 'task' && !rows.some((r) => r.key === editing.rowKey);
+  // The task or project being edited can disappear, for example when another device completes it.
+  const editedTaskGone = (editing?.mode === 'task' || editing?.mode === 'project') && !rows.some((r) => r.key === editing.rowKey);
   useEffect(() => {
     if (editedTaskGone) setEditing(null);
   }, [editedTaskGone]);
@@ -133,6 +137,12 @@ export function Outline({
       const next = siblingsOf(group, parentId).find((t) => t.id !== task.id && t.position !== null && (after === null || t.position > after));
       setEditing({ mode: 'draft', groupId: group.id, parentId, depth: depthOf(task), after, before: next?.position ?? null, returnTo: focused.key });
     }
+  }
+
+  function editProject(key: string) {
+    roving.claim();
+    current.set(key);
+    setEditing({ mode: 'project', rowKey: key });
   }
 
   function openEditor(key: string) {
@@ -229,6 +239,7 @@ export function Outline({
         if (focused?.kind !== 'task') return;
         return handled(), void completeTask(focused.task.id);
       case 'Enter':
+        if (focused?.kind === 'heading' && focused.group.project) return handled(), editProject(focused.key);
         if (focused?.kind !== 'task') return;
         return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'title' });
       case 'p':
@@ -342,14 +353,14 @@ export function Outline({
                           {deferred && (
                             <span
                               className="availability"
-                              title={deferred === task.deferUntil ? undefined : 'Deferred with a task it is beneath'}
+                              title={deferred === task.deferUntil ? undefined : 'Deferred with a task it is beneath, or its project'}
                             >
                               Deferred until {describeDate(deferred, 'defer', now)}
                             </span>
                           )}
                           {pastDefer && <span className="task-date">Deferred until {describeDate(pastDefer, 'defer', now)}</span>}
                           {task.dueBy && (
-                            <span className="task-date" title={task.dueBy === task.dueAt ? undefined : 'Due with a task it is beneath'}>
+                            <span className="task-date" title={task.dueBy === task.dueAt ? undefined : 'Due with a task it is beneath, or its project'}>
                               Due {describeDate(task.dueBy, 'due', now)}
                             </span>
                           )}
@@ -376,18 +387,37 @@ export function Outline({
           );
           if (group.heading === null) return <div key={group.id}>{list}</div>;
           const key = headingKey(group);
+          const { project } = group;
+          const editingProject = editing?.mode === 'project' && editing.rowKey === key;
+          const projectDeferred = project?.deferUntil && Date.parse(project.deferUntil) > now.getTime() ? project.deferUntil : null;
+          const dated = project && (project.deferUntil || project.dueAt) && !editingProject;
           return (
             <section key={group.id} aria-labelledby={`heading-${group.id}`}>
               <h3
-                id={`heading-${group.id}`}
                 className="project-heading"
                 data-key={key}
                 tabIndex={key === focused?.key && !editing ? 0 : -1}
                 data-current={key === focused?.key || undefined}
+                aria-labelledby={`heading-${group.id}`}
+                aria-describedby={dated ? `heading-dates-${group.id}` : undefined}
                 onClick={() => current.set(key)}
+                onDoubleClick={project ? () => editProject(key) : undefined}
+                onMouseDown={(event) => actOnPress(event, key, () => current.set(key))}
               >
-                {group.heading}
+                <span id={`heading-${group.id}`}>{group.heading}</span>
+                {dated && (
+                  <span id={`heading-dates-${group.id}`} className="task-meta">
+                    {project.deferUntil &&
+                      (projectDeferred ? (
+                        <span className="availability">Deferred until {describeDate(projectDeferred, 'defer', now)}</span>
+                      ) : (
+                        <span className="task-date">Deferred until {describeDate(project.deferUntil, 'defer', now)}</span>
+                      ))}
+                    {project.dueAt && <span className="task-date">Due {describeDate(project.dueAt, 'due', now)}</span>}
+                  </span>
+                )}
               </h3>
+              {editingProject && project && <ProjectDatesEditor project={project} onClose={() => setEditing(null)} />}
               {list}
               {group.tasks.length === 0 && draftAt === -1 && <p className="hint">No tasks yet. Press N or use New task to add one.</p>}
             </section>

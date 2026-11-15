@@ -186,6 +186,16 @@ export function moveProject(projectId: string, folderId: string | null, position
   );
 }
 
+/** Defers a project, and every task in it, until a time, or with null stops deferring it. */
+export function deferProject(projectId: string, deferUntil: string | null) {
+  return write(OperationName.deferProject, 'UPDATE projects SET defer_until = ?, _metadata = ? WHERE id = ?', (m) => [deferUntil, m, projectId]);
+}
+
+/** Sets a project's due date, which every task in it is due by, or with null clears it. */
+export function setProjectDue(projectId: string, dueAt: string | null) {
+  return write(OperationName.setProjectDue, 'UPDATE projects SET due_at = ?, _metadata = ? WHERE id = ?', (m) => [dueAt, m, projectId]);
+}
+
 export function createTag(tagId: string, name: string, parentId: string | null, position: string) {
   return write(OperationName.createTag, 'INSERT INTO tags (id, name, parent_id, position, _metadata) VALUES (?, ?, ?, ?, ?)', (m) => [
     tagId,

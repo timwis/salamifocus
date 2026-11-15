@@ -177,4 +177,48 @@ export const moveProject: OperationDefinition<MoveProjectArgs> = {
   },
 };
 
-export const organisationOperations = [createFolder, renameFolder, moveFolder, createProject, renameProject, moveProject];
+export interface DeferProjectArgs {
+  projectId: string;
+  /** When the project's tasks come back to attention, or null to stop deferring it. */
+  deferUntil: string | null;
+}
+
+/** Defers a project or single-action list, and with it every task inside. */
+export const deferProject: OperationDefinition<DeferProjectArgs> = {
+  name: OperationName.deferProject,
+  parse(input) {
+    const a = args.record(input);
+    return { projectId: args.uuid(a, 'projectId'), deferUntil: args.nullableTime(a, 'deferUntil') };
+  },
+  async apply(mutations, { projectId, deferUntil }) {
+    await mutations.update('project', projectId, { defer_until: deferUntil });
+  },
+};
+
+export interface SetProjectDueArgs {
+  projectId: string;
+  dueAt: string | null;
+}
+
+/** Sets or clears a project's due date, which every task inside is due by. */
+export const setProjectDue: OperationDefinition<SetProjectDueArgs> = {
+  name: OperationName.setProjectDue,
+  parse(input) {
+    const a = args.record(input);
+    return { projectId: args.uuid(a, 'projectId'), dueAt: args.nullableTime(a, 'dueAt') };
+  },
+  async apply(mutations, { projectId, dueAt }) {
+    await mutations.update('project', projectId, { due_at: dueAt });
+  },
+};
+
+export const organisationOperations = [
+  createFolder,
+  renameFolder,
+  moveFolder,
+  createProject,
+  renameProject,
+  moveProject,
+  deferProject,
+  setProjectDue,
+];

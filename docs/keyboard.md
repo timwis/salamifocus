@@ -73,12 +73,12 @@ With the mouse, click selects and double-click renames. The **+ Tag** button doe
 
 ## Outline
 
-The task rows of the current perspective. Inbox lists every unfinished task that still lacks a project (a single-action list counts) or a tag, oldest first; once it has both it leaves, and the row now in its place becomes current. In Projects, each selected project has a heading row, and a task nested beneath another (one of its prerequisites) is indented under it, to any depth. Nesting only happens within a project, so indenting does nothing in Tags or the Inbox. A task with an unfinished task beneath it waits on it: its row is marked **Blocked**. Completing its last unfinished child makes it available, but it still needs completing itself. Siblings never wait on each other, whatever their order, and a child never waits on its parent. A deferred task is marked **Deferred until** its date, and so is every task beneath it; it comes back by itself when the date arrives, even with the app left open or offline. A deferred child still blocks its parent. A due date is shown on the row as **Due** and never changes whether a task can be worked on; a task beneath another shows the earlier of their due dates. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
+The task rows of the current perspective. Inbox lists every unfinished task that still lacks a project (a single-action list counts) or a tag, oldest first; once it has both it leaves, and the row now in its place becomes current. In Projects, each selected project has a heading row, and a task nested beneath another (one of its prerequisites) is indented under it, to any depth. Nesting only happens within a project, so indenting does nothing in Tags or the Inbox. A task with an unfinished task beneath it waits on it: its row is marked **Blocked**. Completing its last unfinished child makes it available, but it still needs completing itself. Siblings never wait on each other, whatever their order, and a child never waits on its parent. A deferred task is marked **Deferred until** its date, and so is every task beneath it (a deferred project defers all of its tasks); it comes back by itself when the date arrives, even with the app left open or offline. A deferred child still blocks its parent. A due date is shown on the row as **Due** and never changes whether a task can be worked on; a task beneath another, or in a project with a due date, shows the earliest of those due dates. In Tags, each tag in the selected branch that has tasks has a heading row with its full path, such as "@Computer : Shallow work : Low energy"; a task carrying several of those tags appears under each, and completing it removes every appearance.
 
 | Key | Action |
 |---|---|
 | ↑ / ↓, Home / End | Previous / next row, first / last row |
-| Enter | Edit the task, starting in its title |
+| Enter | Edit the task, starting in its title. On a project heading: edit the project's dates |
 | P | Edit the task's project |
 | T | Edit the task's tags |
 | Space | Complete the task. It leaves the outline and the row now in its place becomes current |
@@ -110,3 +110,14 @@ The task's fields, in order: title, project, tags, defer until, due, then note. 
 | Enter in the note | New line |
 | Cmd+Enter on macOS, Ctrl+Enter on Linux, in the note | Save and stop editing |
 | Escape | Abandon the field you are in and stop editing; fields you already left stay saved |
+
+### Editing a project's dates
+
+A project's heading shows its own defer and due dates. Enter on the heading (or double-click) opens two fields, **Defer project until** and **Project due**, which read dates as a task's do. Every task in the project is deferred until the project's date, as well as any of its own, and is due by the project's due date if that is earlier than its own.
+
+| Key | Action |
+|---|---|
+| Tab / Shift+Tab | The other field, saving this one |
+| Enter | Save and stop editing |
+| Empty field | Clears that date |
+| Escape | Abandon the field you are in and stop editing |

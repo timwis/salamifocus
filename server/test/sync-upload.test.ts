@@ -251,6 +251,27 @@ describe('uploading a client transaction', () => {
     assert.equal(rejected?.code, 'malformed_operation');
   });
 
+  it('defers a project and sets its due date, refusing either if it changes anything else', async () => {
+    const projectId = crypto.randomUUID();
+    await upload([{ op: 'PUT', table: 'projects', id: projectId, data: { name: 'Conference', kind: 'project', position: 'a0' }, metadata: operationMetadata(OperationName.createProject) }]);
+    const patch = (op: OperationName, data: Record<string, unknown>) => ({ op: 'PATCH', table: 'projects', id: projectId, data, metadata: operationMetadata(op) });
+    const project = async () => (await h.application.projects([projectId]))[0]?.project;
+
+    const results = await upload([
+      patch(OperationName.deferProject, { defer_until: '2026-12-01T00:00:00.000Z' }),
+      patch(OperationName.setProjectDue, { due_at: '2026-12-10T17:00:00.000Z' }),
+    ]);
+    assert.deepEqual(results.map((r) => r.outcome), ['applied', 'applied']);
+    assert.deepEqual([(await project())?.deferUntil, (await project())?.dueAt], ['2026-12-01T00:00:00.000Z', '2026-12-10T17:00:00.000Z']);
+    assert.deepEqual((await upload([patch(OperationName.deferProject, { defer_until: null })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await project())?.deferUntil, null);
+    const rejected = await upload([
+      patch(OperationName.deferProject, { defer_until: '2026-12-01T00:00:00.000Z', name: 'Renamed' }),
+      patch(OperationName.setProjectDue, { due_at: null, defer_until: null }),
+    ]);
+    assert.deepEqual(rejected.map((r) => r.code), ['malformed_operation', 'malformed_operation']);
+  });
+
   it('moves a task with its children, the client sending its own copy of their move', async () => {
     const [from, to] = [crypto.randomUUID(), crypto.randomUUID()];
     const [parent, child] = [crypto.randomUUID(), crypto.randomUUID()];
