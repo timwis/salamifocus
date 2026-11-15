@@ -187,6 +187,29 @@ test('selecting a tag shows its branch’s remaining tasks under full-path headi
   expect(await server.tagged(desk)).toHaveLength(2);
 });
 
+test('with the mouse, a tag removed in the editor stays removed when another task is clicked', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const { tagId: home } = await phone.createTag(`@Home ${run}`, { position: 'a6' });
+  const { tagId: quick } = await phone.createTag(`Quick ${run}`, { position: 'a7' });
+  const { projectId } = await phone.createProject(`Chores ${run}`, { position: 'a9' });
+  const { taskId } = await phone.createTask(projectId, `Water the plants ${run}`, 'a0');
+  await phone.createTask(projectId, `Empty the bins ${run}`, 'a1');
+  await phone.tagTask(taskId, home);
+  await phone.tagTask(taskId, quick);
+  await signIn(page);
+  await page.goto(`/projects/${projectId}`);
+  const row = page.getByRole('list', { name: `Chores ${run}` }).getByRole('listitem').filter({ hasText: `Water the plants ${run}` });
+
+  await page.getByRole('button', { name: `Water the plants ${run}`, exact: true }).click();
+  await page.getByRole('button', { name: `Remove Quick ${run}` }).click();
+  // Focus stays in the editor, so it still notices when the user moves on.
+  await expect(page.getByLabel('Title')).toBeFocused();
+  await page.getByRole('button', { name: `Empty the bins ${run}`, exact: true }).click();
+
+  await expect(row.locator('.tag-chip')).toHaveText([`@Home ${run}`]);
+  await expect.poll(async () => (await server.task(taskId))?.tags.map((t) => t.name)).toEqual([`@Home ${run}`]);
+});
+
 test('a tag created offline survives a reload and reaches the server on reconnection', async ({ page }) => {
   await signIn(page);
   await page.getByRole('navigation', { name: 'Perspectives' }).getByRole('link', { name: 'Tags' }).click();

@@ -85,7 +85,14 @@ export function TagsField({
       {chosen.map(({ tag, path }) => (
         <span key={tag.id} className="tag-chip" title={path.join(tagPathSeparator)}>
           {tag.name}
-          <button type="button" tabIndex={-1} aria-label={`Remove ${tag.name}`} onClick={() => onChange(value.filter((id) => id !== tag.id))}>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={`Remove ${tag.name}`}
+            // The button disappears once clicked, so it must not take focus: losing it would leave the editor unaware.
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => onChange(value.filter((id) => id !== tag.id))}
+          >
             ×
           </button>
         </span>

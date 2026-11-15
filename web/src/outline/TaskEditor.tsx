@@ -35,7 +35,7 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
 
   useLayoutEffect(() => fields[startIn].current?.focus(), []);
 
-  // If the editor goes away without closing (its task vanished in a sync), keep what was typed.
+  // If the editor goes away without closing (its task vanished in a sync, or another task's editor replaced it), keep what was typed.
   useEffect(
     () => () => {
       if (!closed.current) fieldOrder.forEach(save);
