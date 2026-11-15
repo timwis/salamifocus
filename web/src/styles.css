@@ -508,3 +508,10 @@ header .capture-button {
   font-size: 0.8rem;
   color: var(--muted);
 }
+.captured-as {
+  margin: 0;
+  padding: 0 0.4rem 0.1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: pre-wrap;
+}

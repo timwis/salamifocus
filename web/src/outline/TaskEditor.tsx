@@ -1,4 +1,5 @@
-import { normaliseNote, normaliseTitle, titleProblem } from '@salamifocus/domain';
+import { useQuery } from '@powersync/react';
+import { normaliseNote, normaliseTitle, titleFromCapture, titleProblem } from '@salamifocus/domain';
 import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { useFolders, useProjects } from '../projects/data.tsx';
 import type { Tags } from '../tags/data.tsx';
@@ -38,6 +39,10 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
   const [problem, setProblem] = useState<string | null>(null);
   const projects = useProjects();
   const folders = useFolders();
+  const { data: captures } = useQuery<{ text: string }>('SELECT text FROM captures WHERE task_id = ?', [task.id]);
+  // Once the task has been reworded, the words it was captured with are still there to look back at.
+  const captured = captures[0]?.text;
+  const reworded = captured !== undefined && titleFromCapture(captured) !== normaliseTitle(title);
   const container = useRef<HTMLDivElement>(null);
   const fields = {
     title: useRef<HTMLInputElement>(null),
@@ -190,6 +195,11 @@ export function TaskEditor({ task, tags, startIn = 'title', onClose }: { task: E
         }}
         onKeyDown={onNoteKeyDown}
       />
+      {reworded && (
+        <p className="captured-as">
+          Captured as “{captured}”
+        </p>
+      )}
     </div>
   );
 }

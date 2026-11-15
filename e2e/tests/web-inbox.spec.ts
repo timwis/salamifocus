@@ -103,7 +103,9 @@ test('captures are processed from the keyboard, leaving the Inbox only once they
 
   // Reword, then Tab to the project and choose it by typing part of its folder path.
   await page.keyboard.press('Enter');
+  await expect(page.locator('.captured-as')).toHaveCount(0);
   await page.getByLabel('Title').fill(`Book a hedge trimmer ${run}`);
+  await expect(page.locator('.captured-as')).toHaveText(`Captured as “sort hedge ${run}”`);
   await page.keyboard.press('Tab');
   await expect(page.getByLabel('Project', { exact: true })).toBeFocused();
   await page.keyboard.type(`outdoors ${mine}`);
