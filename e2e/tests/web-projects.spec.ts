@@ -190,8 +190,12 @@ test('a task’s title and note are edited together; Tab keeps a change and Esca
   await expect(row.getByRole('img', { name: 'Has a note' })).toBeVisible();
   await expect.poll(async () => (await server.task(taskId))?.note).toBe('Policy 12-345\nQuote due in March');
 
-  // Tab keeps the new title; Escape then abandons only the note being typed.
+  // Tab refuses a blank title, keeps a real one, and Escape then abandons only the note being typed.
   await page.keyboard.press('Enter');
+  await page.getByLabel('Title').fill('  ');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('alert')).toHaveText('A task needs a title.');
+  await expect(page.getByLabel('Title')).toBeFocused();
   await page.getByLabel('Title').fill(`Renew car insurance ${run}`);
   await page.keyboard.press('Tab');
   await page.keyboard.type(' (never mind)');

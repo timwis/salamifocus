@@ -63,7 +63,15 @@ export function TaskEditor({ task, onClose }: { task: EditableTask; onClose: () 
       return reason ? setProblem(reason) : close();
     }
     if (event.key === 'Escape') return close('title');
-    if (event.key === 'Tab') return moveTo('note', 'title', event);
+    if (event.key === 'Tab') {
+      // A blank title is refused here as it is on Enter, rather than being quietly dropped later.
+      const reason = titleProblem(typed.current.title);
+      if (reason) {
+        event.preventDefault();
+        return setProblem(reason);
+      }
+      return moveTo('note', 'title', event);
+    }
   }
 
   function onNoteKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
