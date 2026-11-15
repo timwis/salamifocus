@@ -1,5 +1,5 @@
 import { normaliseTitle, positionAt, positionBetween, titleProblem } from '@salamifocus/domain';
-import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
 import { completeTask, createTask, reorderTask } from '../writes.ts';
 import { TaskEditor } from './TaskEditor.tsx';
@@ -56,6 +56,12 @@ export function Outline({
   const current = useCurrentRow(rows.map((r) => r.key));
   const [editing, setEditing] = useState<Editing | null>(null);
   const focused = rows[current.index] ?? null;
+
+  // The task being edited can disappear, for example when another device completes it.
+  const editedTaskGone = editing?.mode === 'task' && !rows.some((r) => r.key === editing.taskId);
+  useEffect(() => {
+    if (editedTaskGone) setEditing(null);
+  }, [editedTaskGone]);
   const roving = useRovingFocus<HTMLDivElement>(editing?.mode === 'draft' ? 'draft' : (current.key ?? EMPTY));
 
   function focusRow(index: number) {

@@ -314,6 +314,29 @@ test('a new task goes after tasks that two devices gave the same position', asyn
   await expect(tasks.nth(3)).toHaveText(`Paint the door ${run}`);
 });
 
+test('a task completed elsewhere while being edited keeps the edit and leaves the outline usable', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const loft = `Loft ${run}`;
+  const { projectId } = await phone.createProject(loft, { position: 'a8' });
+  const { taskId } = await phone.createTask(projectId, `clear loft ${run}`, 'a0');
+  await phone.createTask(projectId, `Insulate the loft ${run}`, 'a1');
+  await signIn(page);
+  await openProjectsAt(page, projectId, loft);
+  const tasks = page.getByRole('list', { name: loft }).getByRole('listitem');
+  await expect(tasks).toHaveCount(2);
+
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await page.getByLabel('Title').fill(`Clear out the loft ${run}`);
+  await phone.complete(taskId);
+
+  await expect(tasks).toHaveText([`Insulate the loft ${run}`]);
+  await expect(page.getByLabel('Title')).toHaveCount(0);
+  await expect(page.locator('main [tabindex="0"]')).toHaveCount(1);
+  await expect.poll(async () => (await server.task(taskId))?.title).toBe(`Clear out the loft ${run}`);
+});
+
 test('a mangled address still opens the app', async ({ page }) => {
   await signIn(page);
   // The app server answers this path with the app; the Vite dev server used here refuses it, so go there in-page.

@@ -84,6 +84,18 @@ export class SimulatedDevice {
     return { taskId };
   }
 
+  async complete(taskId: string): Promise<void> {
+    await this.upload([
+      {
+        op: 'PATCH',
+        table: 'tasks',
+        id: taskId,
+        data: { completed_at: new Date().toISOString() },
+        metadata: operationMetadata(OperationName.completeTask),
+      },
+    ]);
+  }
+
   private async upload(entries: unknown[]): Promise<void> {
     const response = await fetch(`${serverUrl}/api/sync/upload`, {
       method: 'POST',

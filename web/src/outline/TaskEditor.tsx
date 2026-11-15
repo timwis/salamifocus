@@ -1,5 +1,5 @@
 import { normaliseNote, normaliseTitle, titleProblem } from '@salamifocus/domain';
-import { useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { editTaskNote, renameTask } from '../writes.ts';
 
 export interface EditableTask {
@@ -26,6 +26,17 @@ export function TaskEditor({ task, onClose }: { task: EditableTask; onClose: () 
   const typed = useRef({ title: task.title, note: task.note ?? '' });
   const saved = useRef({ title: task.title, note: normaliseNote(task.note ?? '') });
   const closed = useRef(false);
+
+  // If the editor goes away without closing (its task vanished in a sync), keep what was typed.
+  useEffect(
+    () => () => {
+      if (closed.current) return;
+      save('title');
+      save('note');
+    },
+    // save reads refs only, so the first render's copy stays correct.
+    [],
+  );
 
   function save(field: Field) {
     if (field === 'title') {
