@@ -26,8 +26,8 @@ The web client is meant to be used from the keyboard. This is the reference for 
 
 Projects and Tags can show more or less of the system. The choice is shown above the outline, kept in the address (so a reload keeps it), and remembered for each perspective while the app is open. Both start at Remaining.
 
-- **Available**: only tasks that can be worked on now. Blocked and deferred tasks are left out, and a deferred task joins when its date arrives. A prerequisite whose parent is left out is shown where the parent was.
-- **Remaining**: every unfinished task, blocked and deferred ones included.
+- **Available**: only tasks that can be worked on now. Blocked and deferred tasks, and tasks in paused projects, are left out; a deferred task joins when its date arrives. A prerequisite whose parent is left out is shown where the parent was.
+- **Remaining**: every unfinished task, blocked and deferred ones and those in paused projects included.
 - **Everything**: completed tasks as well, each in its place, struck through and marked **Completed** with the day and time. Completing a task here leaves it in place.
 
 Clicking a choice does the same as V, without moving keyboard focus.
@@ -55,13 +55,16 @@ Folders, projects and single-action lists. Selecting a folder shows every projec
 | N | New project |
 | S | New single-action list |
 | F | New folder |
+| P | Pause the project or single-action list, or resume it if it is paused |
 | Alt+↑ / Alt+↓ | Move the item up or down among its siblings |
 | Alt+→ | Move the item into the folder just above it |
 | Alt+← | Move the item out of its folder |
 
 A new item goes at the end of the focused folder, or just after the focused project or list.
 
-With the mouse, click selects, Cmd/Ctrl+click adds or removes an item, and Shift+click selects a range. Double-click renames. The **+ Project**, **+ List** and **+ Folder** buttons below the sidebar do the same as N, S and F.
+A paused project stays in the sidebar, marked **Paused**, and can still be selected and edited. None of its tasks is available until it is resumed: they show under Remaining and Everything, never under Available. Its heading in the outline says **Paused**, and elsewhere (in Tags) its tasks say **Project paused**.
+
+With the mouse, click selects, Cmd/Ctrl+click adds or removes an item, and Shift+click selects a range. Double-click renames. The **+ Project**, **+ List** and **+ Folder** buttons below the sidebar do the same as N, S and F, and the **Pause** or **Resume** button does the same as P for the current item.
 
 ## Tags sidebar
 

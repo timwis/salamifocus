@@ -19,6 +19,14 @@ export interface NewItemKind {
   name: string;
 }
 
+/** Something that can be done to the current item, with its key and button. */
+export interface SidebarAction<N extends TreeNode> {
+  key: string;
+  /** The button's text for this item, or null when the action does not apply to it. */
+  label: (node: N) => string | null;
+  run: (node: N) => Promise<void>;
+}
+
 export interface TreeSidebarProps<N extends TreeNode> {
   label: string;
   tree: readonly N[];
@@ -33,6 +41,9 @@ export interface TreeSidebarProps<N extends TreeNode> {
   /** Whether a new item goes inside this one (at the end) rather than after it. */
   createsInside: (node: N) => boolean;
   newKinds: readonly NewItemKind[];
+  actions?: readonly SidebarAction<N>[];
+  /** A word shown after an item's name, such as "Paused", or null. */
+  badgeOf?: (node: N) => string | null;
   hint: string;
   collapsedStorageKey: string;
   create: (kind: string, id: string, name: string, parentId: string | null, position: string) => Promise<void>;
@@ -82,7 +93,7 @@ function useCollapsed(storageKey: string) {
  * the outline shows.
  */
 export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
-  const { tree, selection, multiple, onSelect, kindOf, canContain, createsInside, newKinds } = props;
+  const { tree, selection, multiple, onSelect, kindOf, canContain, createsInside, newKinds, actions = [], badgeOf } = props;
   const [collapsed, setCollapsed] = useCollapsed(props.collapsedStorageKey);
   const rows = flatten(tree, collapsed);
   const current = useCurrentRow(
@@ -184,6 +195,8 @@ export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
     const newKind = !ctrlKey && !metaKey && !altKey ? newKinds.find((k) => k.key.toLowerCase() === key) : undefined;
     if (newKind) return handled(), startCreating(newKind);
     if (!focused) return;
+    const action = !ctrlKey && !metaKey && !altKey ? actions.find((a) => a.key.toLowerCase() === key && a.label(focused.node) !== null) : undefined;
+    if (action) return handled(), void action.run(focused.node);
 
     if (altKey) {
       if (key === 'ArrowUp') return handled(), reorder(focused, -1);
@@ -266,12 +279,14 @@ export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
           const renaming = editing?.mode === 'rename' && editing.id === node.id;
           const canExpand = expandable(node);
           const isCollapsed = canExpand && collapsed.has(node.id);
+          const badge = badgeOf?.(node) ?? null;
           return [
             <li
               key={node.id}
               role="treeitem"
               data-key={node.id}
               data-kind={kindOf(node)}
+              data-badge={badge ?? undefined}
               aria-level={depth}
               aria-selected={selected.has(node.id)}
               aria-expanded={canExpand ? !isCollapsed : undefined}
@@ -293,6 +308,7 @@ export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
               />
               <span className={`icon icon-${kindOf(node)}`} aria-hidden />
               {renaming ? <NameEditor label="Name" initial={node.name} onDone={finishEditing} /> : <span className="name">{node.name}</span>}
+              {badge && !renaming && <span className="badge">{badge}</span>}
             </li>,
             editing?.mode === 'create' && editing.afterKey === node.id ? draft : null,
           ];
@@ -314,6 +330,23 @@ export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
             + {kind.button}
           </button>
         ))}
+        {actions.map((action) => {
+          const label = focused && action.label(focused.node);
+          if (!focused || !label) return null;
+          return (
+            <button
+              key={action.key}
+              type="button"
+              tabIndex={-1}
+              aria-label={`${label} ${focused.node.name}`}
+              title={`${label} (${action.key})`}
+              aria-keyshortcuts={action.key}
+              onClick={() => void action.run(focused.node)}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
     </aside>
   );

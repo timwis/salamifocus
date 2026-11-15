@@ -1,4 +1,4 @@
-import type { Unavailable } from '@salamifocus/domain';
+import type { ProjectStatus, Unavailable } from '@salamifocus/domain';
 
 export interface Actor {
   type: 'user';
@@ -64,7 +64,7 @@ export interface TagOutline {
 
 export interface ProjectOutline {
   /** The project's own defer and due dates; which its tasks inherit. */
-  project: { id: string; name: string; kind: string; deferUntil: string | null; dueAt: string | null };
+  project: { id: string; name: string; kind: string; status: ProjectStatus; deferUntil: string | null; dueAt: string | null };
   /** In outline order, each followed by its children. `parentId` is the task it is shown beneath (null at the top level). */
   tasks: { id: string; title: string; note: string; parentId: string | null; depth: number; completedAt: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; unavailable: Unavailable[] }[];
 }

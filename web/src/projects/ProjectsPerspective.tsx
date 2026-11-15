@@ -1,5 +1,5 @@
 import { useQuery } from '@powersync/react';
-import { outlineTasks, projectsInSelection, pruneOutline, shownUnder, Visibility } from '@salamifocus/domain';
+import { outlineTasks, ProjectStatus, projectsInSelection, pruneOutline, shownUnder, Visibility } from '@salamifocus/domain';
 import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
@@ -39,7 +39,12 @@ export function ProjectsPerspective({ place }: { place: Place }) {
     heading: project.name,
     newTask: { projectId: project.id, tagId: null },
     ordered: true,
-    project: { id: project.id, deferUntil: datesById.get(project.id)?.defer_until ?? null, dueAt: datesById.get(project.id)?.due_at ?? null },
+    project: {
+      id: project.id,
+      deferUntil: datesById.get(project.id)?.defer_until ?? null,
+      dueAt: datesById.get(project.id)?.due_at ?? null,
+      paused: project.status === ProjectStatus.paused,
+    },
     tasks: pruneOutline(outlineTasks(tasks.filter((t) => t.project_id === project.id).map((t) => ({ ...t, parentId: t.parent_id }))), shown).map(
       ({ task, depth, parentId }) => ({ ...task, projectId: task.project_id, depth, parentId }),
     ),

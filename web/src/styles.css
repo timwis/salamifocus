@@ -128,6 +128,17 @@ nav a:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.tree-row[data-badge] .name {
+  color: var(--muted);
+}
+.tree-row .badge {
+  flex: none;
+  font-size: 0.7rem;
+  color: #9a5b00;
+  border: 1px solid currentColor;
+  border-radius: 0.6rem;
+  padding: 0 0.35rem;
+}
 .tree-row[aria-selected='true'] {
   background: var(--inactive);
 }
@@ -490,7 +501,8 @@ nav:focus-within a[aria-current='page'] {
 }
 /* A blocked or deferred task reads as not yet actionable. */
 .task-row[data-unavailable~='blocked'] .task-title,
-.task-row[data-unavailable~='deferred'] .task-title {
+.task-row[data-unavailable~='deferred'] .task-title,
+.task-row[data-unavailable~='paused'] .task-title {
   color: var(--muted);
 }
 .tag-chip,

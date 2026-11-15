@@ -1,4 +1,4 @@
-import { OperationName } from '@salamifocus/domain';
+import { OperationName, ProjectStatus } from '@salamifocus/domain';
 
 /** One row change from a PowerSync client's upload queue, as the clients send it. */
 export interface CrudEntry {
@@ -229,6 +229,18 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
   [OperationName.setProjectDue](entries) {
     const { id, data } = onlyUpdate(entries, 'projects', ['due_at']);
     return { projectId: id, dueAt: data.due_at ?? null };
+  },
+
+  [OperationName.pauseProject](entries) {
+    const { id, data } = onlyUpdate(entries, 'projects', ['status']);
+    if (data.status !== ProjectStatus.paused) throw new Malformed('Pausing a project must set it to paused.');
+    return { projectId: id };
+  },
+
+  [OperationName.resumeProject](entries) {
+    const { id, data } = onlyUpdate(entries, 'projects', ['status']);
+    if (data.status !== ProjectStatus.active) throw new Malformed('Resuming a project must set it to active.');
+    return { projectId: id };
   },
 
   [OperationName.createTag](entries) {

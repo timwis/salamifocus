@@ -1,4 +1,4 @@
-import { deferredUntilColumn, dueByColumn, unavailability, Visibility, type Unavailable } from '@salamifocus/domain';
+import { deferredUntilColumn, dueByColumn, projectStatusColumn, unavailability, Visibility, type Unavailable } from '@salamifocus/domain';
 
 /**
  * Selects how many of a task's children (the task aliased `t`) are unfinished, as `unfinishedChildren`,
@@ -20,14 +20,24 @@ export interface TaskState {
   dueAt: string | null;
   /** The earliest due date among the task, the unfinished tasks it is beneath and its project. */
   dueBy: string | null;
+  /** The status of the task's project, or null when it has none. */
+  projectStatus: string | null;
 }
 
 /** Selects a task's `TaskState`. */
-export const taskStateColumns = `t.completed_at AS "completedAt", ${unfinishedChildrenColumn}, ${deferredUntilColumn}, t.defer_until AS "deferUntil", ${dueByColumn}, t.due_at AS "dueAt"`;
+export const taskStateColumns = `t.completed_at AS "completedAt", ${unfinishedChildrenColumn}, ${deferredUntilColumn}, t.defer_until AS "deferUntil", ${dueByColumn}, t.due_at AS "dueAt", ${projectStatusColumn}`;
 
 /** Why a task cannot be worked on at `now`, from its `TaskState`. */
 export function taskUnavailability(task: Partial<TaskState>, now: Date): Unavailable[] {
-  return unavailability({ completedAt: task.completedAt ?? null, unfinishedChildren: task.unfinishedChildren ?? 0, deferredUntil: task.deferredUntil ?? null }, now);
+  return unavailability(
+    {
+      completedAt: task.completedAt ?? null,
+      unfinishedChildren: task.unfinishedChildren ?? 0,
+      deferredUntil: task.deferredUntil ?? null,
+      projectStatus: task.projectStatus ?? null,
+    },
+    now,
+  );
 }
 
 /** Limits tasks (aliased `t`) to unfinished ones, except under Everything, which shows completed tasks too. */

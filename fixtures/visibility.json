@@ -1,6 +1,6 @@
 {
   "scenario": "Visibility",
-  "description": "Projects and Tags show Available, Remaining (their default) or Everything. “Build the garden shed” has an available task, a task blocked by an unfinished prerequisite, a deferred task and a completed one. See “Visibility modes” in the spec.",
+  "description": "Projects and Tags show Available, Remaining (their default) or Everything. “Build the garden shed” has an available task, a task blocked by an unfinished prerequisite, a deferred task and a completed one; “Move house” is paused, with the same mix. See “Visibility modes” and “Project and folder organisation” in the spec.",
   "examples": [
     {
       "name": "Available shows only tasks that can be worked on now, leaving out blocked, deferred and completed ones",
@@ -937,6 +937,671 @@
                     "depth": 1
                   }
                 ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "A paused project’s tasks are never available, whatever else holds them back, but the project can still be selected",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "shed",
+            "name": "Build the garden shed",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a1",
+            "status": "paused"
+          }
+        ],
+        "tags": [
+          {
+            "id": "contexts",
+            "name": "Contexts",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "calls",
+            "name": "Calls",
+            "parent_id": "contexts",
+            "position": "a0"
+          },
+          {
+            "id": "errands",
+            "name": "Errands",
+            "parent_id": "contexts",
+            "position": "a1"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "plans",
+            "title": "Draw up the plans",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "boxes",
+            "title": "Order boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "movers",
+            "title": "Book the movers",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-10T11:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "quotes",
+            "title": "Get quotes from movers",
+            "project_id": "move",
+            "parent_id": "movers",
+            "position": "a0",
+            "created_at": "2026-11-10T12:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "post",
+            "title": "Redirect the post",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-10T13:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-30T00:00:00.000Z"
+          },
+          {
+            "id": "keys",
+            "title": "Get the keys copied",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-10T14:00:00.000Z",
+            "completed_at": "2026-11-14T15:30:00.000Z"
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "plans-errands",
+            "task_id": "plans",
+            "tag_id": "errands"
+          },
+          {
+            "id": "boxes-errands",
+            "task_id": "boxes",
+            "tag_id": "errands"
+          },
+          {
+            "id": "movers-calls",
+            "task_id": "movers",
+            "tag_id": "calls"
+          },
+          {
+            "id": "quotes-calls",
+            "task_id": "quotes",
+            "tag_id": "calls"
+          },
+          {
+            "id": "post-errands",
+            "task_id": "post",
+            "tag_id": "errands"
+          },
+          {
+            "id": "keys-errands",
+            "task_id": "keys",
+            "tag_id": "errands"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "plans": [],
+          "boxes": [
+            "paused"
+          ],
+          "movers": [
+            "blocked",
+            "paused"
+          ],
+          "quotes": [
+            "paused"
+          ],
+          "post": [
+            "deferred",
+            "paused"
+          ],
+          "keys": [
+            "completed"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "shed",
+              "move"
+            ],
+            "visibility": "available",
+            "groups": [
+              {
+                "id": "shed",
+                "tasks": [
+                  {
+                    "id": "plans",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "move",
+                "tasks": []
+              }
+            ]
+          },
+          {
+            "perspective": "tags",
+            "selection": [
+              "contexts"
+            ],
+            "visibility": "available",
+            "groups": [
+              {
+                "id": "errands",
+                "tasks": [
+                  {
+                    "id": "plans",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Remaining shows a paused project’s unfinished tasks, and Everything its completed ones too",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "shed",
+            "name": "Build the garden shed",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a1",
+            "status": "paused"
+          }
+        ],
+        "tags": [
+          {
+            "id": "contexts",
+            "name": "Contexts",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "calls",
+            "name": "Calls",
+            "parent_id": "contexts",
+            "position": "a0"
+          },
+          {
+            "id": "errands",
+            "name": "Errands",
+            "parent_id": "contexts",
+            "position": "a1"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "plans",
+            "title": "Draw up the plans",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "boxes",
+            "title": "Order boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "movers",
+            "title": "Book the movers",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-10T11:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "quotes",
+            "title": "Get quotes from movers",
+            "project_id": "move",
+            "parent_id": "movers",
+            "position": "a0",
+            "created_at": "2026-11-10T12:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "post",
+            "title": "Redirect the post",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-10T13:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-30T00:00:00.000Z"
+          },
+          {
+            "id": "keys",
+            "title": "Get the keys copied",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-10T14:00:00.000Z",
+            "completed_at": "2026-11-14T15:30:00.000Z"
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "plans-errands",
+            "task_id": "plans",
+            "tag_id": "errands"
+          },
+          {
+            "id": "boxes-errands",
+            "task_id": "boxes",
+            "tag_id": "errands"
+          },
+          {
+            "id": "movers-calls",
+            "task_id": "movers",
+            "tag_id": "calls"
+          },
+          {
+            "id": "quotes-calls",
+            "task_id": "quotes",
+            "tag_id": "calls"
+          },
+          {
+            "id": "post-errands",
+            "task_id": "post",
+            "tag_id": "errands"
+          },
+          {
+            "id": "keys-errands",
+            "task_id": "keys",
+            "tag_id": "errands"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "plans": [],
+          "boxes": [
+            "paused"
+          ],
+          "movers": [
+            "blocked",
+            "paused"
+          ],
+          "quotes": [
+            "paused"
+          ],
+          "post": [
+            "deferred",
+            "paused"
+          ],
+          "keys": [
+            "completed"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "move"
+            ],
+            "groups": [
+              {
+                "id": "move",
+                "tasks": [
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  },
+                  {
+                    "id": "movers",
+                    "depth": 1
+                  },
+                  {
+                    "id": "quotes",
+                    "depth": 2
+                  },
+                  {
+                    "id": "post",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "projects",
+            "selection": [
+              "move"
+            ],
+            "visibility": "everything",
+            "groups": [
+              {
+                "id": "move",
+                "tasks": [
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  },
+                  {
+                    "id": "movers",
+                    "depth": 1
+                  },
+                  {
+                    "id": "quotes",
+                    "depth": 2
+                  },
+                  {
+                    "id": "post",
+                    "depth": 1
+                  },
+                  {
+                    "id": "keys",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "tags",
+            "selection": [
+              "contexts"
+            ],
+            "groups": [
+              {
+                "id": "calls",
+                "tasks": [
+                  {
+                    "id": "movers",
+                    "depth": 1
+                  },
+                  {
+                    "id": "quotes",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "errands",
+                "tasks": [
+                  {
+                    "id": "plans",
+                    "depth": 1
+                  },
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  },
+                  {
+                    "id": "post",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "tags",
+            "selection": [
+              "contexts"
+            ],
+            "visibility": "everything",
+            "groups": [
+              {
+                "id": "calls",
+                "tasks": [
+                  {
+                    "id": "movers",
+                    "depth": 1
+                  },
+                  {
+                    "id": "quotes",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "errands",
+                "tasks": [
+                  {
+                    "id": "plans",
+                    "depth": 1
+                  },
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  },
+                  {
+                    "id": "post",
+                    "depth": 1
+                  },
+                  {
+                    "id": "keys",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "A deferred task in a paused project stays unavailable after its defer date arrives",
+      "clock": "2026-11-30T00:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "shed",
+            "name": "Build the garden shed",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a1",
+            "status": "paused"
+          }
+        ],
+        "tags": [
+          {
+            "id": "contexts",
+            "name": "Contexts",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "calls",
+            "name": "Calls",
+            "parent_id": "contexts",
+            "position": "a0"
+          },
+          {
+            "id": "errands",
+            "name": "Errands",
+            "parent_id": "contexts",
+            "position": "a1"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "plans",
+            "title": "Draw up the plans",
+            "project_id": "shed",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "boxes",
+            "title": "Order boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "movers",
+            "title": "Book the movers",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-10T11:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "quotes",
+            "title": "Get quotes from movers",
+            "project_id": "move",
+            "parent_id": "movers",
+            "position": "a0",
+            "created_at": "2026-11-10T12:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "post",
+            "title": "Redirect the post",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-10T13:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-30T00:00:00.000Z"
+          },
+          {
+            "id": "keys",
+            "title": "Get the keys copied",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-10T14:00:00.000Z",
+            "completed_at": "2026-11-14T15:30:00.000Z"
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "plans-errands",
+            "task_id": "plans",
+            "tag_id": "errands"
+          },
+          {
+            "id": "boxes-errands",
+            "task_id": "boxes",
+            "tag_id": "errands"
+          },
+          {
+            "id": "movers-calls",
+            "task_id": "movers",
+            "tag_id": "calls"
+          },
+          {
+            "id": "quotes-calls",
+            "task_id": "quotes",
+            "tag_id": "calls"
+          },
+          {
+            "id": "post-errands",
+            "task_id": "post",
+            "tag_id": "errands"
+          },
+          {
+            "id": "keys-errands",
+            "task_id": "keys",
+            "tag_id": "errands"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "plans": [],
+          "boxes": [
+            "paused"
+          ],
+          "movers": [
+            "blocked",
+            "paused"
+          ],
+          "quotes": [
+            "paused"
+          ],
+          "post": [
+            "paused"
+          ],
+          "keys": [
+            "completed"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "projects",
+            "selection": [
+              "move"
+            ],
+            "visibility": "available",
+            "groups": [
+              {
+                "id": "move",
+                "tasks": []
               }
             ]
           }

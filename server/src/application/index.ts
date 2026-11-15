@@ -7,6 +7,8 @@ import {
   inboxCondition,
   outlineTasks,
   placedTags,
+  projectStatusColumn,
+  projectStatusOf,
   projectsInSelection,
   pruneOutline,
   shownUnder,
@@ -51,6 +53,9 @@ const deferredUntil = (sql: Sql) => sql.unsafe(deferredUntilColumn);
 
 /** The earliest due date among a task (aliased `t`), the unfinished tasks it is beneath and its project. */
 const dueBy = (sql: Sql) => sql.unsafe(dueByColumn);
+
+/** The status of a task's (aliased `t`) project, or null when it has none. */
+const projectStatus = (sql: Sql) => sql.unsafe(projectStatusColumn);
 
 /** Limits tasks (aliased `t`) to unfinished ones, except under Everything, which shows completed tasks too. */
 const unfinishedUnless = (sql: Sql, visibility: Visibility) => sql.unsafe(visibility === Visibility.everything ? 'TRUE' : 't.completed_at IS NULL');
@@ -132,11 +137,11 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   async function organisation(): Promise<OrganisationNode[]> {
     const [folders, projects] = await Promise.all([
       sql`SELECT id, name, parent_id, position FROM folders`,
-      sql`SELECT id, name, kind, folder_id, position FROM projects`,
+      sql`SELECT id, name, kind, status, folder_id, position FROM projects`,
     ]);
     return buildTree(
       folders.map((f) => ({ id: f.id, name: f.name, parentId: f.parent_id, position: f.position })),
-      projects.map((p) => ({ id: p.id, name: p.name, kind: p.kind, folderId: p.folder_id, position: p.position })),
+      projects.map((p) => ({ id: p.id, name: p.name, kind: p.kind, status: projectStatusOf(p.status), folderId: p.folder_id, position: p.position })),
     );
   }
 
@@ -171,18 +176,19 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         tagId: string;
         unfinishedChildren: number;
         deferredUntil: string | null;
+        projectStatus: string | null;
       }[]
     >`
       SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.completed_at AS "completedAt", t.defer_until AS "deferUntil", t.due_at AS "dueAt",
-             tt.tag_id AS "tagId", ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
+             tt.tag_id AS "tagId", ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
       FROM tasks t JOIN task_tags tt ON tt.task_id = t.id
       WHERE ${unfinishedUnless(sql, visibility)} AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN ${sql(branch)})
       ORDER BY t.created_at, t.id`;
     const tasks = new Map<string, TagOutline['tasks'][number]>();
-    for (const { tagId: rowTag, unfinishedChildren, deferredUntil, ...task } of rows) {
+    for (const { tagId: rowTag, unfinishedChildren, deferredUntil, projectStatus, ...task } of rows) {
       const existing = tasks.get(task.id);
       if (existing) existing.tagIds.push(rowTag);
-      else tasks.set(task.id, { ...task, tagIds: [rowTag], unavailable: unavailability({ completedAt: task.completedAt, unfinishedChildren, deferredUntil }, now) });
+      else tasks.set(task.id, { ...task, tagIds: [rowTag], unavailable: unavailability({ completedAt: task.completedAt, unfinishedChildren, deferredUntil, projectStatus }, now) });
     }
     const shown = [...tasks.values()].filter((task) => shownUnder(visibility, task.unavailable));
     return groupByTag(placed, shown, (task) => task.tagIds).map(({ tag, path, tasks }) => ({
@@ -220,20 +226,22 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         dueBy: string | null;
         unfinishedChildren: number;
         deferredUntil: string | null;
+        projectStatus: string | null;
       }[]
     >`
       SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.parent_id AS "parentId", t.position, t.completed_at AS "completedAt",
-             t.defer_until AS "deferUntil", t.due_at AS "dueAt", ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
+             t.defer_until AS "deferUntil", t.due_at AS "dueAt", ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
       FROM tasks t WHERE t.project_id IN ${sql(ids)} AND ${unfinishedUnless(sql, visibility)}`;
     const withAvailability = rows.map((row) => ({
       ...row,
-      unavailable: unavailability({ completedAt: row.completedAt, unfinishedChildren: row.unfinishedChildren, deferredUntil: row.deferredUntil }, now),
+      unavailable: unavailability(row, now),
     }));
     return selected.map((project) => ({
       project: {
         id: project.id,
         name: project.name,
         kind: project.kind,
+        status: project.status,
         deferUntil: dates.get(project.id)?.deferUntil ?? null,
         dueAt: dates.get(project.id)?.dueAt ?? null,
       },
@@ -259,7 +267,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     const [[row], tagRows, tree] = await Promise.all([
       sql`
         SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.parent_id, t.completed_at, t.defer_until, t.due_at, c.id AS capture_id, c.text, c.captured_at,
-               ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}
+               ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
         FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
         WHERE t.id = ${id}::uuid`,
       sql<{ tag_id: string }[]>`SELECT tag_id FROM task_tags WHERE task_id = ${id}::uuid`,
@@ -279,7 +287,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       dueAt: row.due_at,
       dueBy: row.dueBy,
       unavailable: unavailability(
-        { completedAt: row.completed_at, unfinishedChildren: row.unfinishedChildren, deferredUntil: row.deferredUntil },
+        { completedAt: row.completed_at, unfinishedChildren: row.unfinishedChildren, deferredUntil: row.deferredUntil, projectStatus: row.projectStatus },
         clock(),
       ),
       tags: placedTags(tree)

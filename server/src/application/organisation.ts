@@ -1,4 +1,4 @@
-import { isProjectKind, nameProblem, normaliseName, OperationName, positionProblem, wouldNestInItself, type ProjectKind } from '@salamifocus/domain';
+import { isProjectKind, nameProblem, normaliseName, OperationName, positionProblem, ProjectStatus, wouldNestInItself, type ProjectKind } from '@salamifocus/domain';
 import * as args from './arguments.ts';
 import type { Mutations } from './mutations.ts';
 import type { OperationDefinition } from './operations.ts';
@@ -212,6 +212,32 @@ export const setProjectDue: OperationDefinition<SetProjectDueArgs> = {
   },
 };
 
+export interface ProjectArgs {
+  projectId: string;
+}
+
+/** Pauses a project or single-action list: it can still be inspected and edited, but none of its tasks are available. */
+export const pauseProject: OperationDefinition<ProjectArgs> = {
+  name: OperationName.pauseProject,
+  parse(input) {
+    return { projectId: args.uuid(args.record(input), 'projectId') };
+  },
+  async apply(mutations, { projectId }) {
+    await mutations.update('project', projectId, { status: ProjectStatus.paused });
+  },
+};
+
+/** Makes a paused project active again, so its tasks can be available once more. */
+export const resumeProject: OperationDefinition<ProjectArgs> = {
+  name: OperationName.resumeProject,
+  parse(input) {
+    return { projectId: args.uuid(args.record(input), 'projectId') };
+  },
+  async apply(mutations, { projectId }) {
+    await mutations.update('project', projectId, { status: ProjectStatus.active });
+  },
+};
+
 export const organisationOperations = [
   createFolder,
   renameFolder,
@@ -221,4 +247,6 @@ export const organisationOperations = [
   moveProject,
   deferProject,
   setProjectDue,
+  pauseProject,
+  resumeProject,
 ];

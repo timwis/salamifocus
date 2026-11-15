@@ -43,7 +43,7 @@ export interface OutlineGroup {
   /** Whether the tasks are in an order and hierarchy of their own (a project's), which new tasks slot into and Alt+arrows change. */
   ordered: boolean;
   /** The project the group is, whose dates can be edited from its heading. */
-  project?: DatedProject;
+  project?: DatedProject & { paused: boolean };
 }
 
 type Row = { key: string; group: OutlineGroup } & ({ kind: 'heading' } | { kind: 'task'; task: OutlineTask; index: number });
@@ -308,6 +308,8 @@ export function Outline({
             const unavailable = taskUnavailability(task, now);
             const completed = task.completedAt ?? null;
             const blocked = unavailable.includes(Unavailable.blocked);
+            // Under a project's own heading, that heading says it is paused.
+            const paused = unavailable.includes(Unavailable.paused) && !group.project;
             const deferred = unavailable.includes(Unavailable.deferred) && task.deferredUntil ? task.deferredUntil : null;
             // A defer date that has passed is still worth seeing; a future one shows as the deferral itself.
             const pastDefer = !deferred && task.deferUntil ? task.deferUntil : null;
@@ -351,7 +353,7 @@ export function Outline({
                       >
                         {task.title}
                       </button>
-                      {(chips.length > 0 || task.projectName || completed || blocked || deferred || pastDefer || task.dueBy) && (
+                      {(chips.length > 0 || task.projectName || completed || blocked || deferred || paused || pastDefer || task.dueBy) && (
                         <span className="task-meta">
                           {completed && <span className="completion">Completed {describeMoment(completed, now)}</span>}
                           {blocked && (
@@ -367,6 +369,7 @@ export function Outline({
                               Deferred until {describeDate(deferred, 'defer', now)}
                             </span>
                           )}
+                          {paused && <span className="availability">Project paused</span>}
                           {pastDefer && <span className="task-date">Deferred until {describeDate(pastDefer, 'defer', now)}</span>}
                           {task.dueBy && (
                             <span className="task-date" title={task.dueBy === task.dueAt ? undefined : 'Due with a task it is beneath, or its project'}>
@@ -399,7 +402,7 @@ export function Outline({
           const { project } = group;
           const editingProject = editing?.mode === 'project' && editing.rowKey === key;
           const projectDeferred = project?.deferUntil && Date.parse(project.deferUntil) > now.getTime() ? project.deferUntil : null;
-          const dated = project && (project.deferUntil || project.dueAt) && !editingProject;
+          const described = project && (project.deferUntil || project.dueAt || project.paused) && !editingProject;
           return (
             <section key={group.id} aria-labelledby={`heading-${group.id}`}>
               <h3
@@ -408,14 +411,15 @@ export function Outline({
                 tabIndex={key === focused?.key && !editing ? 0 : -1}
                 data-current={key === focused?.key || undefined}
                 aria-labelledby={`heading-${group.id}`}
-                aria-describedby={dated ? `heading-dates-${group.id}` : undefined}
+                aria-describedby={described ? `heading-dates-${group.id}` : undefined}
                 onClick={() => current.set(key)}
                 onDoubleClick={project ? () => editProject(key) : undefined}
                 onMouseDown={(event) => actOnPress(event, key, () => current.set(key))}
               >
                 <span id={`heading-${group.id}`}>{group.heading}</span>
-                {dated && (
+                {described && (
                   <span id={`heading-dates-${group.id}`} className="task-meta">
+                    {project.paused && <span className="availability">Paused</span>}
                     {project.deferUntil &&
                       (projectDeferred ? (
                         <span className="availability">Deferred until {describeDate(projectDeferred, 'defer', now)}</span>

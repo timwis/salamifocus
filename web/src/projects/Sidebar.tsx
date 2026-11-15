@@ -1,6 +1,6 @@
-import { ProjectKind, type OrganisationNode } from '@salamifocus/domain';
-import { TreeSidebar, type NewItemKind } from '../sidebar/TreeSidebar.tsx';
-import { createFolder, createProject, moveFolder, moveProject, renameFolder, renameProject } from '../writes.ts';
+import { ProjectKind, ProjectStatus, type OrganisationNode } from '@salamifocus/domain';
+import { TreeSidebar, type NewItemKind, type SidebarAction } from '../sidebar/TreeSidebar.tsx';
+import { createFolder, createProject, moveFolder, moveProject, pauseProject, renameFolder, renameProject, resumeProject } from '../writes.ts';
 
 const newKinds: NewItemKind[] = [
   { kind: ProjectKind.project, key: 'N', button: 'Project', name: 'project' },
@@ -9,6 +9,15 @@ const newKinds: NewItemKind[] = [
 ];
 
 const isFolder = (node: OrganisationNode) => node.type === 'folder';
+const isPaused = (node: OrganisationNode) => node.type === 'project' && node.status === ProjectStatus.paused;
+
+const actions: SidebarAction<OrganisationNode>[] = [
+  {
+    key: 'P',
+    label: (node) => (node.type === 'folder' ? null : isPaused(node) ? 'Resume' : 'Pause'),
+    run: (node) => (isPaused(node) ? resumeProject(node.id) : pauseProject(node.id)),
+  },
+];
 
 /** Folders, projects and single-action lists. Selecting a folder selects every project inside it. */
 export function Sidebar({ tree, selection, onSelect }: { tree: OrganisationNode[]; selection: string[]; onSelect: (ids: string[]) => void }) {
@@ -23,6 +32,8 @@ export function Sidebar({ tree, selection, onSelect }: { tree: OrganisationNode[
       canContain={isFolder}
       createsInside={isFolder}
       newKinds={newKinds}
+      actions={actions}
+      badgeOf={(node) => (isPaused(node) ? 'Paused' : null)}
       hint="Press N for a new project, F for a folder, S for a single-action list."
       collapsedStorageKey="salamifocus.sidebar.collapsed"
       create={(kind, id, name, parentId, position) =>

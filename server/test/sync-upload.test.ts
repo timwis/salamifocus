@@ -284,6 +284,22 @@ describe('uploading a client transaction', () => {
     assert.deepEqual(rejected.map((r) => r.code), ['malformed_operation', 'malformed_operation']);
   });
 
+  it('pauses and resumes a project, refusing a pause that sets any other status', async () => {
+    const projectId = crypto.randomUUID();
+    await upload([
+      { op: 'PUT', table: 'projects', id: projectId, data: { name: 'Move house', kind: 'project', folder_id: null, position: 'a0' }, metadata: operationMetadata(OperationName.createProject) },
+    ]);
+    const patch = (op: OperationName, data: Record<string, unknown>) => ({ op: 'PATCH', table: 'projects', id: projectId, data, metadata: operationMetadata(op) });
+    const status = async () => (await h.application.projects([projectId]))[0]?.project.status;
+
+    assert.deepEqual((await upload([patch(OperationName.pauseProject, { status: 'paused' })])).map((r) => r.outcome), ['applied']);
+    assert.equal(await status(), 'paused');
+    assert.deepEqual((await upload([patch(OperationName.resumeProject, { status: 'active' })])).map((r) => r.outcome), ['applied']);
+    assert.equal(await status(), 'active');
+    const [rejected] = await upload([patch(OperationName.pauseProject, { status: 'active' })]);
+    assert.equal(rejected?.code, 'malformed_operation');
+  });
+
   it('moves a task with its children, the client sending its own copy of their move', async () => {
     const [from, to] = [crypto.randomUUID(), crypto.randomUUID()];
     const [parent, child] = [crypto.randomUUID(), crypto.randomUUID()];

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SimulatedDevice } from '../support/device.ts';
 import { server } from '../support/server.ts';
-import { run, signIn, treeItem } from '../support/web.ts';
+import { run, sidebar, signIn, treeItem } from '../support/web.ts';
 
 /** A project's rows as shown, children indented beneath their parents, without this run's suffix. */
 async function shownOutline(page: Page, project: string): Promise<string[]> {
@@ -104,4 +104,50 @@ test('Everything shows completed tasks with when they were completed, and Space 
   await page.keyboard.press('v');
   await expect(choice(page, 'Available')).toBeChecked();
   await expect.poll(() => shownOutline(page, garage)).toEqual(['Sweep the floor']);
+});
+
+test('P pauses a project from the sidebar: it stays selectable and marked, and its tasks leave Available until it is resumed', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const move = `Move house (${run})`;
+  const { projectId } = await phone.createProject(move, { position: 'a8' });
+  const { taskId } = await phone.createTask(projectId, `Order boxes ${run}`, 'a0');
+  const { tagId } = await phone.createTag(`Errands (${run})`, { position: 'a8' });
+  await phone.tagTask(taskId, tagId);
+  const item = sidebar(page).locator(`[data-key="${projectId}"]`);
+  const boxes = page.getByRole('listitem').filter({ hasText: `Order boxes ${run}` });
+  const status = async () => (await server.projects([projectId]))[0]?.project.status;
+
+  await signIn(page);
+  await page.goto(`/projects/${projectId}?show=available`);
+  await expect(item).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('2');
+  await expect(item).toBeFocused();
+  await expect.poll(() => shownOutline(page, move)).toEqual(['Order boxes']);
+
+  await page.keyboard.press('p');
+  await expect(item).toHaveAttribute('data-badge', 'Paused');
+  await expect(item).toContainText('Paused');
+  await expect(item).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: move })).toContainText('Paused');
+  await expect.poll(() => shownOutline(page, move)).toEqual([]);
+  await expect.poll(status).toBe('paused');
+
+  // Remaining still shows its tasks, marked as unavailable because the project is paused.
+  await page.keyboard.press('v');
+  await expect.poll(() => shownOutline(page, move)).toEqual(['Order boxes']);
+  await expect(boxes).toHaveAttribute('data-unavailable', 'paused');
+
+  // Elsewhere, its tasks say why.
+  await page.goto(`/tags/${tagId}`);
+  await expect(boxes).toContainText('Project paused');
+
+  // The sidebar button resumes it, as P would.
+  await page.goto(`/projects/${projectId}?show=available`);
+  await page.keyboard.press('2');
+  await expect(item).toBeFocused();
+  await page.getByRole('button', { name: `Resume ${move}` }).click();
+  await expect(item).not.toHaveAttribute('data-badge');
+  await expect.poll(() => shownOutline(page, move)).toEqual(['Order boxes']);
+  await expect(page.getByRole('button', { name: `Pause ${move}` })).toBeVisible();
+  await expect.poll(status).toBe('active');
 });

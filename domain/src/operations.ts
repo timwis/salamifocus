@@ -21,6 +21,8 @@ export const OperationName = {
   moveProject: 'move_project',
   deferProject: 'defer_project',
   setProjectDue: 'set_project_due',
+  pauseProject: 'pause_project',
+  resumeProject: 'resume_project',
   createTag: 'create_tag',
   renameTag: 'rename_tag',
   moveTag: 'move_tag',

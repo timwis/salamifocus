@@ -33,15 +33,22 @@ test('a pruned outline keeps its order, with each task beneath its nearest kept 
 const now = new Date('2026-11-16T09:00:00.000Z');
 
 test('a task waits only on its own unfinished children', () => {
-  assert.deepEqual(unavailability({ completedAt: null, unfinishedChildren: 1, deferredUntil: null }, now), ['blocked']);
-  assert.deepEqual(unavailability({ completedAt: null, unfinishedChildren: 0, deferredUntil: null }, now), []);
-  assert.deepEqual(unavailability({ completedAt: '2026-11-13T09:00:00.000Z', unfinishedChildren: 1, deferredUntil: null }, now), ['completed']);
+  assert.deepEqual(unavailability({ completedAt: null, unfinishedChildren: 1, deferredUntil: null, projectStatus: null }, now), ['blocked']);
+  assert.deepEqual(unavailability({ completedAt: null, unfinishedChildren: 0, deferredUntil: null, projectStatus: null }, now), []);
+  assert.deepEqual(unavailability({ completedAt: '2026-11-13T09:00:00.000Z', unfinishedChildren: 1, deferredUntil: null, projectStatus: null }, now), ['completed']);
 });
 
 test('a deferred task is unavailable until the clock reaches its defer date', () => {
-  const task = (deferredUntil: string) => ({ completedAt: null, unfinishedChildren: 1, deferredUntil });
+  const task = (deferredUntil: string) => ({ completedAt: null, unfinishedChildren: 1, deferredUntil, projectStatus: 'active' });
   assert.deepEqual(unavailability(task('2026-11-16T09:00:00.001Z'), now), ['blocked', 'deferred']);
   assert.deepEqual(unavailability(task('2026-11-16T09:00:00.000Z'), now), ['blocked']);
   // As PowerSync syncs timestamps, with microseconds.
   assert.deepEqual(unavailability(task('2026-11-23T00:00:00.000000Z'), now), ['blocked', 'deferred']);
+});
+
+test('a task in a paused project is unavailable, alongside any other reason, until it is completed', () => {
+  const task = (unfinishedChildren: number, completedAt: string | null = null) => ({ completedAt, unfinishedChildren, deferredUntil: null, projectStatus: 'paused' });
+  assert.deepEqual(unavailability(task(0), now), ['paused']);
+  assert.deepEqual(unavailability(task(1), now), ['blocked', 'paused']);
+  assert.deepEqual(unavailability(task(0, '2026-11-13T09:00:00.000Z'), now), ['completed']);
 });

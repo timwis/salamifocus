@@ -1,7 +1,8 @@
+import { ProjectStatus } from './organisation.ts';
+
 // Whether a task can be worked on now is worked out from current state and the
 // clock each time it is needed, never stored, so each client can answer it
 // offline and a deferred task comes back by itself when its date arrives.
-// Later tickets add paused projects as a further reason.
 
 export const Unavailable = {
   completed: 'completed',
@@ -9,6 +10,8 @@ export const Unavailable = {
   blocked: 'blocked',
   /** Deferred, by its own defer date, an unfinished task it is beneath or its project, until a time still to come. */
   deferred: 'deferred',
+  /** In a paused project. */
+  paused: 'paused',
 } as const;
 
 export type Unavailable = (typeof Unavailable)[keyof typeof Unavailable];
@@ -19,6 +22,8 @@ export interface AvailabilityFacts {
   unfinishedChildren: number;
   /** The latest defer date among the task, the unfinished tasks it is beneath and its project (see `deferredUntilColumn`), or null. */
   deferredUntil: string | null;
+  /** The status of the task's project (see `projectStatusColumn`), or null when it has none. */
+  projectStatus: string | null;
 }
 
 /** Why a task cannot be worked on at `now`; empty when it is available. A deferred task is available from its defer date on. */
@@ -27,6 +32,7 @@ export function unavailability(task: AvailabilityFacts, now: Date): Unavailable[
   const reasons: Unavailable[] = [];
   if (task.unfinishedChildren > 0) reasons.push(Unavailable.blocked);
   if (task.deferredUntil !== null && Date.parse(task.deferredUntil) > now.getTime()) reasons.push(Unavailable.deferred);
+  if (task.projectStatus === ProjectStatus.paused) reasons.push(Unavailable.paused);
   return reasons;
 }
 
@@ -47,3 +53,6 @@ export const deferredUntilColumn = inheritedDate('defer_until', 'max', 'deferred
 
 /** Selects `dueBy`: the earliest due date among a task, the unfinished tasks it is beneath and its project, since it must be done before them. */
 export const dueByColumn = inheritedDate('due_at', 'min', 'dueBy');
+
+/** Selects `projectStatus`: the status of a task's (aliased `t`) project, or null when it has none. */
+export const projectStatusColumn = '(SELECT pr.status FROM projects pr WHERE pr.id = t.project_id) AS "projectStatus"';

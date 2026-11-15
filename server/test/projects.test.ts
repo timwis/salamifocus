@@ -163,6 +163,28 @@ describe('tasks in projects', () => {
     assert.equal(await perform(OperationName.reopenTask, { taskId: crypto.randomUUID() }), 'not_found');
   });
 
+  it('pauses a project, keeping it and its tasks inspectable while none of them is available, and resumes it', async () => {
+    const id = await project('Move house');
+    const taskId = await addTask(id, 'Order boxes', 'a0');
+
+    assert.equal(await perform(OperationName.pauseProject, { projectId: id }), 'applied');
+
+    const node = (await h.application.organisation()).find((n) => n.id === id);
+    assert.equal(node?.type === 'project' && node.status, 'paused');
+    const [paused] = await h.application.projects([id]);
+    assert.deepEqual([paused?.project.status, paused?.tasks.map((t) => [t.title, t.unavailable])], ['paused', [['Order boxes', ['paused']]]]);
+    assert.deepEqual((await h.application.projects([id], 'available'))[0]?.tasks, []);
+    assert.deepEqual((await h.application.task(taskId))?.unavailable, ['paused']);
+    // Pausing it again, as a second device might, changes nothing.
+    assert.equal(await perform(OperationName.pauseProject, { projectId: id }), 'applied');
+
+    assert.equal(await perform(OperationName.resumeProject, { projectId: id }), 'applied');
+
+    assert.deepEqual((await h.application.task(taskId))?.unavailable, []);
+    assert.deepEqual(await outline([id]), [{ 'Move house': ['Order boxes'] }]);
+    assert.equal(await perform(OperationName.pauseProject, { projectId: crypto.randomUUID() }), 'not_found');
+  });
+
   it('never treats a single-action list as complete because it is empty', async () => {
     const id = await project('Miscellaneous', { kind: 'single_actions' });
     const only = await addTask(id, 'Post the parcel', 'a0');

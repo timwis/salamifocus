@@ -14,6 +14,19 @@ export function isProjectKind(value: unknown): value is ProjectKind {
   return value === ProjectKind.project || value === ProjectKind.singleActions;
 }
 
+/** Whether a project or single-action list is being worked on. A paused one can still be inspected and edited. */
+export const ProjectStatus = {
+  active: 'active',
+  paused: 'paused',
+} as const;
+
+export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
+
+/** A stored status as one the client knows, treating anything else (such as a project not yet synced back) as active. */
+export function projectStatusOf(value: unknown): ProjectStatus {
+  return value === ProjectStatus.paused ? ProjectStatus.paused : ProjectStatus.active;
+}
+
 export interface FolderRecord {
   id: string;
   name: string;
@@ -27,6 +40,7 @@ export interface ProjectRecord {
   folderId: string | null;
   position: string;
   kind: ProjectKind;
+  status: ProjectStatus;
 }
 
 export interface FolderNode {
@@ -43,6 +57,7 @@ export interface ProjectNode {
   name: string;
   position: string;
   kind: ProjectKind;
+  status: ProjectStatus;
 }
 
 export type OrganisationNode = FolderNode | ProjectNode;
@@ -82,7 +97,7 @@ export function buildTree(folders: readonly FolderRecord[], projects: readonly P
       .sort(comparePositions)
       .map((item) => {
         visited.add(item.id);
-        if ('kind' in item) return { type: 'project', id: item.id, name: item.name, position: item.position, kind: item.kind };
+        if ('kind' in item) return { type: 'project', id: item.id, name: item.name, position: item.position, kind: item.kind, status: item.status };
         return { type: 'folder', id: item.id, name: item.name, position: item.position, children: nodesUnder(item.id) };
       });
 

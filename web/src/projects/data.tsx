@@ -1,5 +1,15 @@
 import { useQuery } from '@powersync/react';
-import { buildTree, isProjectKind, placedFolders, placedProjects, ProjectKind, type OrganisationNode, type PlacedFolder, type PlacedProject } from '@salamifocus/domain';
+import {
+  buildTree,
+  isProjectKind,
+  placedFolders,
+  placedProjects,
+  ProjectKind,
+  projectStatusOf,
+  type OrganisationNode,
+  type PlacedFolder,
+  type PlacedProject,
+} from '@salamifocus/domain';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
 interface FolderRow {
@@ -13,6 +23,7 @@ interface ProjectRow {
   id: string;
   name: string;
   kind: string;
+  status: string | null;
   folder_id: string | null;
   position: string;
 }
@@ -33,7 +44,7 @@ const OrganisationContext = createContext<Organisation | null>(null);
  */
 export function OrganisationProvider({ children }: { children: ReactNode }) {
   const { data: folders } = useQuery<FolderRow>('SELECT id, name, parent_id, position FROM folders');
-  const { data: projects } = useQuery<ProjectRow>('SELECT id, name, kind, folder_id, position FROM projects');
+  const { data: projects } = useQuery<ProjectRow>('SELECT id, name, kind, status, folder_id, position FROM projects');
   const value = useMemo(() => {
     const tree = buildTree(
       folders.map((f) => ({ id: f.id, name: f.name, parentId: f.parent_id, position: f.position })),
@@ -41,6 +52,7 @@ export function OrganisationProvider({ children }: { children: ReactNode }) {
         id: p.id,
         name: p.name,
         kind: isProjectKind(p.kind) ? p.kind : ProjectKind.project,
+        status: projectStatusOf(p.status),
         folderId: p.folder_id,
         position: p.position,
       })),

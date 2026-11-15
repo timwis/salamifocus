@@ -1,4 +1,4 @@
-import { operationMetadata, OperationName, positionBetween, ProjectKind, titleFromCapture } from '@salamifocus/domain';
+import { operationMetadata, OperationName, positionBetween, ProjectKind, ProjectStatus, titleFromCapture } from '@salamifocus/domain';
 import type { Transaction } from '@powersync/web';
 import { db } from './powersync.ts';
 
@@ -199,6 +199,15 @@ export function deferProject(projectId: string, deferUntil: string | null) {
 /** Sets a project's due date, which every task in it is due by, or with null clears it. */
 export function setProjectDue(projectId: string, dueAt: string | null) {
   return write(OperationName.setProjectDue, 'UPDATE projects SET due_at = ?, _metadata = ? WHERE id = ?', (m) => [dueAt, m, projectId]);
+}
+
+/** Pauses a project: it stays in the sidebar and can be edited, but none of its tasks is available until it is resumed. */
+export function pauseProject(projectId: string) {
+  return write(OperationName.pauseProject, 'UPDATE projects SET status = ?, _metadata = ? WHERE id = ?', (m) => [ProjectStatus.paused, m, projectId]);
+}
+
+export function resumeProject(projectId: string) {
+  return write(OperationName.resumeProject, 'UPDATE projects SET status = ?, _metadata = ? WHERE id = ?', (m) => [ProjectStatus.active, m, projectId]);
 }
 
 export function createTag(tagId: string, name: string, parentId: string | null, position: string) {

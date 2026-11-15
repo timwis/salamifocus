@@ -9,6 +9,7 @@ const project = (id: string, folderId: string | null, position: string): Project
   folderId,
   position,
   kind: 'project',
+  status: 'active',
 });
 
 const outline = (nodes: OrganisationNode[]): unknown[] =>
