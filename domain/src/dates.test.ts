@@ -58,3 +58,24 @@ test('dates are described in local time, with the year only when it is not this 
   assert.equal(describeDate('2027-06-30T23:00:00.000Z', 'defer', monday), 'Thu 1 Jul 2027');
   assert.equal(describeDate('2026-11-23T17:00:00.000Z', 'defer', monday), 'Mon 23 Nov 17:00');
 });
+
+test("today's own date or weekday means today, even late in the day", () => {
+  const afternoon = new Date('2026-11-16T13:30:00.000Z');
+  const readAt = (text: string, kind: DateKind) => {
+    const entry = readDateEntry(text, kind, afternoon);
+    return entry.kind === 'date' ? describeDate(entry.date, kind, afternoon, { year: true }) : entry.kind;
+  };
+  for (const kind of ['defer', 'due'] as const) {
+    assert.equal(readAt('16 Nov', kind), 'Mon 16 Nov 2026');
+    assert.equal(readAt('16/11', kind), 'Mon 16 Nov 2026');
+    assert.equal(readAt('mon', kind), 'Mon 16 Nov 2026');
+    assert.equal(readAt('today', kind), 'Mon 16 Nov 2026');
+    assert.equal(readAt('tomorrow', kind), 'Tue 17 Nov 2026');
+    assert.equal(readAt('1 week', kind), 'Mon 23 Nov 2026');
+    assert.equal(readAt('next monday', kind), 'Mon 23 Nov 2026');
+    assert.equal(readAt('15 Nov', kind), 'Mon 15 Nov 2027');
+  }
+  // A time typed for later today stays today; one already past moves on a day.
+  assert.equal(readAt('5pm', 'defer'), 'Mon 16 Nov 2026 17:00');
+  assert.equal(readAt('9am', 'defer'), 'Tue 17 Nov 2026 09:00');
+});

@@ -25,12 +25,26 @@ export function readDateEntry(text: string, kind: DateKind, now: Date): DateEntr
   const trimmed = text.trim();
   if (trimmed === '') return { kind: 'empty' };
   const input = trimmed.replace(shortMonths, '$1 months');
-  const [result, ...rest] = parser.parse(input, now, { forwardDate: true });
-  if (!result || rest.length > 0 || result.index !== 0 || result.text.length !== input.length) return { kind: 'invalid' };
-  const date = result.start.date();
-  if (!result.start.isCertain('hour')) date.setHours(defaultHour[kind], 0, 0, 0);
+  const result = parseWhole(input, now);
+  if (!result) return { kind: 'invalid' };
+  if (result.start.isCertain('hour')) return { kind: 'date', date: result.start.date() };
+  // chrono takes a date without a time to mean midday, so after midday it would move today's own date
+  // ("16 Nov", "mon") on a year or a week. Read from the start of today, it stays today.
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const fromToday = parseWhole(input, startOfToday)?.start.date();
+  const date = fromToday && sameDay(fromToday, now) ? fromToday : result.start.date();
+  date.setHours(defaultHour[kind], 0, 0, 0);
   return { kind: 'date', date };
 }
+
+/** The one date that the whole of the text is, read forwards from `reference`, or null. */
+function parseWhole(input: string, reference: Date) {
+  const [result, ...rest] = parser.parse(input, reference, { forwardDate: true });
+  return result && rest.length === 0 && result.index === 0 && result.text.length === input.length ? result : null;
+}
+
+const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const dayFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
