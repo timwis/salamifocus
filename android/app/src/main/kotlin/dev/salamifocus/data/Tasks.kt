@@ -4,6 +4,8 @@ import com.powersync.PowerSyncDatabase
 import com.powersync.db.getLong
 import com.powersync.db.getString
 import com.powersync.db.schema.Column
+import com.powersync.db.schema.Index
+import com.powersync.db.schema.IndexedColumn
 import com.powersync.db.schema.Schema
 import com.powersync.db.schema.Table
 import com.powersync.db.schema.TableOptions
@@ -43,6 +45,8 @@ val AppSchema = Schema(
         Table(
             name = "task_tags",
             columns = listOf(Column.text("task_id"), Column.text("tag_id")),
+            // Indexed by task, since the Inbox checks each task for a tag.
+            indexes = listOf(Index("task", listOf(IndexedColumn.ascending("task_id")))),
             options = synced,
         ),
     ),
