@@ -32,23 +32,31 @@ export function ProjectsPerspective({ place }: { place: Place }) {
   );
   const datesById = new Map(projectDates.map((p) => [p.id, p]));
   // Under Available, a task joins the outline when its defer date passes.
-  const now = useNow(tasks.map((t) => t.deferredUntil));
+  const now = useNow([...tasks.map((t) => t.deferredUntil), ...projectDates.map((p) => p.defer_until)]);
   const shown = (task: TaskRow) => shownUnder(visibility, taskUnavailability(task, now));
-  const groups: OutlineGroup[] = selected.map((project) => ({
-    id: project.id,
-    heading: project.name,
-    newTask: { projectId: project.id, tagId: null },
-    ordered: true,
-    project: {
+  const available = visibility === Visibility.available;
+  const groups: OutlineGroup[] = selected.map((project) => {
+    const deferUntil = datesById.get(project.id)?.defer_until ?? null;
+    const paused = project.status === ProjectStatus.paused;
+    // Under Available, a task added to a paused or deferred project would never be shown.
+    const canAdd = !available || (!paused && !(deferUntil && Date.parse(deferUntil) > now.getTime()));
+    return {
       id: project.id,
-      deferUntil: datesById.get(project.id)?.defer_until ?? null,
-      dueAt: datesById.get(project.id)?.due_at ?? null,
-      paused: project.status === ProjectStatus.paused,
-    },
-    tasks: pruneOutline(outlineTasks(tasks.filter((t) => t.project_id === project.id).map((t) => ({ ...t, parentId: t.parent_id }))), shown).map(
-      ({ task, depth, parentId }) => ({ ...task, projectId: task.project_id, depth, parentId }),
-    ),
-  }));
+      heading: project.name,
+      ...(canAdd ? { newTask: { projectId: project.id, tagId: null } } : {}),
+      // Available shows only part of the project, so its order and nesting are not the project's own to change.
+      ordered: !available,
+      project: {
+        id: project.id,
+        deferUntil,
+        dueAt: datesById.get(project.id)?.due_at ?? null,
+        paused,
+      },
+      tasks: pruneOutline(outlineTasks(tasks.filter((t) => t.project_id === project.id).map((t) => ({ ...t, parentId: t.parent_id }))), shown).map(
+        ({ task, depth, parentId }) => ({ ...task, projectId: task.project_id, depth, parentId }),
+      ),
+    };
+  });
   const taskCount = groups.reduce((sum, g) => sum + g.tasks.length, 0);
 
   return (

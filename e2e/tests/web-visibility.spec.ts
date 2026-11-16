@@ -8,7 +8,8 @@ async function shownOutline(page: Page, project: string): Promise<string[]> {
   const rows = await page.getByRole('list', { name: project }).getByRole('listitem').all();
   return Promise.all(
     rows.map(async (row) => {
-      const level = Number(await row.getAttribute('aria-level'));
+      // Rows have no level where the outline is not the project's own order, as under Available.
+      const level = Number((await row.getAttribute('aria-level')) ?? 1);
       const title = (await row.locator('.task-title').textContent()) ?? '';
       return `${'  '.repeat(level - 1)}${title.replace(` ${run}`, '')}`;
     }),
@@ -176,4 +177,46 @@ test('reopening a task reopens the completed task it is beneath, which waits on 
   await expect(lay).toHaveAttribute('data-unavailable', 'blocked');
   await expect.poll(async () => (await server.task(parent))?.unavailable).toEqual(['blocked']);
   expect((await server.task(child))?.completedAt).toBeNull();
+});
+
+test('under Available, a new task goes at the end of its project, Alt+arrows leave the hidden order alone, and a paused project takes no new tasks', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const shed = `Paint the fence (${run})`;
+  const { projectId } = await phone.createProject(shed, { position: 'a8' });
+  await phone.createTask(projectId, `Buy paint ${run}`, 'a0');
+  const { taskId: sand } = await phone.createTask(projectId, `Sand the fence ${run}`, 'a1');
+  await phone.createTask(projectId, `Fill the cracks ${run}`, 'a0', sand);
+
+  await signIn(page);
+  await page.goto(`/projects/${projectId}?show=available`);
+  const item = sidebar(page).locator(`[data-key="${projectId}"]`);
+  await expect(item).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('2');
+  await expect(item).toBeFocused();
+  await expect.poll(() => shownOutline(page, shed)).toEqual(['Buy paint', 'Fill the cracks']);
+
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('End');
+  await page.keyboard.press('Alt+ArrowUp');
+  await page.keyboard.press('Alt+ArrowLeft');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('n');
+  await page.keyboard.type(`Paint the fence ${run}`);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect.poll(() => shownOutline(page, shed)).toEqual(['Buy paint', 'Fill the cracks', 'Paint the fence']);
+  await expect(page.getByRole('listitem').filter({ hasText: `Paint the fence ${run}` })).toBeFocused();
+
+  await page.keyboard.press('v');
+  await expect.poll(() => shownOutline(page, shed)).toEqual(['Buy paint', 'Sand the fence', '  Fill the cracks', 'Paint the fence']);
+  await page.keyboard.press('Shift+V');
+
+  // A paused project's tasks are never available, so it offers no new task here.
+  await page.keyboard.press('Shift+Tab');
+  await expect(item).toBeFocused();
+  await page.keyboard.press('p');
+  await expect(item).toHaveAttribute('data-badge', 'Paused');
+  await expect(page.getByRole('main').getByText('Nothing available. Press V to show remaining tasks.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'New task' })).toHaveCount(0);
 });

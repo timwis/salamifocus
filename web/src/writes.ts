@@ -134,8 +134,8 @@ export function nestTask(taskId: string, parentId: string | null, position: stri
 }
 
 /**
- * Adds a task, in a project at a position (beneath a parent task, if given) or, with no project, in the Inbox,
- * with any tags, as one operation.
+ * Adds a task, in a project at a position (beneath a parent task, if given; with no position, at the end of the
+ * project) or, with no project, in the Inbox, with any tags, as one operation.
  */
 export async function createTask(
   taskId: string,
@@ -147,12 +147,17 @@ export async function createTask(
 ) {
   const metadata = operationMetadata(OperationName.createTask);
   await db.writeTransaction(async (tx) => {
+    let at = position;
+    if (projectId !== null && at === null) {
+      const { last } = await tx.get<{ last: string | null }>('SELECT max(position) AS last FROM tasks WHERE project_id = ? AND parent_id IS NULL', [projectId]);
+      at = positionBetween(last, null);
+    }
     await tx.execute('INSERT INTO tasks (id, title, project_id, parent_id, position, created_at, _metadata) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       taskId,
       title,
       projectId,
       parentId,
-      position,
+      at,
       new Date().toISOString(),
       metadata,
     ]);

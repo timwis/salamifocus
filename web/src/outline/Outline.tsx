@@ -7,7 +7,7 @@ import {
   tagPathSeparator,
   titleProblem,
   Unavailable,
-  type Visibility,
+  Visibility,
 } from '@salamifocus/domain';
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { useNow } from '../clock.ts';
@@ -40,7 +40,10 @@ export interface OutlineGroup {
   tasks: OutlineTask[];
   /** Where a task added here goes, or absent if tasks cannot be added here. */
   newTask?: { projectId: string | null; tagId: string | null };
-  /** Whether the tasks are in an order and hierarchy of their own (a project's), which new tasks slot into and Alt+arrows change. */
+  /**
+   * Whether the tasks are in an order and hierarchy of their own (a project's, in full), which new tasks slot into
+   * and Alt+arrows change. Otherwise a task added to a project goes at its end.
+   */
   ordered: boolean;
   /** The project the group is, whose dates can be edited from its heading. */
   project?: DatedProject & { paused: boolean };
@@ -432,7 +435,13 @@ export function Outline({
               </h3>
               {editingProject && project && <ProjectDatesEditor project={project} onClose={() => setEditing(null)} />}
               {list}
-              {group.tasks.length === 0 && draftAt === -1 && <p className="hint">No tasks yet. Press N or use New task to add one.</p>}
+              {group.tasks.length === 0 && draftAt === -1 && (
+                <p className="hint">
+                  {visibility?.value === Visibility.available
+                    ? 'Nothing available. Press V to show remaining tasks.'
+                    : 'No tasks yet. Press N or use New task to add one.'}
+                </p>
+              )}
             </section>
           );
         })}
