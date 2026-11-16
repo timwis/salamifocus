@@ -1,5 +1,6 @@
 import { useQuery } from '@powersync/react';
 import { groupByTag, shownUnder, tagBranch, tagPathSeparator, visibilityCondition, Visibility, type TagNode } from '@salamifocus/domain';
+import { useState } from 'react';
 import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
@@ -40,7 +41,9 @@ export function TagsPerspective({ place }: { place: Place }) {
   );
   // Under Available, a task joins the outline when its defer date passes.
   const now = useNow(tasks.map((t) => t.deferredUntil));
-  const shown = tasks.filter((task) => shownUnder(visibility, taskUnavailability(task, now)));
+  // A task being edited stays until editing stops, even when an edit (a defer date, say) means the visibility hides it.
+  const [editedTaskId, setEditedTaskId] = useState<string | null>(null);
+  const shown = tasks.filter((task) => task.id === editedTaskId || shownUnder(visibility, taskUnavailability(task, now)));
   const groups: OutlineGroup[] = groupByTag(branch, shown, (task) => taskTags.get(task.id) ?? []).map(
     ({ tag, path, tasks }) => ({
       id: tag.id,
@@ -83,6 +86,7 @@ export function TagsPerspective({ place }: { place: Place }) {
         groups={groups}
         empty="Nothing selected."
         visibility={{ value: visibility, choose: (visibility) => go({ ...place, visibility }) }}
+        onEditing={setEditedTaskId}
       />
     </>
   );

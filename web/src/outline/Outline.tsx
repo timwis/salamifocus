@@ -52,7 +52,7 @@ export interface OutlineGroup {
 type Row = { key: string; group: OutlineGroup } & ({ kind: 'heading' } | { kind: 'task'; task: OutlineTask; index: number });
 
 type Editing =
-  | { mode: 'task'; rowKey: string; startIn: Field }
+  | { mode: 'task'; rowKey: string; taskId: string; startIn: Field }
   | { mode: 'project'; rowKey: string }
   | { mode: 'draft'; groupId: string; parentId: string | null; depth: number; after: string | null; before: string | null; returnTo: string | null };
 
@@ -98,6 +98,7 @@ export function Outline({
   groups,
   empty,
   visibility,
+  onEditing,
 }: {
   title: string;
   summary?: ReactNode;
@@ -105,6 +106,8 @@ export function Outline({
   empty: ReactNode;
   /** How much the outline shows, where the perspective offers a choice. */
   visibility?: { value: Visibility; choose: (visibility: Visibility) => void };
+  /** Told which task is being edited (null when none), so the perspective can keep it shown while an edit hides it. */
+  onEditing?: (taskId: string | null) => void;
 }) {
   const rows: Row[] = groups.flatMap((group) => [
     ...(group.heading !== null ? [{ key: headingKey(group), group, kind: 'heading' as const }] : []),
@@ -123,6 +126,8 @@ export function Outline({
   useEffect(() => {
     if (editedTaskGone) setEditing(null);
   }, [editedTaskGone]);
+  const editedTaskId = editing?.mode === 'task' ? editing.taskId : null;
+  useEffect(() => onEditing?.(editedTaskId), [onEditing, editedTaskId]);
   const roving = useRovingFocus<HTMLDivElement>(editing?.mode === 'draft' ? 'draft' : (current.key ?? EMPTY));
 
   function focusRow(index: number) {
@@ -156,10 +161,10 @@ export function Outline({
     setEditing({ mode: 'project', rowKey: key });
   }
 
-  function openEditor(key: string) {
+  function openEditor(key: string, taskId: string) {
     roving.claim();
     current.set(key);
-    setEditing({ mode: 'task', rowKey: key, startIn: 'title' });
+    setEditing({ mode: 'task', rowKey: key, taskId, startIn: 'title' });
   }
 
   /**
@@ -252,13 +257,13 @@ export function Outline({
       case 'Enter':
         if (focused?.kind === 'heading' && focused.group.project) return handled(), editProject(focused.key);
         if (focused?.kind !== 'task') return;
-        return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'title' });
+        return handled(), setEditing({ mode: 'task', rowKey: focused.key, taskId: focused.task.id, startIn: 'title' });
       case 'p':
         if (focused?.kind !== 'task') return;
-        return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'project' });
+        return handled(), setEditing({ mode: 'task', rowKey: focused.key, taskId: focused.task.id, startIn: 'project' });
       case 't':
         if (focused?.kind !== 'task') return;
-        return handled(), setEditing({ mode: 'task', rowKey: focused.key, startIn: 'tags' });
+        return handled(), setEditing({ mode: 'task', rowKey: focused.key, taskId: focused.task.id, startIn: 'tags' });
     }
   }
 
@@ -348,10 +353,10 @@ export function Outline({
                         type="button"
                         tabIndex={-1}
                         className="task-title"
-                        onClick={() => openEditor(key)}
+                        onClick={() => openEditor(key, task.id)}
                         onMouseDown={(event) => {
                           event.stopPropagation();
-                          actOnPress(event, key, () => openEditor(key));
+                          actOnPress(event, key, () => openEditor(key, task.id));
                         }}
                       >
                         {task.title}

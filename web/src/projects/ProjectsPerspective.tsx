@@ -1,5 +1,6 @@
 import { useQuery } from '@powersync/react';
 import { outlineTasks, ProjectStatus, projectsInSelection, pruneOutline, shownUnder, visibilityCondition, Visibility } from '@salamifocus/domain';
+import { useState } from 'react';
 import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
@@ -33,7 +34,9 @@ export function ProjectsPerspective({ place }: { place: Place }) {
   const datesById = new Map(projectDates.map((p) => [p.id, p]));
   // Under Available, a task joins the outline when its defer date passes.
   const now = useNow([...tasks.map((t) => t.deferredUntil), ...projectDates.map((p) => p.defer_until)]);
-  const shown = (task: TaskRow) => shownUnder(visibility, taskUnavailability(task, now));
+  // A task being edited stays until editing stops, even when an edit (a defer date, say) means the visibility hides it.
+  const [editedTaskId, setEditedTaskId] = useState<string | null>(null);
+  const shown = (task: TaskRow) => task.id === editedTaskId || shownUnder(visibility, taskUnavailability(task, now));
   const available = visibility === Visibility.available;
   const groups: OutlineGroup[] = selected.map((project) => {
     const deferUntil = datesById.get(project.id)?.defer_until ?? null;
@@ -72,6 +75,7 @@ export function ProjectsPerspective({ place }: { place: Place }) {
         groups={groups}
         empty="Nothing selected."
         visibility={{ value: visibility, choose: (visibility) => go({ ...place, visibility }) }}
+        onEditing={setEditedTaskId}
       />
     </>
   );

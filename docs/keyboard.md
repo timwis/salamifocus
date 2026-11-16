@@ -26,7 +26,7 @@ The web client is meant to be used from the keyboard. This is the reference for 
 
 Projects and Tags can show more or less of the system. The choice is shown above the outline, kept in the address (so a reload keeps it), and remembered for each perspective while the app is open. Both start at Remaining.
 
-- **Available**: only tasks that can be worked on now. Blocked and deferred tasks, and tasks in paused projects, are left out; a deferred task joins when its date arrives. A prerequisite whose parent is left out is shown where the parent was. Since only part of each project is shown, Alt+arrows do nothing here, a new task goes at the end of its project, and a paused or deferred project takes no new tasks (they would not be shown).
+- **Available**: only tasks that can be worked on now. Blocked and deferred tasks, and tasks in paused projects, are left out; a deferred task joins when its date arrives. A prerequisite whose parent is left out is shown where the parent was. Since only part of each project is shown, Alt+arrows do nothing here, a new task goes at the end of its project, and a paused or deferred project takes no new tasks (they would not be shown). A task you are editing stays until you stop, even when an edit (such as a defer date) means it is no longer available.
 - **Remaining**: every unfinished task, blocked and deferred ones and those in paused projects included.
 - **Everything**: completed tasks as well, each in its place, struck through and marked **Completed** with the day and time. Completing a task here leaves it in place.
 

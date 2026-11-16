@@ -3,17 +3,21 @@ import { SimulatedDevice } from '../support/device.ts';
 import { server } from '../support/server.ts';
 import { run, sidebar, signIn, treeItem } from '../support/web.ts';
 
-/** A project's rows as shown, children indented beneath their parents, without this run's suffix. */
+/** A project's rows as shown, children indented beneath their parents, without this run's suffix. Read in one go, as rows come and go. */
 async function shownOutline(page: Page, project: string): Promise<string[]> {
-  const rows = await page.getByRole('list', { name: project }).getByRole('listitem').all();
-  return Promise.all(
-    rows.map(async (row) => {
-      // Rows have no level where the outline is not the project's own order, as under Available.
-      const level = Number((await row.getAttribute('aria-level')) ?? 1);
-      const title = (await row.locator('.task-title').textContent()) ?? '';
-      return `${'  '.repeat(level - 1)}${title.replace(` ${run}`, '')}`;
-    }),
-  );
+  return page
+    .getByRole('list', { name: project })
+    .getByRole('listitem')
+    .evaluateAll(
+      (rows, suffix) =>
+        rows.map((row) => {
+          // Rows have no level where the outline is not the project's own order, as under Available.
+          const level = Number(row.getAttribute('aria-level') ?? 1);
+          const title = row.querySelector('.task-title')?.textContent ?? '';
+          return `${'  '.repeat(level - 1)}${title.replace(` ${suffix}`, '')}`;
+        }),
+      run,
+    );
 }
 
 const choice = (page: Page, name: string) => page.getByRole('radiogroup', { name: 'Show' }).getByRole('radio', { name });
@@ -219,4 +223,36 @@ test('under Available, a new task goes at the end of its project, Alt+arrows lea
   await expect(item).toHaveAttribute('data-badge', 'Paused');
   await expect(page.getByRole('main').getByText('Nothing available. Press V to show remaining tasks.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'New task' })).toHaveCount(0);
+});
+
+test('under Available, a task stays while it is edited, even once a defer date hides it, and leaves when editing stops', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const garden = `Tidy the garden (${run})`;
+  const { projectId } = await phone.createProject(garden, { position: 'a8' });
+  await phone.createTask(projectId, `Rake the leaves ${run}`, 'a0');
+  await phone.createTask(projectId, `Prune the roses ${run}`, 'a1');
+
+  await signIn(page);
+  await page.goto(`/projects/${projectId}?show=available`);
+  await expect(treeItem(page, garden)).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('2');
+  await expect.poll(() => shownOutline(page, garden)).toEqual(['Rake the leaves', 'Prune the roses']);
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('End');
+  await expect(page.getByRole('listitem').filter({ hasText: `Prune the roses ${run}` })).toBeFocused();
+  await page.keyboard.press('Enter');
+  for (let i = 0; i < 3; i++) await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Defer until')).toBeFocused();
+  await page.keyboard.type('2099-01-04');
+  await page.keyboard.press('Tab');
+
+  await expect(page.getByLabel('Due', { exact: true })).toBeFocused();
+  await expect.poll(async () => (await server.projects([projectId], 'available'))[0]?.tasks.length).toBe(1);
+  await page.keyboard.type('2099-01-05');
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Due', { exact: true })).toHaveCount(0);
+  await expect.poll(() => shownOutline(page, garden)).toEqual(['Rake the leaves']);
+  await expect(page.getByRole('listitem').filter({ hasText: `Rake the leaves ${run}` })).toBeFocused();
+  await page.keyboard.press('v');
+  await expect(page.getByRole('listitem').filter({ hasText: `Prune the roses ${run}` })).toContainText('Due');
 });
