@@ -157,7 +157,10 @@ export interface ReopenTaskArgs {
   taskId: string;
 }
 
-/** Marks a completed task unfinished again. Its completion stays in its history. */
+/**
+ * Marks a completed task unfinished again, and with it any completed task it is beneath, since a task cannot be
+ * done while one of its prerequisites is not. Each completion stays in its task's history.
+ */
 export const reopenTask: OperationDefinition<ReopenTaskArgs> = {
   name: OperationName.reopenTask,
   parse(input) {
@@ -170,6 +173,14 @@ export const reopenTask: OperationDefinition<ReopenTaskArgs> = {
     // Reopened on two devices: the first reopening stands.
     if (task.completed_at === null) return;
     await mutations.update('task', taskId, { completed_at: null });
+    const seen = new Set([taskId]);
+    for (let parentId = task.parent_id as string | null; parentId !== null && !seen.has(parentId); ) {
+      seen.add(parentId);
+      const parent = await mutations.read('task', parentId);
+      if (!parent) break;
+      if (parent.completed_at !== null) await mutations.update('task', parentId, { completed_at: null });
+      parentId = parent.parent_id as string | null;
+    }
   },
 };
 

@@ -150,8 +150,15 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
   },
 
   [OperationName.reopenTask](entries) {
-    const { id, data } = onlyUpdate(entries, 'tasks', ['completed_at']);
-    if (data.completed_at !== null) throw new Malformed('Reopening a task must clear when it was completed.');
+    // The reopened task comes first; then the client's own copy of reopening the completed tasks it is beneath,
+    // which the server works out for itself.
+    const [reopen] = entries;
+    const { id } = onlyUpdate(reopen ? [reopen] : [], 'tasks', ['completed_at']);
+    for (const entry of entries) {
+      if (entry.op !== 'PATCH' || entry.table !== 'tasks' || onlyColumns(entry, ['completed_at']).completed_at !== null) {
+        throw new Malformed('Reopening a task must only clear when tasks were completed.');
+      }
+    }
     return { taskId: id };
   },
 

@@ -163,6 +163,30 @@ describe('tasks in projects', () => {
     assert.equal(await perform(OperationName.reopenTask, { taskId: crypto.randomUUID() }), 'not_found');
   });
 
+  it('reopens the completed tasks a reopened task is beneath, since they cannot be done without it', async () => {
+    const id = await project('Loft');
+    const parent = await addTask(id, 'Board the loft', 'a0');
+    const child = crypto.randomUUID();
+    await perform(OperationName.createTask, { taskId: child, projectId: id, parentId: parent, title: 'Buy boards', position: 'a0', createdAt: '2026-11-13T10:00:00.000Z' });
+    const other = await addTask(id, 'Fit a ladder', 'a1');
+    for (const taskId of [child, parent, other]) await perform(OperationName.completeTask, { taskId, completedAt: '2026-11-14T15:30:00.000Z' });
+
+    assert.equal(await perform(OperationName.reopenTask, { taskId: child }), 'applied');
+
+    const [loft] = await h.application.projects([id]);
+    assert.deepEqual(
+      loft?.tasks.map((t) => [t.title, t.depth, t.unavailable]),
+      [
+        ['Board the loft', 1, ['blocked']],
+        ['Buy boards', 2, []],
+      ],
+    );
+    // One operation, in both tasks' histories.
+    const reopening = async (taskId: string) => (await h.application.history(taskId)).find((e) => e.operation === 'reopen_task')?.opId;
+    assert.ok(await reopening(parent));
+    assert.equal(await reopening(parent), await reopening(child));
+  });
+
   it('pauses a project, keeping it and its tasks inspectable while none of them is available, and resumes it', async () => {
     const id = await project('Move house');
     const taskId = await addTask(id, 'Order boxes', 'a0');

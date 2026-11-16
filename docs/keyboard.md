@@ -95,7 +95,7 @@ The task rows of the current perspective. Inbox lists every unfinished task that
 | Enter | Edit the task, starting in its title. On a project heading: edit the project's dates |
 | P | Edit the task's project |
 | T | Edit the task's tags |
-| Space | Complete the task. It leaves the outline (except under Everything) and the row now in its place becomes current. On a completed task, under Everything: mark it unfinished again |
+| Space | Complete the task. It leaves the outline (except under Everything) and the row now in its place becomes current. On a completed task, under Everything: mark it unfinished again, with any completed task it is beneath, since that cannot be done without it |
 | Alt+↑ / Alt+↓ | Move the task, with its children, up or down among its siblings. The order is for your reading only; it never makes one task wait for another |
 | Alt+→ | Indent: make the task a prerequisite of the task above it at the same level (it becomes that task's last child). Its own children come with it |
 | Alt+← | Outdent: move the task out of its parent, to just after it. Its own children come with it |

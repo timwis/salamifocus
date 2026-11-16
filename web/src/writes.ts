@@ -46,9 +46,20 @@ export function completeTask(taskId: string) {
   ]);
 }
 
-/** Marks a completed task unfinished again. */
+/** Marks a completed task unfinished again, and any completed task it is beneath, as the server does. */
 export function reopenTask(taskId: string) {
-  return write(OperationName.reopenTask, 'UPDATE tasks SET completed_at = NULL, _metadata = ? WHERE id = ?', (m) => [m, taskId]);
+  const metadata = operationMetadata(OperationName.reopenTask);
+  return db.writeTransaction(async (tx) => {
+    await tx.execute('UPDATE tasks SET completed_at = NULL, _metadata = ? WHERE id = ?', [metadata, taskId]);
+    const above = await tx.getAll<{ id: string }>(
+      `WITH RECURSIVE up(id, parent_id) AS (SELECT id, parent_id FROM tasks WHERE id = ? UNION SELECT t.id, t.parent_id FROM tasks t JOIN up ON t.id = up.parent_id)
+       SELECT up.id FROM up JOIN tasks t ON t.id = up.id WHERE up.id != ? AND t.completed_at IS NOT NULL`,
+      [taskId, taskId],
+    );
+    for (const { id } of above) {
+      await tx.execute('UPDATE tasks SET completed_at = NULL, _metadata = ? WHERE id = ?', [metadata, id]);
+    }
+  });
 }
 
 /** Defers a task (and the tasks beneath it) until a time, or with null stops deferring it. */

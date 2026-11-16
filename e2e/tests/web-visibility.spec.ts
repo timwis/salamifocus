@@ -151,3 +151,29 @@ test('P pauses a project from the sidebar: it stays selectable and marked, and i
   await expect(page.getByRole('button', { name: `Pause ${move}` })).toBeVisible();
   await expect.poll(status).toBe('active');
 });
+
+test('reopening a task reopens the completed task it is beneath, which waits on it again', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const loft = `Board the loft (${run})`;
+  const { projectId } = await phone.createProject(loft, { position: 'a8' });
+  const { taskId: parent } = await phone.createTask(projectId, `Lay the boards ${run}`, 'a0');
+  const { taskId: child } = await phone.createTask(projectId, `Buy boards ${run}`, 'a0', parent);
+  await phone.complete(child);
+  await phone.complete(parent);
+
+  await signIn(page);
+  await page.goto(`/projects/${projectId}?show=everything`);
+  await expect(treeItem(page, loft)).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('2');
+  await expect.poll(() => shownOutline(page, loft)).toEqual(['Lay the boards', '  Buy boards']);
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('End');
+  const boards = page.getByRole('listitem').filter({ hasText: `Buy boards ${run}` });
+  await expect(boards).toBeFocused();
+  await page.keyboard.press(' ');
+
+  const lay = page.getByRole('listitem').filter({ hasText: `Lay the boards ${run}` });
+  await expect(lay).toHaveAttribute('data-unavailable', 'blocked');
+  await expect.poll(async () => (await server.task(parent))?.unavailable).toEqual(['blocked']);
+  expect((await server.task(child))?.completedAt).toBeNull();
+});

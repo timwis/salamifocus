@@ -250,6 +250,33 @@ describe('uploading a client transaction', () => {
     assert.equal(rejected?.code, 'malformed_operation');
   });
 
+  it('reopens a task with the completed tasks it is beneath, the client sending its own copy of reopening them', async () => {
+    const projectId = crypto.randomUUID();
+    const [parent, child] = [crypto.randomUUID(), crypto.randomUUID()];
+    const create = (taskId: string, parentId: string | null) => ({
+      op: 'PUT',
+      table: 'tasks',
+      id: taskId,
+      data: { title: 'Plaster the wall', project_id: projectId, parent_id: parentId, position: 'a0', created_at: '2026-11-13T10:00:00.000Z' },
+      metadata: operationMetadata(OperationName.createTask),
+    });
+    await upload([{ op: 'PUT', table: 'projects', id: projectId, data: { name: 'Hallway', kind: 'project', folder_id: null, position: 'a0' }, metadata: operationMetadata(OperationName.createProject) }]);
+    await upload([create(parent, null)]);
+    await upload([create(child, parent)]);
+    const patch = (taskId: string, op: OperationName, data: Record<string, unknown>, metadata = operationMetadata(op)) => ({ op: 'PATCH', table: 'tasks', id: taskId, data, metadata });
+    await upload([patch(child, OperationName.completeTask, { completed_at: '2026-11-14T15:30:00.000Z' })]);
+    await upload([patch(parent, OperationName.completeTask, { completed_at: '2026-11-14T15:30:00.000Z' })]);
+
+    const metadata = operationMetadata(OperationName.reopenTask);
+    const results = await upload([patch(child, OperationName.reopenTask, { completed_at: null }, metadata), patch(parent, OperationName.reopenTask, { completed_at: null }, metadata)]);
+
+    assert.deepEqual(results.map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.task(parent))?.completedAt, null);
+    const another = operationMetadata(OperationName.reopenTask);
+    const [renamed] = await upload([patch(child, OperationName.reopenTask, { completed_at: null }, another), patch(parent, OperationName.reopenTask, { title: 'x' }, another)]);
+    assert.equal(renamed?.code, 'malformed_operation');
+  });
+
   it('sets and clears a due date', async () => {
     const { taskId, entries } = captureTransaction('file the tax return');
     await upload(entries);
