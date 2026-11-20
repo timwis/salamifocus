@@ -3,7 +3,8 @@ import { flushSync } from 'react-dom';
 import { CaptureBox } from './Capture.tsx';
 import { isTyping, useRovingFocus } from './focus.ts';
 import { Inbox } from './Inbox.tsx';
-import { goToPerspective, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
+import { FlaggedPerspective } from './flagged/FlaggedPerspective.tsx';
+import { goToPerspective, hasSidebar, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
 import { OrganisationProvider } from './projects/data.tsx';
 import { ProjectsPerspective } from './projects/ProjectsPerspective.tsx';
 import { signOut } from './session.ts';
@@ -40,7 +41,7 @@ function switchTo(perspective: Perspective) {
   // Render the new perspective now, so the focus below lands on its rows
   // rather than on the old perspective's, which are about to disappear.
   flushSync(() => goToPerspective(perspective));
-  focusRegion(perspective === 'inbox' ? 'outline' : 'sidebar');
+  focusRegion(hasSidebar(perspective) ? 'sidebar' : 'outline');
 }
 
 /**
@@ -67,7 +68,7 @@ export function Shell() {
     returnTo.current = null;
     if (focusMoved) return;
     if (previous instanceof HTMLElement && previous.isConnected && previous !== document.body) previous.focus();
-    else focusRegion(place.perspective === 'inbox' ? 'outline' : 'sidebar');
+    else focusRegion(hasSidebar(place.perspective) ? 'sidebar' : 'outline');
   }
 
   useEffect(() => {
@@ -130,6 +131,8 @@ export function Shell() {
               <ProjectsPerspective place={place} />
             ) : place.perspective === 'tags' ? (
               <TagsPerspective place={place} />
+            ) : place.perspective === 'flagged' ? (
+              <FlaggedPerspective place={place} />
             ) : (
               <Inbox />
             )}

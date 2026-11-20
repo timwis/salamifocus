@@ -28,16 +28,18 @@ async function shownRows(page: Page) {
 }
 
 /** What the outline shows, in the fixtures' terms, and the availability each row shows. */
-async function shown(page: Page, ids: Ids) {
+async function shown(page: Page, ids: Ids, onlySeeded = false) {
   const name = (uuid: string) => ids.name(uuid) ?? uuid;
   const lists = await shownRows(page);
   const unavailable: Record<string, string[]> = {};
   const groups: ExpectedPerspective['groups'] = lists.map(({ group, rows }) => ({
     id: name(group),
-    tasks: rows.map((row) => {
-      const id = name(row.key.slice(row.key.indexOf('/') + 1));
+    tasks: rows.flatMap((row) => {
+      const uuid = row.key.slice(row.key.indexOf('/') + 1);
+      if (onlySeeded && ids.name(uuid) === undefined) return [];
+      const id = name(uuid);
       unavailable[id] = row.unavailable.split(' ').filter(Boolean);
-      return { id, depth: row.level === null ? 1 : Number(row.level) };
+      return [{ id, depth: row.level === null ? 1 : Number(row.level) }];
     }),
   }));
   return { groups, unavailable };
@@ -54,8 +56,10 @@ for (const { scenario, file, examples } of loadScenarios()) {
           for (const perspective of example.expect.perspectives) {
             const show = perspective.visibility ? `?show=${perspective.visibility}` : '';
             await page.goto(`/${perspective.perspective}/${perspective.selection.map((id) => ids.uuid(id)).join(',')}${show}`);
-            await expect.poll(async () => (await shown(page, ids)).groups).toEqual(perspective.groups);
-            const { unavailable } = await shown(page, ids);
+            // Flagged lists every flagged task, and other tests share this database, so only the example's own are compared.
+            const onlySeeded = perspective.perspective === 'flagged';
+            await expect.poll(async () => (await shown(page, ids, onlySeeded)).groups).toEqual(perspective.groups);
+            const { unavailable } = await shown(page, ids, onlySeeded);
             // Only the listed tasks are checked, and only where this perspective shows them.
             for (const [task, reasons] of Object.entries(example.expect.unavailable)) {
               if (task in unavailable) expect(unavailable[task], `availability of ${task}`).toEqual(reasons);

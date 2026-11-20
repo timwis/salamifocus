@@ -8,9 +8,10 @@ import type { Sql } from '../src/db.ts';
 type Row = Record<string, unknown> & { id: string };
 
 export interface ExpectedPerspective {
-  perspective: 'projects' | 'tags';
+  perspective: 'projects' | 'tags' | 'flagged';
+  /** Flagged has no sidebar, so nothing to select. */
   selection: string[];
-  /** Absent means the perspective's default, Remaining. */
+  /** Absent means the perspective's default: Remaining, or Available for Flagged. */
   visibility?: Visibility;
   groups: { id: string; tasks: { id: string; depth: number }[] }[];
 }

@@ -64,6 +64,21 @@ export interface TagOutline {
   tasks: { id: string; title: string; note: string; projectId: string | null; completedAt: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; flagged: boolean; tagIds: string[]; unavailable: Unavailable[] }[];
 }
 
+/** A task in the Flagged perspective, with the project it is in. */
+export interface FlaggedTask {
+  id: string;
+  title: string;
+  note: string;
+  projectId: string | null;
+  projectName: string | null;
+  completedAt: string | null;
+  deferUntil: string | null;
+  dueAt: string | null;
+  dueBy: string | null;
+  tagIds: string[];
+  unavailable: Unavailable[];
+}
+
 export interface ProjectOutline {
   /** The project's own defer and due dates; which its tasks inherit. */
   project: { id: string; name: string; kind: string; status: ProjectStatus; deferUntil: string | null; dueAt: string | null };

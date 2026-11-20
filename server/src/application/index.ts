@@ -3,6 +3,7 @@ import {
   buildTree,
   deferredUntilColumn,
   dueByColumn,
+  flaggedCondition,
   groupByTag,
   inboxCondition,
   outlineTasks,
@@ -30,6 +31,7 @@ import type {
   OperationRecord,
   OperationRequest,
   OperationResult,
+  FlaggedTask,
   ProjectOutline,
   TagOutline,
   TaskView,
@@ -200,6 +202,43 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   }
 
   /**
+   * What the Flagged perspective shows: the tasks the user has flagged that the visibility shows (by default
+   * only available ones), oldest first. A task is shown for its own flag only, never one above it.
+   */
+  async function flagged(visibility: Visibility = Visibility.available): Promise<FlaggedTask[]> {
+    const now = clock();
+    const rows = await sql<
+      {
+        id: string;
+        title: string;
+        note: string;
+        projectId: string | null;
+        projectName: string | null;
+        completedAt: string | null;
+        deferUntil: string | null;
+        dueAt: string | null;
+        dueBy: string | null;
+        tagIds: string[];
+        unfinishedChildren: number;
+        deferredUntil: string | null;
+        projectStatus: string | null;
+      }[]
+    >`
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", p.name AS "projectName", t.completed_at AS "completedAt",
+             t.defer_until AS "deferUntil", t.due_at AS "dueAt", ARRAY(SELECT tt.tag_id::text FROM task_tags tt WHERE tt.task_id = t.id ORDER BY tt.tag_id) AS "tagIds",
+             ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
+      FROM tasks t LEFT JOIN projects p ON p.id = t.project_id
+      WHERE ${sql.unsafe(flaggedCondition)} AND ${unfinishedUnless(sql, visibility)}
+      ORDER BY t.created_at, t.id`;
+    return rows
+      .map(({ unfinishedChildren, deferredUntil, projectStatus, ...task }) => ({
+        ...task,
+        unavailable: unavailability({ completedAt: task.completedAt, unfinishedChildren, deferredUntil, projectStatus }, now),
+      }))
+      .filter((task) => shownUnder(visibility, task.unavailable));
+  }
+
+  /**
    * What the Projects perspective shows for a sidebar selection: each selected
    * project (every project inside a selected folder), in sidebar order, with
    * the tasks the visibility shows in outline order, each followed by its
@@ -348,5 +387,5 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     };
   }
 
-  return { execute, inbox, organisation, projects, tags, tagged, task, history, operation };
+  return { execute, inbox, organisation, projects, tags, tagged, flagged, task, history, operation };
 }

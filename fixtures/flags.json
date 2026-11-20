@@ -1,0 +1,531 @@
+{
+  "scenario": "Flags",
+  "description": "Flagged lists the tasks the user has flagged, oldest first, and starts at Available. “Quarterly report” has a flagged task blocked by an unflagged prerequisite, an available flagged task, a deferred flagged one, an unflagged one and a completed flagged one; “Move house” is paused, with a flagged task; and an Inbox task is flagged. See “Flags” in the spec.",
+  "examples": [
+    {
+      "name": "Flagged shows only available flagged tasks by default, leaving out blocked, deferred, paused and completed ones; a flag is not inherited",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a1",
+            "status": "paused"
+          }
+        ],
+        "tags": [
+          {
+            "id": "office",
+            "name": "Office",
+            "parent_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-10T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "book-room",
+            "title": "Book the meeting room",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-10T11:00:00.000Z",
+            "completed_at": null,
+            "flagged": true,
+            "due_at": "2026-11-20T17:00:00.000Z"
+          },
+          {
+            "id": "chase",
+            "title": "Chase the figures from finance",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-10T12:00:00.000Z",
+            "completed_at": null,
+            "flagged": true,
+            "defer_until": "2026-11-18T00:00:00.000Z"
+          },
+          {
+            "id": "print",
+            "title": "Print the handouts",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-10T13:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "send-draft",
+            "title": "Send the draft round",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a4",
+            "created_at": "2026-11-10T08:00:00.000Z",
+            "completed_at": "2026-11-13T16:00:00.000Z",
+            "flagged": true
+          },
+          {
+            "id": "boxes",
+            "title": "Order boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T14:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          },
+          {
+            "id": "dentist",
+            "title": "Book the dentist",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T15:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "room-office",
+            "task_id": "book-room",
+            "tag_id": "office"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [],
+          "book-room": [],
+          "chase": [
+            "deferred"
+          ],
+          "print": [],
+          "send-draft": [
+            "completed"
+          ],
+          "boxes": [
+            "paused"
+          ],
+          "dentist": []
+        },
+        "perspectives": [
+          {
+            "perspective": "flagged",
+            "selection": [],
+            "groups": [
+              {
+                "id": "flagged",
+                "tasks": [
+                  {
+                    "id": "book-room",
+                    "depth": 1
+                  },
+                  {
+                    "id": "dentist",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Remaining shows every unfinished flagged task, and Everything completed ones too",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a1",
+            "status": "paused"
+          }
+        ],
+        "tags": [
+          {
+            "id": "office",
+            "name": "Office",
+            "parent_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-10T10:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "book-room",
+            "title": "Book the meeting room",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-10T11:00:00.000Z",
+            "completed_at": null,
+            "flagged": true,
+            "due_at": "2026-11-20T17:00:00.000Z"
+          },
+          {
+            "id": "chase",
+            "title": "Chase the figures from finance",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-10T12:00:00.000Z",
+            "completed_at": null,
+            "flagged": true,
+            "defer_until": "2026-11-18T00:00:00.000Z"
+          },
+          {
+            "id": "print",
+            "title": "Print the handouts",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-10T13:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "send-draft",
+            "title": "Send the draft round",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a4",
+            "created_at": "2026-11-10T08:00:00.000Z",
+            "completed_at": "2026-11-13T16:00:00.000Z",
+            "flagged": true
+          },
+          {
+            "id": "boxes",
+            "title": "Order boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T14:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          },
+          {
+            "id": "dentist",
+            "title": "Book the dentist",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T15:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "room-office",
+            "task_id": "book-room",
+            "tag_id": "office"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "chase": [
+            "deferred"
+          ],
+          "send-draft": [
+            "completed"
+          ],
+          "boxes": [
+            "paused"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "flagged",
+            "selection": [],
+            "visibility": "remaining",
+            "groups": [
+              {
+                "id": "flagged",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "book-room",
+                    "depth": 1
+                  },
+                  {
+                    "id": "chase",
+                    "depth": 1
+                  },
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  },
+                  {
+                    "id": "dentist",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "flagged",
+            "selection": [],
+            "visibility": "everything",
+            "groups": [
+              {
+                "id": "flagged",
+                "tasks": [
+                  {
+                    "id": "send-draft",
+                    "depth": 1
+                  },
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "book-room",
+                    "depth": 1
+                  },
+                  {
+                    "id": "chase",
+                    "depth": 1
+                  },
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  },
+                  {
+                    "id": "dentist",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "A flagged task comes back to Available, still flagged, when its defer date arrives or its prerequisite is completed",
+      "clock": "2026-11-18T09:00:00.000Z",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a1",
+            "status": "paused"
+          }
+        ],
+        "tags": [
+          {
+            "id": "office",
+            "name": "Office",
+            "parent_id": null,
+            "position": "a0"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-10T10:00:00.000Z",
+            "completed_at": "2026-11-17T08:00:00.000Z"
+          },
+          {
+            "id": "book-room",
+            "title": "Book the meeting room",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-10T11:00:00.000Z",
+            "completed_at": null,
+            "flagged": true,
+            "due_at": "2026-11-20T17:00:00.000Z"
+          },
+          {
+            "id": "chase",
+            "title": "Chase the figures from finance",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-10T12:00:00.000Z",
+            "completed_at": null,
+            "flagged": true,
+            "defer_until": "2026-11-18T00:00:00.000Z"
+          },
+          {
+            "id": "print",
+            "title": "Print the handouts",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-10T13:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "send-draft",
+            "title": "Send the draft round",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a4",
+            "created_at": "2026-11-10T08:00:00.000Z",
+            "completed_at": "2026-11-13T16:00:00.000Z",
+            "flagged": true
+          },
+          {
+            "id": "boxes",
+            "title": "Order boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T14:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          },
+          {
+            "id": "dentist",
+            "title": "Book the dentist",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T15:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "room-office",
+            "task_id": "book-room",
+            "tag_id": "office"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [],
+          "chase": [],
+          "boxes": [
+            "paused"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "flagged",
+            "selection": [],
+            "groups": [
+              {
+                "id": "flagged",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "book-room",
+                    "depth": 1
+                  },
+                  {
+                    "id": "chase",
+                    "depth": 1
+                  },
+                  {
+                    "id": "dentist",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

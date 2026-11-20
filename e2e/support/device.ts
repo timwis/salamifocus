@@ -102,6 +102,10 @@ export class SimulatedDevice {
     ]);
   }
 
+  async flag(taskId: string): Promise<void> {
+    await this.upload([{ op: 'PATCH', table: 'tasks', id: taskId, data: { flagged: 1 }, metadata: operationMetadata(OperationName.flagTask) }]);
+  }
+
   async createTag(name: string, options: { parentId?: string; position?: string } = {}): Promise<{ tagId: string }> {
     const tagId = crypto.randomUUID();
     await this.upload([

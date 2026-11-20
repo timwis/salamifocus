@@ -19,6 +19,11 @@ async function shown(expected: ExpectedPerspective, ids: Ids): Promise<ExpectedP
     );
     return outline.map(({ project, tasks }) => ({ id: name(project.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: t.depth })) }));
   }
+  if (expected.perspective === 'flagged') {
+    // Every flagged task in the database is listed, so those other examples seeded are left out.
+    const tasks = (await h.application.flagged(expected.visibility)).filter((t) => ids.name(t.id) !== undefined);
+    return [{ id: 'flagged', tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }];
+  }
   const [tagId] = expected.selection;
   const outline = tagId ? await h.application.tagged(ids.uuid(tagId), expected.visibility) : [];
   return outline.map(({ tag, tasks }) => ({ id: name(tag.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }));

@@ -8,9 +8,10 @@ import { useSyncExternalStore } from 'react';
 // with the app, so these paths load directly too.
 
 export const perspectives = [
-  { id: 'inbox', name: 'Inbox', visibility: null },
-  { id: 'projects', name: 'Projects', visibility: Visibility.remaining },
-  { id: 'tags', name: 'Tags', visibility: Visibility.remaining },
+  { id: 'inbox', name: 'Inbox', visibility: null, sidebar: false },
+  { id: 'projects', name: 'Projects', visibility: Visibility.remaining, sidebar: true },
+  { id: 'tags', name: 'Tags', visibility: Visibility.remaining, sidebar: true },
+  { id: 'flagged', name: 'Flagged', visibility: Visibility.available, sidebar: false },
 ] as const;
 
 export type Perspective = (typeof perspectives)[number]['id'];
@@ -21,6 +22,9 @@ export interface Place {
   /** How much the outline shows, where the perspective offers a choice. Left out, it stays as it was. */
   visibility?: Visibility;
 }
+
+/** Whether a perspective has a sidebar, which is where focus goes on opening it. */
+export const hasSidebar = (perspective: Perspective): boolean => perspectives.find((p) => p.id === perspective)?.sidebar ?? false;
 
 /** The visibility a perspective starts with, or null if it offers no choice. */
 const defaultVisibility = (perspective: Perspective): Visibility | null => perspectives.find((p) => p.id === perspective)?.visibility ?? null;

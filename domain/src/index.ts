@@ -6,5 +6,6 @@ export * from './prerequisites.ts';
 export * from './titles.ts';
 export * from './tags.ts';
 export * from './inbox.ts';
+export * from './flags.ts';
 export * from './dates.ts';
 export * from './visibility.ts';
