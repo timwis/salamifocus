@@ -72,6 +72,15 @@ export function setTaskDue(taskId: string, dueAt: string | null) {
   return write(OperationName.setTaskDue, 'UPDATE tasks SET due_at = ?, _metadata = ? WHERE id = ?', (m) => [dueAt, m, taskId]);
 }
 
+/** Flags a task as one to do now, or with false takes its flag away. */
+export function setTaskFlagged(taskId: string, flagged: boolean) {
+  return write(flagged ? OperationName.flagTask : OperationName.unflagTask, 'UPDATE tasks SET flagged = ?, _metadata = ? WHERE id = ?', (m) => [
+    flagged ? 1 : 0,
+    m,
+    taskId,
+  ]);
+}
+
 export function reorderTask(taskId: string, position: string) {
   return write(OperationName.reorderTask, 'UPDATE tasks SET position = ?, _metadata = ? WHERE id = ?', (m) => [position, m, taskId]);
 }

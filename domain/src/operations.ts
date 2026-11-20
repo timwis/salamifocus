@@ -10,6 +10,8 @@ export const OperationName = {
   reopenTask: 'reopen_task',
   deferTask: 'defer_task',
   setTaskDue: 'set_task_due',
+  flagTask: 'flag_task',
+  unflagTask: 'unflag_task',
   reorderTask: 'reorder_task',
   moveTask: 'move_task',
   nestTask: 'nest_task',

@@ -26,6 +26,7 @@ export const schema = new Schema({
       completed_at: column.text,
       defer_until: column.text,
       due_at: column.text,
+      flagged: column.integer,
     },
     { ...synced, indexes: { parent: ['parent_id'] } },
   ),

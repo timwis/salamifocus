@@ -174,13 +174,14 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         deferUntil: string | null;
         dueAt: string | null;
         dueBy: string | null;
+        flagged: boolean;
         tagId: string;
         unfinishedChildren: number;
         deferredUntil: string | null;
         projectStatus: string | null;
       }[]
     >`
-      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.completed_at AS "completedAt", t.defer_until AS "deferUntil", t.due_at AS "dueAt",
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.completed_at AS "completedAt", t.defer_until AS "deferUntil", t.due_at AS "dueAt", t.flagged,
              tt.tag_id AS "tagId", ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
       FROM tasks t JOIN task_tags tt ON tt.task_id = t.id
       WHERE ${unfinishedUnless(sql, visibility)} AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN ${sql(branch)})
@@ -225,13 +226,14 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         deferUntil: string | null;
         dueAt: string | null;
         dueBy: string | null;
+        flagged: boolean;
         unfinishedChildren: number;
         deferredUntil: string | null;
         projectStatus: string | null;
       }[]
     >`
       SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.parent_id AS "parentId", t.position, t.completed_at AS "completedAt",
-             t.defer_until AS "deferUntil", t.due_at AS "dueAt", ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
+             t.defer_until AS "deferUntil", t.due_at AS "dueAt", t.flagged, ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
       FROM tasks t WHERE t.project_id IN ${sql(ids)} AND ${unfinishedUnless(sql, visibility)}`;
     const withAvailability = rows.map((row) => ({
       ...row,
@@ -259,6 +261,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         deferUntil: task.deferUntil,
         dueAt: task.dueAt,
         dueBy: task.dueBy,
+        flagged: task.flagged,
         unavailable: task.unavailable,
       })),
     }));
@@ -267,7 +270,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   async function task(id: string): Promise<TaskView | null> {
     const [[row], tagRows, tree] = await Promise.all([
       sql`
-        SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.parent_id, t.completed_at, t.defer_until, t.due_at, c.id AS capture_id, c.text, c.captured_at,
+        SELECT t.id, t.title, t.note, t.created_at, t.project_id, t.parent_id, t.completed_at, t.defer_until, t.due_at, t.flagged, c.id AS capture_id, c.text, c.captured_at,
                ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
         FROM tasks t LEFT JOIN captures c ON c.task_id = t.id
         WHERE t.id = ${id}::uuid`,
@@ -287,6 +290,7 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       deferUntil: row.defer_until,
       dueAt: row.due_at,
       dueBy: row.dueBy,
+      flagged: row.flagged,
       unavailable: unavailability(
         { completedAt: row.completed_at, unfinishedChildren: row.unfinishedChildren, deferredUntil: row.deferredUntil, projectStatus: row.projectStatus },
         clock(),

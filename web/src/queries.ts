@@ -22,10 +22,12 @@ export interface TaskState {
   dueBy: string | null;
   /** The status of the task's project, or null when it has none. */
   projectStatus: string | null;
+  /** 1 when the task itself is flagged (SQLite has no booleans). */
+  flagged: number | null;
 }
 
 /** Selects a task's `TaskState`. */
-export const taskStateColumns = `t.completed_at AS "completedAt", ${unfinishedChildrenColumn}, ${deferredUntilColumn}, t.defer_until AS "deferUntil", ${dueByColumn}, t.due_at AS "dueAt", ${projectStatusColumn}`;
+export const taskStateColumns = `t.completed_at AS "completedAt", ${unfinishedChildrenColumn}, ${deferredUntilColumn}, t.defer_until AS "deferUntil", ${dueByColumn}, t.due_at AS "dueAt", ${projectStatusColumn}, t.flagged`;
 
 /** Why a task cannot be worked on at `now`, from its `TaskState`. */
 export function taskUnavailability(task: Partial<TaskState>, now: Date): Unavailable[] {

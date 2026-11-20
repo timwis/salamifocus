@@ -220,6 +220,31 @@ export const setTaskDue: OperationDefinition<SetTaskDueArgs> = {
   },
 };
 
+export interface FlagTaskArgs {
+  taskId: string;
+}
+
+/** Marks a task as one the user intends to do now. The flag stays while the task is deferred or blocked. */
+export const flagTask: OperationDefinition<FlagTaskArgs> = {
+  name: OperationName.flagTask,
+  parse(input) {
+    return { taskId: args.uuid(args.record(input), 'taskId') };
+  },
+  async apply(mutations, { taskId }) {
+    await mutations.update('task', taskId, { flagged: true });
+  },
+};
+
+export const unflagTask: OperationDefinition<FlagTaskArgs> = {
+  name: OperationName.unflagTask,
+  parse(input) {
+    return { taskId: args.uuid(args.record(input), 'taskId') };
+  },
+  async apply(mutations, { taskId }) {
+    await mutations.update('task', taskId, { flagged: false });
+  },
+};
+
 export interface ReorderTaskArgs {
   taskId: string;
   position: string;
@@ -277,7 +302,7 @@ export const moveTask: OperationDefinition<MoveTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reopenTask, deferTask, setTaskDue, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reopenTask, deferTask, setTaskDue, flagTask, unflagTask, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

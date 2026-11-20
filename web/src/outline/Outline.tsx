@@ -14,7 +14,7 @@ import { useNow } from '../clock.ts';
 import { isTyping, useCurrentRow, useRovingFocus } from '../focus.ts';
 import { taskUnavailability, type TaskState } from '../queries.ts';
 import { tagsInOrder, useTags, useTaskTags } from '../tags/data.tsx';
-import { completeTask, createTask, nestTask, reopenTask, reorderTask } from '../writes.ts';
+import { completeTask, createTask, nestTask, reopenTask, reorderTask, setTaskFlagged } from '../writes.ts';
 import { ProjectDatesEditor, type DatedProject } from './ProjectDatesEditor.tsx';
 import { TaskEditor, type Field } from './TaskEditor.tsx';
 import { VisibilitySelector } from './VisibilitySelector.tsx';
@@ -64,6 +64,7 @@ const parentOf = (task: OutlineTask) => task.parentId ?? null;
 
 /** Completes an unfinished task, or marks a completed one (shown under Everything) unfinished again. */
 const toggleCompletion = (task: OutlineTask) => (task.completedAt ? reopenTask(task.id) : completeTask(task.id));
+const toggleFlag = (task: OutlineTask) => setTaskFlagged(task.id, !task.flagged);
 const depthOf = (task: OutlineTask) => task.depth ?? 1;
 const siblingsOf = (group: OutlineGroup, parentId: string | null) => group.tasks.filter((t) => parentOf(t) === parentId);
 const childrenOf = (group: OutlineGroup, task: OutlineTask) => siblingsOf(group, task.id);
@@ -254,6 +255,9 @@ export function Outline({
       case ' ':
         if (focused?.kind !== 'task') return;
         return handled(), void toggleCompletion(focused.task);
+      case 'f':
+        if (focused?.kind !== 'task') return;
+        return handled(), void toggleFlag(focused.task);
       case 'Enter':
         if (focused?.kind === 'heading' && focused.group.project) return handled(), editProject(focused.key);
         if (focused?.kind !== 'task') return;
@@ -394,6 +398,19 @@ export function Outline({
                       )}
                     </div>
                     {task.note ? <span className="note-mark" role="img" aria-label="Has a note" title={task.note} /> : null}
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="flag"
+                      aria-label={`Flag ${task.title}`}
+                      aria-pressed={Boolean(task.flagged)}
+                      aria-keyshortcuts="F"
+                      title={task.flagged ? 'Flagged (F)' : 'Flag (F)'}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void toggleFlag(task);
+                      }}
+                    />
                   </>
                 )}
               </li>

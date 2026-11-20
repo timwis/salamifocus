@@ -44,6 +44,8 @@ export interface TaskView {
   dueAt: string | null;
   /** The earliest due date among the task, the unfinished tasks it is beneath and its project. */
   dueBy: string | null;
+  /** Whether the user intends to do it now. Its own only: never inherited from the tasks it is beneath or its project. */
+  flagged: boolean;
   /** Why the task cannot be worked on now; empty when it is available. */
   unavailable: Unavailable[];
   /** In sidebar order, each with its full path. */
@@ -59,14 +61,14 @@ export interface TagView {
 
 export interface TagOutline {
   tag: TagView;
-  tasks: { id: string; title: string; note: string; projectId: string | null; completedAt: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; tagIds: string[]; unavailable: Unavailable[] }[];
+  tasks: { id: string; title: string; note: string; projectId: string | null; completedAt: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; flagged: boolean; tagIds: string[]; unavailable: Unavailable[] }[];
 }
 
 export interface ProjectOutline {
   /** The project's own defer and due dates; which its tasks inherit. */
   project: { id: string; name: string; kind: string; status: ProjectStatus; deferUntil: string | null; dueAt: string | null };
   /** In outline order, each followed by its children. `parentId` is the task it is shown beneath (null at the top level). */
-  tasks: { id: string; title: string; note: string; parentId: string | null; depth: number; completedAt: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; unavailable: Unavailable[] }[];
+  tasks: { id: string; title: string; note: string; parentId: string | null; depth: number; completedAt: string | null; deferUntil: string | null; dueAt: string | null; dueBy: string | null; flagged: boolean; unavailable: Unavailable[] }[];
 }
 
 export interface ChangeView {

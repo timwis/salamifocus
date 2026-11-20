@@ -327,6 +327,19 @@ describe('uploading a client transaction', () => {
     assert.equal(rejected?.code, 'malformed_operation');
   });
 
+  it('flags and unflags a task, as a client stores the flag, refusing a flag that sets anything else', async () => {
+    const { taskId, entries } = captureTransaction('book the dentist');
+    await upload(entries);
+    const patch = (op: OperationName, data: Record<string, unknown>) => ({ op: 'PATCH', table: 'tasks', id: taskId, data, metadata: operationMetadata(op) });
+
+    assert.deepEqual((await upload([patch(OperationName.flagTask, { flagged: 1 })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.task(taskId))?.flagged, true);
+    assert.deepEqual((await upload([patch(OperationName.unflagTask, { flagged: 0 })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.task(taskId))?.flagged, false);
+    const refused = await upload([patch(OperationName.flagTask, { flagged: 0 }), patch(OperationName.flagTask, { flagged: 1, title: 'Book the dentist' })]);
+    assert.deepEqual(refused.map((r) => r.code), ['malformed_operation', 'malformed_operation']);
+  });
+
   it('moves a task with its children, the client sending its own copy of their move', async () => {
     const [from, to] = [crypto.randomUUID(), crypto.randomUUID()];
     const [parent, child] = [crypto.randomUUID(), crypto.randomUUID()];

@@ -172,6 +172,19 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     return { taskId: id, dueAt: data.due_at ?? null };
   },
 
+  // Clients store the flag as SQLite does a boolean, 1 or 0.
+  [OperationName.flagTask](entries) {
+    const { id, data } = onlyUpdate(entries, 'tasks', ['flagged']);
+    if (data.flagged !== 1 && data.flagged !== true) throw new Malformed('Flagging a task must set its flag.');
+    return { taskId: id };
+  },
+
+  [OperationName.unflagTask](entries) {
+    const { id, data } = onlyUpdate(entries, 'tasks', ['flagged']);
+    if (data.flagged !== 0 && data.flagged !== false) throw new Malformed('Unflagging a task must clear its flag.');
+    return { taskId: id };
+  },
+
   [OperationName.reorderTask](entries) {
     const { id, data } = onlyUpdate(entries, 'tasks', ['position']);
     return { taskId: id, position: data.position };
