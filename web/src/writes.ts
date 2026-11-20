@@ -73,12 +73,15 @@ export function setTaskDue(taskId: string, dueAt: string | null) {
 }
 
 /** Flags a task as one to do now, or with false takes its flag away. */
-export function setTaskFlagged(taskId: string, flagged: boolean) {
-  return write(flagged ? OperationName.flagTask : OperationName.unflagTask, 'UPDATE tasks SET flagged = ?, _metadata = ? WHERE id = ?', (m) => [
-    flagged ? 1 : 0,
-    m,
-    taskId,
-  ]);
+/** Reads the flag inside the write, so a second press before the row re-renders still undoes the first. */
+export function toggleTaskFlag(taskId: string) {
+  return db.writeTransaction(async (tx) => {
+    const row = await tx.getOptional<{ flagged: number | null }>('SELECT flagged FROM tasks WHERE id = ?', [taskId]);
+    if (!row) return;
+    const flag = !row.flagged;
+    const metadata = operationMetadata(flag ? OperationName.flagTask : OperationName.unflagTask);
+    await tx.execute('UPDATE tasks SET flagged = ?, _metadata = ? WHERE id = ?', [flag ? 1 : 0, metadata, taskId]);
+  });
 }
 
 export function reorderTask(taskId: string, position: string) {

@@ -38,7 +38,7 @@ export function FlaggedPerspective({ place }: { place: Place }) {
       title="Flagged"
       summary={`${count} ${count === 1 ? 'task' : 'tasks'}${visibility === Visibility.everything ? '' : ` ${visibility}`}`}
       groups={[{ id: 'flagged', heading: null, ordered: false, tasks: shown }]}
-      empty={visibility === Visibility.available ? 'No flagged task is available. Press V to show remaining tasks.' : 'Nothing is flagged.'}
+      empty={visibility === Visibility.available ? 'No flagged task is available. Press V to show remaining tasks.' : visibility === Visibility.remaining ? 'No flagged task is left to do. Press V to show completed ones too.' : 'Nothing is flagged.'}
       visibility={{ value: visibility, choose: (visibility) => go({ ...place, visibility }) }}
       onEditing={setEditedTaskId}
     />
