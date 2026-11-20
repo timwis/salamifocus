@@ -1,4 +1,4 @@
-import type { ProjectStatus, Unavailable } from '@salamifocus/domain';
+import type { FolderScope, ProjectStatus, Unavailable } from '@salamifocus/domain';
 
 export interface Actor {
   type: 'user';
@@ -77,6 +77,20 @@ export interface FlaggedTask {
   dueBy: string | null;
   tagIds: string[];
   unavailable: Unavailable[];
+}
+
+export interface Settings {
+  /** The folder each Actionable perspective shows, or null when none is designated. */
+  folders: Record<FolderScope, string | null>;
+}
+
+export interface ActionableOutline {
+  folderId: string | null;
+  /** By tag in sidebar order, then the untagged group (`tag` null); each group's tasks oldest first. */
+  groups: {
+    tag: TagView | null;
+    tasks: { id: string; title: string; note: string; projectId: string; deferUntil: string | null; dueAt: string | null; dueBy: string | null; tagIds: string[] }[];
+  }[];
 }
 
 export interface ProjectOutline {

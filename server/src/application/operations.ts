@@ -4,6 +4,7 @@ import type { Mutations } from './mutations.ts';
 import { organisationOperations } from './organisation.ts';
 import { Rejection } from './rejection.ts';
 import { checkParent, moveWithChildren, nestTask } from './prerequisites.ts';
+import { designateFolder } from './settings.ts';
 import { addTaskTag, tagOperations } from './tags.ts';
 
 export interface OperationDefinition<A> {
@@ -302,7 +303,7 @@ export const moveTask: OperationDefinition<MoveTaskArgs> = {
   },
 };
 
-const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reopenTask, deferTask, setTaskDue, flagTask, unflagTask, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations] as OperationDefinition<unknown>[];
+const definitions = [captureText, renameTask, createTask, editTaskNote, completeTask, reopenTask, deferTask, setTaskDue, flagTask, unflagTask, reorderTask, moveTask, nestTask, ...organisationOperations, ...tagOperations, designateFolder] as OperationDefinition<unknown>[];
 
 export function findOperation(name: string): OperationDefinition<unknown> | undefined {
   return definitions.find((definition) => definition.name === name);

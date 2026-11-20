@@ -3,11 +3,13 @@ import { flushSync } from 'react-dom';
 import { CaptureBox } from './Capture.tsx';
 import { isTyping, useRovingFocus } from './focus.ts';
 import { Inbox } from './Inbox.tsx';
+import { ActionablePerspective } from './actionable/ActionablePerspective.tsx';
 import { FlaggedPerspective } from './flagged/FlaggedPerspective.tsx';
 import { goToPerspective, hasSidebar, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
 import { OrganisationProvider } from './projects/data.tsx';
 import { ProjectsPerspective } from './projects/ProjectsPerspective.tsx';
 import { signOut } from './session.ts';
+import { SettingsDialog } from './settings/Settings.tsx';
 import { TagsProvider } from './tags/data.tsx';
 import { TagsPerspective } from './tags/TagsPerspective.tsx';
 import { SyncState } from './SyncState.tsx';
@@ -51,6 +53,7 @@ function switchTo(perspective: Perspective) {
 export function Shell() {
   const place = usePlace();
   const [capturing, setCapturing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // Where focus was before capturing, to return to afterwards; null while not capturing.
   const returnTo = useRef<Element | null>(null);
 
@@ -77,6 +80,11 @@ export function Shell() {
       if (event.key === 'c') {
         event.preventDefault();
         startCapture();
+        return;
+      }
+      if (event.key === ',') {
+        event.preventDefault();
+        setSettingsOpen(true);
         return;
       }
       const perspective = perspectives[Number(event.key) - 1];
@@ -119,13 +127,24 @@ export function Shell() {
         >
           + Capture
         </button>
+        <button
+          type="button"
+          tabIndex={-1}
+          title="Settings (,)"
+          aria-keyshortcuts=","
+          // Keeps focus where it is, so closing the dialog returns there.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => setSettingsOpen(true)}
+        >
+          Settings
+        </button>
         <button type="button" onClick={() => void signOut()}>
           Sign out
         </button>
       </header>
-      <div className="regions" data-perspective={place.perspective}>
-        <PerspectiveNav current={place.perspective} onBrowse={goToPerspective} onOpen={switchTo} />
-        <OrganisationProvider>
+      <OrganisationProvider>
+        <div className="regions" data-perspective={place.perspective}>
+          <PerspectiveNav current={place.perspective} onBrowse={goToPerspective} onOpen={switchTo} />
           <TagsProvider>
             {place.perspective === 'projects' ? (
               <ProjectsPerspective place={place} />
@@ -133,13 +152,16 @@ export function Shell() {
               <TagsPerspective place={place} />
             ) : place.perspective === 'flagged' ? (
               <FlaggedPerspective place={place} />
+            ) : place.perspective === 'personal' || place.perspective === 'work' ? (
+              <ActionablePerspective key={place.perspective} scope={place.perspective} />
             ) : (
               <Inbox />
             )}
           </TagsProvider>
-        </OrganisationProvider>
-      </div>
-      {capturing && <CaptureBox onClose={endCapture} />}
+        </div>
+        {capturing && <CaptureBox onClose={endCapture} />}
+        {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      </OrganisationProvider>
     </div>
   );
 }

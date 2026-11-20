@@ -12,3 +12,4 @@ streams:
       - SELECT * FROM projects
       - SELECT * FROM tags
       - SELECT * FROM task_tags
+      - SELECT * FROM settings

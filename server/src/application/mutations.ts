@@ -8,6 +8,7 @@ const tables = {
   project: 'projects',
   tag: 'tags',
   task_tag: 'task_tags',
+  setting: 'settings',
 } as const;
 
 export type Entity = keyof typeof tables;

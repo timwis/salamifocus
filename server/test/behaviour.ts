@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import type { Unavailable, Visibility } from '@salamifocus/domain';
+import { settingsId, type Unavailable, type Visibility } from '@salamifocus/domain';
 import type { Sql } from '../src/db.ts';
 
 // Loads the client-neutral behaviour fixtures (see fixtures/README.md) and
@@ -8,7 +8,7 @@ import type { Sql } from '../src/db.ts';
 type Row = Record<string, unknown> & { id: string };
 
 export interface ExpectedPerspective {
-  perspective: 'projects' | 'tags' | 'flagged';
+  perspective: 'projects' | 'tags' | 'flagged' | 'personal' | 'work';
   /** Flagged has no sidebar, so nothing to select. */
   selection: string[];
   /** Absent means the perspective's default: Remaining, or Available for Flagged. */
@@ -19,7 +19,7 @@ export interface ExpectedPerspective {
 export interface Example {
   name: string;
   clock: string;
-  records: Partial<Record<(typeof tables)[number], Row[]>>;
+  records: Partial<Record<(typeof tables)[number], Row[]>> & { settings?: Record<string, string | null> };
   expect: { unavailable: Record<string, Unavailable[]>; perspectives: ExpectedPerspective[] };
 }
 
@@ -86,6 +86,8 @@ export async function seed(sql: Sql, example: Example): Promise<Ids> {
         for (const row of rows) if (row[parent]) await tx`UPDATE ${tx(table)} SET ${tx(parent)} = ${row[parent] as string} WHERE id = ${row.id as string}`;
       }
     }
+    // Settings are a single row that already exists, so an example's settings change it.
+    if (example.records.settings) await tx`UPDATE settings SET ${tx(resolve(example.records.settings as Row) as Record<string, never>)} WHERE id = ${settingsId}`;
   });
   return ids;
 }
@@ -94,6 +96,7 @@ export async function seed(sql: Sql, example: Example): Promise<Ids> {
 export async function unseed(sql: Sql, ids: Ids): Promise<void> {
   const uuids = ids.all;
   await sql.begin(async (tx) => {
+    await tx`UPDATE settings SET personal_folder_id = NULL, work_folder_id = NULL WHERE personal_folder_id IN ${tx(uuids)} OR work_folder_id IN ${tx(uuids)}`;
     for (const table of [...tables].reverse()) await tx`DELETE FROM ${tx(table)} WHERE id IN ${tx(uuids)}`;
   });
 }

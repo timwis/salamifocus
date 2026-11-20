@@ -1,0 +1,1084 @@
+{
+  "scenario": "Actionable",
+  "description": "Actionable — Personal and Actionable — Work show the available tasks in the folder designated for each, and every folder and project inside it, as individual actions grouped by tag in sidebar order, oldest first within a group, then the tasks with no tag. A task with several tags appears under each. “Personal” holds a single-action list and, in a nested “Home” folder, a project and a paused project; “Work” holds one project; one project is in neither. See the built-in perspectives table and “Hierarchical tag browsing” in the spec.",
+  "examples": [
+    {
+      "name": "Only available tasks in the designated folder show, grouped by tag, oldest first, with untagged tasks last",
+      "clock": "2026-11-20T09:00:00.000Z",
+      "records": {
+        "folders": [
+          {
+            "id": "personal",
+            "name": "Personal",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "home",
+            "name": "Home",
+            "parent_id": "personal",
+            "position": "a1"
+          },
+          {
+            "id": "work",
+            "name": "Work",
+            "parent_id": null,
+            "position": "a1"
+          }
+        ],
+        "projects": [
+          {
+            "id": "misc",
+            "name": "Miscellaneous",
+            "kind": "single_actions",
+            "folder_id": "personal",
+            "position": "a0"
+          },
+          {
+            "id": "house",
+            "name": "Fix up the house",
+            "kind": "project",
+            "folder_id": "home",
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": "home",
+            "position": "a1",
+            "status": "paused"
+          },
+          {
+            "id": "launch",
+            "name": "Launch the website",
+            "kind": "project",
+            "folder_id": "work",
+            "position": "a0"
+          },
+          {
+            "id": "loose",
+            "name": "Somewhere else",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a2"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "dad",
+            "name": "Dad",
+            "parent_id": "people",
+            "position": "a0"
+          },
+          {
+            "id": "computer",
+            "name": "@Computer",
+            "parent_id": null,
+            "position": "a1"
+          },
+          {
+            "id": "deep",
+            "name": "Deep work",
+            "parent_id": "computer",
+            "position": "a0"
+          },
+          {
+            "id": "shallow",
+            "name": "Shallow work",
+            "parent_id": "computer",
+            "position": "a1"
+          },
+          {
+            "id": "low",
+            "name": "Low energy",
+            "parent_id": "shallow",
+            "position": "a0"
+          },
+          {
+            "id": "shopping",
+            "name": "Online shopping",
+            "parent_id": "shallow",
+            "position": "a1"
+          },
+          {
+            "id": "phone",
+            "name": "@Phone",
+            "parent_id": null,
+            "position": "a2"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "book",
+            "title": "Book a weightlifting class",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-03T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "privacy",
+            "title": "Check the insurer's privacy policy",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "waterpick",
+            "title": "Buy a water pick",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-02T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "checkup",
+            "title": "Ask Dad about his checkup",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-04T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "fence",
+            "title": "Fix the fence",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-05T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "timber",
+            "title": "Order timber for the fence",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-06T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "quote",
+            "title": "Get a quote for timber",
+            "project_id": "house",
+            "parent_id": "timber",
+            "position": "a0",
+            "created_at": "2026-11-07T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "curtains",
+            "title": "Choose curtains",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-08T09:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-25T00:00:00.000Z"
+          },
+          {
+            "id": "gutters",
+            "title": "Clear the gutters",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a4",
+            "created_at": "2026-11-09T09:00:00.000Z",
+            "completed_at": "2026-11-10T09:00:00.000Z"
+          },
+          {
+            "id": "boxes",
+            "title": "Order moving boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "copy",
+            "title": "Proofread the website copy",
+            "project_id": "launch",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-11T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "elsewhere",
+            "title": "Renew the passport",
+            "project_id": "loose",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-12T09:00:00.000Z",
+            "completed_at": null
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "book-low",
+            "task_id": "book",
+            "tag_id": "low"
+          },
+          {
+            "id": "privacy-low",
+            "task_id": "privacy",
+            "tag_id": "low"
+          },
+          {
+            "id": "waterpick-shopping",
+            "task_id": "waterpick",
+            "tag_id": "shopping"
+          },
+          {
+            "id": "checkup-dad",
+            "task_id": "checkup",
+            "tag_id": "dad"
+          },
+          {
+            "id": "checkup-low",
+            "task_id": "checkup",
+            "tag_id": "low"
+          },
+          {
+            "id": "timber-deep",
+            "task_id": "timber",
+            "tag_id": "deep"
+          },
+          {
+            "id": "quote-phone",
+            "task_id": "quote",
+            "tag_id": "phone"
+          },
+          {
+            "id": "curtains-shopping",
+            "task_id": "curtains",
+            "tag_id": "shopping"
+          },
+          {
+            "id": "gutters-low",
+            "task_id": "gutters",
+            "tag_id": "low"
+          },
+          {
+            "id": "boxes-low",
+            "task_id": "boxes",
+            "tag_id": "low"
+          },
+          {
+            "id": "copy-low",
+            "task_id": "copy",
+            "tag_id": "low"
+          },
+          {
+            "id": "elsewhere-low",
+            "task_id": "elsewhere",
+            "tag_id": "low"
+          }
+        ],
+        "settings": {
+          "personal_folder_id": "personal",
+          "work_folder_id": "work"
+        }
+      },
+      "expect": {
+        "unavailable": {
+          "book": [],
+          "timber": [
+            "blocked"
+          ],
+          "quote": [],
+          "curtains": [
+            "deferred"
+          ],
+          "boxes": [
+            "paused"
+          ],
+          "fence": []
+        },
+        "perspectives": [
+          {
+            "perspective": "personal",
+            "selection": [],
+            "groups": [
+              {
+                "id": "dad",
+                "tasks": [
+                  {
+                    "id": "checkup",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "low",
+                "tasks": [
+                  {
+                    "id": "privacy",
+                    "depth": 1
+                  },
+                  {
+                    "id": "book",
+                    "depth": 1
+                  },
+                  {
+                    "id": "checkup",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "shopping",
+                "tasks": [
+                  {
+                    "id": "waterpick",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "phone",
+                "tasks": [
+                  {
+                    "id": "quote",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "untagged",
+                "tasks": [
+                  {
+                    "id": "fence",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "work",
+            "selection": [],
+            "groups": [
+              {
+                "id": "low",
+                "tasks": [
+                  {
+                    "id": "copy",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "A deferred task joins its group when its defer date arrives",
+      "clock": "2026-11-25T09:00:00.000Z",
+      "records": {
+        "folders": [
+          {
+            "id": "personal",
+            "name": "Personal",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "home",
+            "name": "Home",
+            "parent_id": "personal",
+            "position": "a1"
+          },
+          {
+            "id": "work",
+            "name": "Work",
+            "parent_id": null,
+            "position": "a1"
+          }
+        ],
+        "projects": [
+          {
+            "id": "misc",
+            "name": "Miscellaneous",
+            "kind": "single_actions",
+            "folder_id": "personal",
+            "position": "a0"
+          },
+          {
+            "id": "house",
+            "name": "Fix up the house",
+            "kind": "project",
+            "folder_id": "home",
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": "home",
+            "position": "a1",
+            "status": "paused"
+          },
+          {
+            "id": "launch",
+            "name": "Launch the website",
+            "kind": "project",
+            "folder_id": "work",
+            "position": "a0"
+          },
+          {
+            "id": "loose",
+            "name": "Somewhere else",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a2"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "dad",
+            "name": "Dad",
+            "parent_id": "people",
+            "position": "a0"
+          },
+          {
+            "id": "computer",
+            "name": "@Computer",
+            "parent_id": null,
+            "position": "a1"
+          },
+          {
+            "id": "deep",
+            "name": "Deep work",
+            "parent_id": "computer",
+            "position": "a0"
+          },
+          {
+            "id": "shallow",
+            "name": "Shallow work",
+            "parent_id": "computer",
+            "position": "a1"
+          },
+          {
+            "id": "low",
+            "name": "Low energy",
+            "parent_id": "shallow",
+            "position": "a0"
+          },
+          {
+            "id": "shopping",
+            "name": "Online shopping",
+            "parent_id": "shallow",
+            "position": "a1"
+          },
+          {
+            "id": "phone",
+            "name": "@Phone",
+            "parent_id": null,
+            "position": "a2"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "book",
+            "title": "Book a weightlifting class",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-03T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "privacy",
+            "title": "Check the insurer's privacy policy",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "waterpick",
+            "title": "Buy a water pick",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-02T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "checkup",
+            "title": "Ask Dad about his checkup",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-04T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "fence",
+            "title": "Fix the fence",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-05T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "timber",
+            "title": "Order timber for the fence",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-06T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "quote",
+            "title": "Get a quote for timber",
+            "project_id": "house",
+            "parent_id": "timber",
+            "position": "a0",
+            "created_at": "2026-11-07T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "curtains",
+            "title": "Choose curtains",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-08T09:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-25T00:00:00.000Z"
+          },
+          {
+            "id": "gutters",
+            "title": "Clear the gutters",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a4",
+            "created_at": "2026-11-09T09:00:00.000Z",
+            "completed_at": "2026-11-10T09:00:00.000Z"
+          },
+          {
+            "id": "boxes",
+            "title": "Order moving boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "copy",
+            "title": "Proofread the website copy",
+            "project_id": "launch",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-11T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "elsewhere",
+            "title": "Renew the passport",
+            "project_id": "loose",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-12T09:00:00.000Z",
+            "completed_at": null
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "book-low",
+            "task_id": "book",
+            "tag_id": "low"
+          },
+          {
+            "id": "privacy-low",
+            "task_id": "privacy",
+            "tag_id": "low"
+          },
+          {
+            "id": "waterpick-shopping",
+            "task_id": "waterpick",
+            "tag_id": "shopping"
+          },
+          {
+            "id": "checkup-dad",
+            "task_id": "checkup",
+            "tag_id": "dad"
+          },
+          {
+            "id": "checkup-low",
+            "task_id": "checkup",
+            "tag_id": "low"
+          },
+          {
+            "id": "timber-deep",
+            "task_id": "timber",
+            "tag_id": "deep"
+          },
+          {
+            "id": "quote-phone",
+            "task_id": "quote",
+            "tag_id": "phone"
+          },
+          {
+            "id": "curtains-shopping",
+            "task_id": "curtains",
+            "tag_id": "shopping"
+          },
+          {
+            "id": "gutters-low",
+            "task_id": "gutters",
+            "tag_id": "low"
+          },
+          {
+            "id": "boxes-low",
+            "task_id": "boxes",
+            "tag_id": "low"
+          },
+          {
+            "id": "copy-low",
+            "task_id": "copy",
+            "tag_id": "low"
+          },
+          {
+            "id": "elsewhere-low",
+            "task_id": "elsewhere",
+            "tag_id": "low"
+          }
+        ],
+        "settings": {
+          "personal_folder_id": "personal",
+          "work_folder_id": "work"
+        }
+      },
+      "expect": {
+        "unavailable": {
+          "curtains": []
+        },
+        "perspectives": [
+          {
+            "perspective": "personal",
+            "selection": [],
+            "groups": [
+              {
+                "id": "dad",
+                "tasks": [
+                  {
+                    "id": "checkup",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "low",
+                "tasks": [
+                  {
+                    "id": "privacy",
+                    "depth": 1
+                  },
+                  {
+                    "id": "book",
+                    "depth": 1
+                  },
+                  {
+                    "id": "checkup",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "shopping",
+                "tasks": [
+                  {
+                    "id": "waterpick",
+                    "depth": 1
+                  },
+                  {
+                    "id": "curtains",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "phone",
+                "tasks": [
+                  {
+                    "id": "quote",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "untagged",
+                "tasks": [
+                  {
+                    "id": "fence",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "The folders are held by identity: designating the nested Home folder shows only what is inside it, and with no folder designated nothing shows",
+      "clock": "2026-11-20T09:00:00.000Z",
+      "records": {
+        "folders": [
+          {
+            "id": "personal",
+            "name": "Personal",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "home",
+            "name": "Home",
+            "parent_id": "personal",
+            "position": "a1"
+          },
+          {
+            "id": "work",
+            "name": "Work",
+            "parent_id": null,
+            "position": "a1"
+          }
+        ],
+        "projects": [
+          {
+            "id": "misc",
+            "name": "Miscellaneous",
+            "kind": "single_actions",
+            "folder_id": "personal",
+            "position": "a0"
+          },
+          {
+            "id": "house",
+            "name": "Fix up the house",
+            "kind": "project",
+            "folder_id": "home",
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": "home",
+            "position": "a1",
+            "status": "paused"
+          },
+          {
+            "id": "launch",
+            "name": "Launch the website",
+            "kind": "project",
+            "folder_id": "work",
+            "position": "a0"
+          },
+          {
+            "id": "loose",
+            "name": "Somewhere else",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a2"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "dad",
+            "name": "Dad",
+            "parent_id": "people",
+            "position": "a0"
+          },
+          {
+            "id": "computer",
+            "name": "@Computer",
+            "parent_id": null,
+            "position": "a1"
+          },
+          {
+            "id": "deep",
+            "name": "Deep work",
+            "parent_id": "computer",
+            "position": "a0"
+          },
+          {
+            "id": "shallow",
+            "name": "Shallow work",
+            "parent_id": "computer",
+            "position": "a1"
+          },
+          {
+            "id": "low",
+            "name": "Low energy",
+            "parent_id": "shallow",
+            "position": "a0"
+          },
+          {
+            "id": "shopping",
+            "name": "Online shopping",
+            "parent_id": "shallow",
+            "position": "a1"
+          },
+          {
+            "id": "phone",
+            "name": "@Phone",
+            "parent_id": null,
+            "position": "a2"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "book",
+            "title": "Book a weightlifting class",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-03T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "privacy",
+            "title": "Check the insurer's privacy policy",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "waterpick",
+            "title": "Buy a water pick",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-02T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "checkup",
+            "title": "Ask Dad about his checkup",
+            "project_id": "misc",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-04T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "fence",
+            "title": "Fix the fence",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-05T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "timber",
+            "title": "Order timber for the fence",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-06T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "quote",
+            "title": "Get a quote for timber",
+            "project_id": "house",
+            "parent_id": "timber",
+            "position": "a0",
+            "created_at": "2026-11-07T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "curtains",
+            "title": "Choose curtains",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-08T09:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-25T00:00:00.000Z"
+          },
+          {
+            "id": "gutters",
+            "title": "Clear the gutters",
+            "project_id": "house",
+            "parent_id": null,
+            "position": "a4",
+            "created_at": "2026-11-09T09:00:00.000Z",
+            "completed_at": "2026-11-10T09:00:00.000Z"
+          },
+          {
+            "id": "boxes",
+            "title": "Order moving boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-10T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "copy",
+            "title": "Proofread the website copy",
+            "project_id": "launch",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-11T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "elsewhere",
+            "title": "Renew the passport",
+            "project_id": "loose",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-12T09:00:00.000Z",
+            "completed_at": null
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "book-low",
+            "task_id": "book",
+            "tag_id": "low"
+          },
+          {
+            "id": "privacy-low",
+            "task_id": "privacy",
+            "tag_id": "low"
+          },
+          {
+            "id": "waterpick-shopping",
+            "task_id": "waterpick",
+            "tag_id": "shopping"
+          },
+          {
+            "id": "checkup-dad",
+            "task_id": "checkup",
+            "tag_id": "dad"
+          },
+          {
+            "id": "checkup-low",
+            "task_id": "checkup",
+            "tag_id": "low"
+          },
+          {
+            "id": "timber-deep",
+            "task_id": "timber",
+            "tag_id": "deep"
+          },
+          {
+            "id": "quote-phone",
+            "task_id": "quote",
+            "tag_id": "phone"
+          },
+          {
+            "id": "curtains-shopping",
+            "task_id": "curtains",
+            "tag_id": "shopping"
+          },
+          {
+            "id": "gutters-low",
+            "task_id": "gutters",
+            "tag_id": "low"
+          },
+          {
+            "id": "boxes-low",
+            "task_id": "boxes",
+            "tag_id": "low"
+          },
+          {
+            "id": "copy-low",
+            "task_id": "copy",
+            "tag_id": "low"
+          },
+          {
+            "id": "elsewhere-low",
+            "task_id": "elsewhere",
+            "tag_id": "low"
+          }
+        ],
+        "settings": {
+          "personal_folder_id": "home",
+          "work_folder_id": null
+        }
+      },
+      "expect": {
+        "unavailable": {},
+        "perspectives": [
+          {
+            "perspective": "personal",
+            "selection": [],
+            "groups": [
+              {
+                "id": "low",
+                "tasks": [
+                  {
+                    "id": "privacy",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "phone",
+                "tasks": [
+                  {
+                    "id": "quote",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "untagged",
+                "tasks": [
+                  {
+                    "id": "fence",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "perspective": "work",
+            "selection": [],
+            "groups": []
+          }
+        ]
+      }
+    }
+  ]
+}

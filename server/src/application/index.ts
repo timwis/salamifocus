@@ -1,4 +1,5 @@
 import {
+  actionableGroups,
   buildTagTree,
   buildTree,
   deferredUntilColumn,
@@ -10,6 +11,8 @@ import {
   placedTags,
   projectStatusColumn,
   projectStatusOf,
+  scopeFolderColumn,
+  settingsId,
   projectsInSelection,
   pruneOutline,
   shownUnder,
@@ -17,6 +20,7 @@ import {
   unavailability,
   visibilityCondition,
   Visibility,
+  type FolderScope,
   type OrganisationNode,
   type TagNode,
 } from '@salamifocus/domain';
@@ -25,6 +29,7 @@ import { Mutations } from './mutations.ts';
 import { findOperation } from './operations.ts';
 import { Rejection } from './rejection.ts';
 import type {
+  ActionableOutline,
   Actor,
   HistoryEntry,
   InboxEntry,
@@ -33,6 +38,7 @@ import type {
   OperationResult,
   FlaggedTask,
   ProjectOutline,
+  Settings,
   TagOutline,
   TaskView,
 } from './types.ts';
@@ -199,6 +205,56 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       tag: { id: tag.id, name: tag.name, path },
       tasks,
     }));
+  }
+
+  /** The user's settings: which folder each Actionable perspective shows. */
+  async function settings(): Promise<Settings> {
+    const [row] = await sql<{ personal: string | null; work: string | null }[]>`
+      SELECT ${sql(scopeFolderColumn.personal)} AS personal, ${sql(scopeFolderColumn.work)} AS work FROM settings WHERE id = ${settingsId}`;
+    return { folders: { personal: row?.personal ?? null, work: row?.work ?? null } };
+  }
+
+  /**
+   * What Actionable — Personal or Actionable — Work shows: the available tasks in the designated folder and
+   * everything inside it, grouped by tag in sidebar order (a task under each of its tags), oldest first within a
+   * group, then those with no tag. Empty when no folder is designated.
+   */
+  async function actionable(scope: FolderScope): Promise<ActionableOutline> {
+    const folderId = (await settings()).folders[scope];
+    const [tree, tagTree] = await Promise.all([organisation(), tags()]);
+    const projectIds = folderId ? projectsInSelection(tree, [folderId]).map((p) => p.id) : [];
+    if (folderId === null || projectIds.length === 0) return { folderId, groups: [] };
+    const now = clock();
+    const rows = await sql<
+      {
+        id: string;
+        title: string;
+        note: string;
+        projectId: string;
+        deferUntil: string | null;
+        dueAt: string | null;
+        dueBy: string | null;
+        tagIds: string[];
+        unfinishedChildren: number;
+        deferredUntil: string | null;
+        projectStatus: string | null;
+      }[]
+    >`
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.defer_until AS "deferUntil", t.due_at AS "dueAt",
+             ARRAY(SELECT tt.tag_id FROM task_tags tt WHERE tt.task_id = t.id) AS "tagIds",
+             ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
+      FROM tasks t WHERE t.completed_at IS NULL AND t.project_id IN ${sql(projectIds)}
+      ORDER BY t.created_at, t.id`;
+    const available = rows
+      .filter((row) => unavailability({ ...row, completedAt: null }, now).length === 0)
+      .map(({ unfinishedChildren, deferredUntil, projectStatus, ...task }) => task);
+    return {
+      folderId,
+      groups: actionableGroups(placedTags(tagTree), available, (task) => task.tagIds).map(({ tag, tasks }) => ({
+        tag: tag && { id: tag.tag.id, name: tag.tag.name, path: tag.path },
+        tasks,
+      })),
+    };
   }
 
   /**
@@ -387,5 +443,5 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     };
   }
 
-  return { execute, inbox, organisation, projects, tags, tagged, flagged, task, history, operation };
+  return { execute, inbox, organisation, projects, tags, tagged, flagged, settings, actionable, task, history, operation };
 }

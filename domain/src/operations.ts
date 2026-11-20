@@ -30,6 +30,7 @@ export const OperationName = {
   moveTag: 'move_tag',
   tagTask: 'tag_task',
   untagTask: 'untag_task',
+  designateFolder: 'designate_folder',
 } as const;
 
 export type OperationName = (typeof OperationName)[keyof typeof OperationName];

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
+import { untaggedId } from '@salamifocus/domain';
 import { loadScenarios, seed, type ExpectedPerspective, type Ids } from './behaviour.ts';
 import { createHarness, type Harness } from './harness.ts';
 
@@ -23,6 +24,10 @@ async function shown(expected: ExpectedPerspective, ids: Ids): Promise<ExpectedP
     // Every flagged task in the database is listed, so those other examples seeded are left out.
     const tasks = (await h.application.flagged(expected.visibility)).filter((t) => ids.name(t.id) !== undefined);
     return [{ id: 'flagged', tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }];
+  }
+  if (expected.perspective === 'personal' || expected.perspective === 'work') {
+    const { groups } = await h.application.actionable(expected.perspective);
+    return groups.map(({ tag, tasks }) => ({ id: tag ? name(tag.id) : untaggedId, tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }));
   }
   const [tagId] = expected.selection;
   const outline = tagId ? await h.application.tagged(ids.uuid(tagId), expected.visibility) : [];

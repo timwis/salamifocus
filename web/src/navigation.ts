@@ -11,6 +11,9 @@ export const perspectives = [
   { id: 'inbox', name: 'Inbox', visibility: null, sidebar: false },
   { id: 'projects', name: 'Projects', visibility: Visibility.remaining, sidebar: true },
   { id: 'tags', name: 'Tags', visibility: Visibility.remaining, sidebar: true },
+  // Actionable — Personal and Actionable — Work; they show available tasks only.
+  { id: 'personal', name: 'Personal', visibility: null, sidebar: false },
+  { id: 'work', name: 'Work', visibility: null, sidebar: false },
   { id: 'flagged', name: 'Flagged', visibility: Visibility.available, sidebar: false },
 ] as const;
 

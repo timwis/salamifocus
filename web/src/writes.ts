@@ -1,4 +1,14 @@
-import { operationMetadata, OperationName, positionBetween, ProjectKind, ProjectStatus, titleFromCapture } from '@salamifocus/domain';
+import {
+  operationMetadata,
+  OperationName,
+  positionBetween,
+  ProjectKind,
+  ProjectStatus,
+  scopeFolderColumn,
+  settingsId,
+  titleFromCapture,
+  type FolderScope,
+} from '@salamifocus/domain';
 import type { Transaction } from '@powersync/web';
 import { db } from './powersync.ts';
 
@@ -277,4 +287,9 @@ export function untagTask(taskId: string, tagId: string) {
     taskId,
     tagId,
   ]);
+}
+
+/** Chooses the folder an Actionable perspective shows, or with null none. */
+export function designateFolder(scope: FolderScope, folderId: string | null) {
+  return write(OperationName.designateFolder, `UPDATE settings SET ${scopeFolderColumn[scope]} = ?, _metadata = ? WHERE id = ?`, (m) => [folderId, m, settingsId]);
 }

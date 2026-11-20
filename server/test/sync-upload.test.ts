@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
-import { operationMetadata, OperationName } from '@salamifocus/domain';
+import { operationMetadata, OperationName, settingsId } from '@salamifocus/domain';
 import { createHarness, createHttpHarness, type Harness } from './harness.ts';
 
 let h: Harness;
@@ -338,6 +338,19 @@ describe('uploading a client transaction', () => {
     assert.equal((await h.application.task(taskId))?.flagged, false);
     const refused = await upload([patch(OperationName.flagTask, { flagged: 0 }), patch(OperationName.flagTask, { flagged: 1, title: 'Book the dentist' })]);
     assert.deepEqual(refused.map((r) => r.code), ['malformed_operation', 'malformed_operation']);
+  });
+
+  it('designates the folder an Actionable perspective shows, one scope at a time', async () => {
+    const folderId = crypto.randomUUID();
+    await upload([{ op: 'PUT', table: 'folders', id: folderId, data: { name: 'Personal', parent_id: null, position: 'a0' }, metadata: operationMetadata(OperationName.createFolder) }]);
+    const patch = (data: Record<string, unknown>, id = settingsId) => ({ op: 'PATCH', table: 'settings', id, data, metadata: operationMetadata(OperationName.designateFolder) });
+
+    assert.deepEqual((await upload([patch({ personal_folder_id: folderId })])).map((r) => r.outcome), ['applied']);
+    assert.deepEqual((await h.application.settings()).folders, { personal: folderId, work: null });
+    assert.deepEqual((await upload([patch({ personal_folder_id: null })])).map((r) => r.outcome), ['applied']);
+    assert.deepEqual((await h.application.settings()).folders, { personal: null, work: null });
+    const rejected = await upload([patch({ personal_folder_id: folderId, work_folder_id: folderId }), patch({ work_folder_id: folderId }, crypto.randomUUID())]);
+    assert.deepEqual(rejected.map((r) => r.code), ['malformed_operation', 'malformed_operation']);
   });
 
   it('moves a task with its children, the client sending its own copy of their move', async () => {

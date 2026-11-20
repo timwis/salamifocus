@@ -18,10 +18,13 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 1 | Go to Inbox |
 | 2 | Go to Projects (focus goes to the sidebar) |
 | 3 | Go to Tags (focus goes to the sidebar) |
-| 4 | Go to Flagged |
+| 4 | Go to Actionable — Personal |
+| 5 | Go to Actionable — Work |
+| 6 | Go to Flagged |
 | Tab / Shift+Tab | Next / previous region |
 | V / Shift+V | In Projects, Tags and Flagged: show the next / previous of **Available**, **Remaining** and **Everything** (see [Visibility](#visibility)) |
 | C | Capture to the Inbox without leaving where you are. Enter saves and clears the box for the next one; Enter on an empty box or Escape closes it, and focus goes back where it was. The **+ Capture** button does the same |
+| , | Settings: choose the folder Actionable — Personal and Actionable — Work each show. A choice is saved as soon as it is made; Escape or **Done** closes Settings and focus goes back where it was. The **Settings** button does the same |
 
 ## Visibility
 
@@ -32,6 +35,12 @@ Projects, Tags and Flagged can show more or less of the system. The choice is sh
 - **Everything**: completed tasks as well, each in its place, struck through and marked **Completed** with the day and time. Completing a task here leaves it in place.
 
 Clicking a choice does the same as V, without moving keyboard focus.
+
+## Actionable
+
+Actionable — Personal and Actionable — Work (**Personal** and **Work** in the navigation) show the tasks you can work on now in one part of your life: the folder chosen for it in Settings, and every folder and project inside it. The folder is remembered by identity, so renaming or moving it keeps it chosen. Only available tasks are shown (there is no visibility choice), as individual actions without their project's nesting.
+
+Tasks are grouped by tag, under headings with the tag's full path, in sidebar order; within a group the oldest task comes first, so long-lingering tasks stay at the top. A task with several tags appears under each of them, and completing it removes every appearance. Available tasks with no tag come last, under **Untagged**. Groups come and go as tasks are completed, deferred, blocked or become available; when the current task leaves, the task now in its place becomes current. Rows show the task's project and tags, and are edited and completed as in any outline.
 
 ## Perspective navigation
 

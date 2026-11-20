@@ -74,7 +74,7 @@ test('Flagged lists available flagged tasks with their project and tags; deferri
   await phone.tagTask(book, tagId);
 
   await signIn(page);
-  await page.keyboard.press('4');
+  await page.keyboard.press('6');
   await expect(page.getByRole('heading', { name: 'Flagged', level: 2 })).toBeVisible();
   await expect(choice(page, 'Available')).toBeChecked();
   await expect.poll(() => flaggedTitles(page, suffix)).toEqual(['Book the room', 'Chase finance', 'Print handouts']);

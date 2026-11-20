@@ -97,6 +97,17 @@ nav a:focus-visible {
   clip-path: polygon(0 35%, 35% 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
   border-radius: 0.2rem;
 }
+.perspective-personal,
+.perspective-work {
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 0 0.25rem, var(--scope) 0.27rem);
+}
+.perspective-personal {
+  --scope: #2a9d8f;
+}
+.perspective-work {
+  --scope: #5b6ee1;
+}
 .perspective-projects {
   background: radial-gradient(circle at 30% 30%, #2f6fdf 22%, transparent 24%), radial-gradient(circle at 70% 30%, #6c9cf0 22%, transparent 24%),
     radial-gradient(circle at 30% 70%, #6c9cf0 22%, transparent 24%), radial-gradient(circle at 70% 70%, #2f6fdf 22%, transparent 24%);
@@ -652,4 +663,31 @@ header .capture-button {
   font-size: 0.8rem;
   color: var(--muted);
   white-space: pre-wrap;
+}
+
+/* Settings, over whatever perspective is open */
+dialog.settings {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+}
+dialog.settings h2 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+}
+dialog.settings label {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+}
+dialog.settings select {
+  font: inherit;
+  padding: 0.25rem;
+}
+dialog.settings .hint {
+  font-size: 0.8rem;
+  color: var(--muted);
 }
