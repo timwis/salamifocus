@@ -42,18 +42,27 @@ export function useRovingFocus<T extends HTMLElement>(focusedKey: string | null)
 /**
  * Which row of a region is current. When that row disappears (completed,
  * moved away, or removed by sync) the row now at its place becomes current,
- * so focus is never lost. A row just created locally can be awaited until the
- * write shows up.
+ * so focus is never lost, and focus stays with that row if rows are later
+ * added above it. The row that disappeared is still remembered, and is
+ * current again if it comes back (on selecting its project again, say). A
+ * row just created locally can be awaited until the write shows up.
  */
 export function useCurrentRow(keys: readonly string[], initial: string | null = null) {
   const [chosen, setChosen] = useState<string | null>(initial);
   const lastIndex = useRef(0);
   const awaiting = useRef<string | null>(null);
+  // The row standing in for the chosen one while it is missing.
+  const standIn = useRef<string | null>(null);
 
   let index = chosen === null ? -1 : keys.indexOf(chosen);
   if (index !== -1 && awaiting.current === chosen) awaiting.current = null;
   const waiting = index === -1 && chosen !== null && awaiting.current === chosen;
-  if (index === -1 && !waiting && keys.length > 0) index = Math.min(lastIndex.current, keys.length - 1);
+  if (index !== -1 || waiting) standIn.current = null;
+  else if (keys.length > 0) {
+    const followed = standIn.current === null ? -1 : keys.indexOf(standIn.current);
+    index = followed !== -1 ? followed : Math.min(lastIndex.current, keys.length - 1);
+    standIn.current = keys[index]!;
+  }
   if (index !== -1) lastIndex.current = index;
 
   return {

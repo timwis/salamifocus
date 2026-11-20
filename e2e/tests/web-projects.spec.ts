@@ -106,6 +106,34 @@ test('selecting several projects or a folder shows each of their projects', asyn
   await expect(sidebar(page)).toBeHidden();
 });
 
+test('the current task is remembered while another project is selected, and is current again on coming back', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const { folderId } = await phone.createFolder(`Utility room ${run}`, { position: 'a2' });
+  const { projectId } = await phone.createProject(`Worktop ${run}`, { folderId, position: 'a0' });
+  await phone.createProject(`Cupboards ${run}`, { folderId, position: 'a1' });
+  await phone.createTask(projectId, `Measure the worktop ${run}`, 'a0');
+  await phone.createTask(projectId, `Order the worktop ${run}`, 'a1');
+  await phone.createTask(projectId, `Fit the worktop ${run}`, 'a2');
+  await signIn(page);
+  await openProjectsAt(page, projectId, `Worktop ${run}`);
+  const order = page.getByRole('main').getByRole('listitem').filter({ hasText: `Order the worktop ${run}` });
+
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect(order).toBeFocused();
+
+  // Cupboards has only its heading, so its outline puts another row where Order was.
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('ArrowDown');
+  await expect(treeItem(page, `Cupboards ${run}`)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: `Cupboards ${run}`, level: 3 })).toBeVisible();
+  await page.keyboard.press('ArrowUp');
+  await expect(treeItem(page, `Worktop ${run}`)).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Tab');
+  await expect(order).toBeFocused();
+});
+
 test('tasks are added to a project, retitled and reordered from the keyboard, and wait in the Inbox for a tag', async ({ page }) => {
   const phone = await SimulatedDevice.signIn();
   const kitchen = `Kitchen ${run}`;
