@@ -202,6 +202,14 @@ nav a:focus-visible {
   box-sizing: border-box;
   transform: rotate(-45deg) scale(0.85);
 }
+.icon-untagged {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1.5px dashed #8a4fd8;
+  border-radius: 0.15rem 50% 0.15rem 0.15rem;
+  box-sizing: border-box;
+  transform: rotate(-45deg) scale(0.85);
+}
 .hint {
   color: var(--muted);
   font-size: 0.85rem;

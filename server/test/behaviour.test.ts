@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
-import { untaggedId } from '@salamifocus/domain';
+import { untaggedId, type TagNode } from '@salamifocus/domain';
 import { loadScenarios, seed, type ExpectedPerspective, type Ids } from './behaviour.ts';
 import { createHarness, type Harness } from './harness.ts';
 
@@ -11,27 +11,33 @@ before(async () => {
 after(() => h.close());
 
 /** What the server's queries say a perspective shows, in the fixtures' terms. */
-async function shown(expected: ExpectedPerspective, ids: Ids): Promise<ExpectedPerspective['groups']> {
+async function shown(expected: ExpectedPerspective, ids: Ids): Promise<Pick<ExpectedPerspective, 'groups' | 'sidebar'>> {
   const name = (uuid: string) => ids.name(uuid) ?? uuid;
+  if (expected.perspective === 'personal' || expected.perspective === 'work') {
+    const [selected = null] = expected.selection;
+    const { groups, sidebar } = await h.application.actionable(expected.perspective, selected === null || selected === untaggedId ? selected : ids.uuid(selected));
+    const entries = (nodes: TagNode[], depth: number): { id: string; depth: number }[] =>
+      nodes.flatMap((node) => [{ id: name(node.id), depth }, ...entries(node.children, depth + 1)]);
+    return {
+      groups: groups.map(({ tag, tasks }) => ({ id: tag ? name(tag.id) : untaggedId, tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) })),
+      sidebar: [...entries(sidebar.tags, 1), ...(sidebar.untagged ? [{ id: untaggedId, depth: 1 }] : [])],
+    };
+  }
   if (expected.perspective === 'projects') {
     const outline = await h.application.projects(
       expected.selection.map((id) => ids.uuid(id)),
       expected.visibility,
     );
-    return outline.map(({ project, tasks }) => ({ id: name(project.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: t.depth })) }));
+    return { groups: outline.map(({ project, tasks }) => ({ id: name(project.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: t.depth })) })) };
   }
   if (expected.perspective === 'flagged') {
     // Every flagged task in the database is listed, so those other examples seeded are left out.
     const tasks = (await h.application.flagged(expected.visibility)).filter((t) => ids.name(t.id) !== undefined);
-    return [{ id: 'flagged', tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }];
-  }
-  if (expected.perspective === 'personal' || expected.perspective === 'work') {
-    const { groups } = await h.application.actionable(expected.perspective);
-    return groups.map(({ tag, tasks }) => ({ id: tag ? name(tag.id) : untaggedId, tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }));
+    return { groups: [{ id: 'flagged', tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }] };
   }
   const [tagId] = expected.selection;
   const outline = tagId ? await h.application.tagged(ids.uuid(tagId), expected.visibility) : [];
-  return outline.map(({ tag, tasks }) => ({ id: name(tag.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) }));
+  return { groups: outline.map(({ tag, tasks }) => ({ id: name(tag.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) })) };
 }
 
 for (const { scenario, file, examples } of loadScenarios()) {
@@ -45,7 +51,10 @@ for (const { scenario, file, examples } of loadScenarios()) {
           assert.deepEqual((await h.application.task(ids.uuid(task)))?.unavailable, reasons, `availability of ${task}`);
         }
         for (const perspective of example.expect.perspectives) {
-          assert.deepEqual(await shown(perspective, ids), perspective.groups, `${perspective.perspective} with ${perspective.selection.join(', ')} selected, showing ${perspective.visibility ?? 'the default'}`);
+          const { groups, sidebar } = await shown(perspective, ids);
+          const described = `${perspective.perspective} with ${perspective.selection.join(', ')} selected, showing ${perspective.visibility ?? 'the default'}`;
+          assert.deepEqual(groups, perspective.groups, described);
+          if (perspective.sidebar) assert.deepEqual(sidebar, perspective.sidebar, `sidebar of ${described}`);
         }
       });
     }

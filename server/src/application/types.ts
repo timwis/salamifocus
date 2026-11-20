@@ -1,4 +1,4 @@
-import type { FolderScope, ProjectStatus, Unavailable } from '@salamifocus/domain';
+import type { ActionableSidebar, FolderScope, ProjectStatus, Unavailable } from '@salamifocus/domain';
 
 export interface Actor {
   type: 'user';
@@ -86,6 +86,7 @@ export interface Settings {
 
 export interface ActionableOutline {
   folderId: string | null;
+  sidebar: ActionableSidebar;
   /** By tag in sidebar order, then the untagged group (`tag` null); each group's tasks oldest first. */
   groups: {
     tag: TagView | null;

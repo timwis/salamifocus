@@ -153,7 +153,7 @@ export function Shell() {
             ) : place.perspective === 'flagged' ? (
               <FlaggedPerspective place={place} />
             ) : place.perspective === 'personal' || place.perspective === 'work' ? (
-              <ActionablePerspective key={place.perspective} scope={place.perspective} />
+              <ActionablePerspective key={place.perspective} scope={place.perspective} place={place} />
             ) : (
               <Inbox />
             )}

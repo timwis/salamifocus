@@ -18,8 +18,8 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 1 | Go to Inbox |
 | 2 | Go to Projects (focus goes to the sidebar) |
 | 3 | Go to Tags (focus goes to the sidebar) |
-| 4 | Go to Actionable — Personal |
-| 5 | Go to Actionable — Work |
+| 4 | Go to Actionable — Personal (focus goes to the sidebar) |
+| 5 | Go to Actionable — Work (focus goes to the sidebar) |
 | 6 | Go to Flagged |
 | Tab / Shift+Tab | Next / previous region |
 | V / Shift+V | In Projects, Tags and Flagged: show the next / previous of **Available**, **Remaining** and **Everything** (see [Visibility](#visibility)) |
@@ -41,6 +41,15 @@ Clicking a choice does the same as V, without moving keyboard focus.
 Actionable — Personal and Actionable — Work (**Personal** and **Work** in the navigation) show the tasks you can work on now in one part of your life: the folder chosen for it in Settings, and every folder and project inside it. The folder is remembered by identity, so renaming or moving it keeps it chosen. Only available tasks are shown (there is no visibility choice), as individual actions without their project's nesting.
 
 Tasks are grouped by tag, under headings with the tag's full path, in sidebar order; within a group the oldest task comes first, so long-lingering tasks stay at the top. A task with several tags appears under each of them, and completing it removes every appearance. Available tasks with no tag come last, under **Untagged**. Groups come and go as tasks are completed, deferred, blocked or become available; when the current task leaves, the task now in its place becomes current. Rows show the task's project and tags, and are edited and completed as in any outline.
+
+The sidebar shows only the tags that have available tasks here, with the tags above them needed to reach them, and then **Untagged** if any available task has no tag. Tags join and leave it as tasks become available or stop being so. The selected tag stays, even once it has nothing available, until you move off it. With nothing selected, every group shows; selecting a tag shows the groups for it and every tag beneath it, and selecting **Untagged** shows only the tasks with no tag. Tags are created, renamed and moved in the Tags perspective, not here.
+
+| Key | Action |
+|---|---|
+| ↑ / ↓, Home / End | Move and select that entry |
+| Cmd+↑ / Cmd+↓ on macOS, Ctrl+↑ / Ctrl+↓ on Linux | Move without changing the selection |
+| Space | Select the entry, or clear the selection (showing every group) if it is already selected |
+| → / ← | Expand or collapse a tag, or go to its first child or its parent |
 
 ## Perspective navigation
 

@@ -1,4 +1,4 @@
-import { operationMetadata, OperationName } from '@salamifocus/domain';
+import { operationMetadata, OperationName, scopeFolderColumn, settingsId, type FolderScope } from '@salamifocus/domain';
 import { password, serverUrl } from './env.ts';
 
 /**
@@ -129,6 +129,13 @@ export class SimulatedDevice {
         data: { task_id: taskId, tag_id: tagId },
         metadata: operationMetadata(OperationName.tagTask),
       },
+    ]);
+  }
+
+  /** Chooses the folder an Actionable perspective shows. */
+  async designateFolder(scope: FolderScope, folderId: string | null): Promise<void> {
+    await this.upload([
+      { op: 'PATCH', table: 'settings', id: settingsId, data: { [scopeFolderColumn[scope]]: folderId }, metadata: operationMetadata(OperationName.designateFolder) },
     ]);
   }
 

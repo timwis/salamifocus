@@ -46,9 +46,10 @@ export interface TreeSidebarProps<N extends TreeNode> {
   badgeOf?: (node: N) => string | null;
   hint: string;
   collapsedStorageKey: string;
-  create: (kind: string, id: string, name: string, parentId: string | null, position: string) => Promise<void>;
-  rename: (node: N, name: string) => Promise<void>;
-  move: (node: N, parentId: string | null, position: string) => Promise<void>;
+  /** Left out where the tree is not the whole hierarchy (only part of it is shown), so items are not created, renamed or moved there. */
+  create?: (kind: string, id: string, name: string, parentId: string | null, position: string) => Promise<void>;
+  rename?: (node: N, name: string) => Promise<void>;
+  move?: (node: N, parentId: string | null, position: string) => Promise<void>;
 }
 
 interface Row<N extends TreeNode> {
@@ -156,20 +157,24 @@ export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
     if (finished.mode === 'rename') {
       const node = rows.find((r) => r.node.id === finished.id)?.node;
       if (!node || node.name === name) return;
-      await props.rename(node, name);
+      await props.rename?.(node, name);
       return;
     }
     const id = crypto.randomUUID();
     current.await(id);
     onSelect([id]);
-    await props.create(finished.kind.kind, id, name, finished.parentId, finished.position);
+    await props.create?.(finished.kind.kind, id, name, finished.parentId, finished.position);
+  }
+
+  function startRenaming(node: N) {
+    if (props.rename) setEditing({ mode: 'rename', id: node.id });
   }
 
   function reorder(row: Row<N>, by: -1 | 1) {
     const target = row.index + by;
     if (target < 0 || target >= row.siblings.length) return;
     const others = row.siblings.filter((s) => s.id !== row.node.id);
-    void props.move(row.node, row.parentId, positionAt(others, target));
+    void props.move?.(row.node, row.parentId, positionAt(others, target));
   }
 
   function moveIntoItemAbove(row: Row<N>) {
@@ -177,14 +182,14 @@ export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
     if (!above || !canContain(above)) return;
     const children = childrenOf(above);
     setCollapsed(above.id, false);
-    void props.move(row.node, above.id, positionAt(children, children.length));
+    void props.move?.(row.node, above.id, positionAt(children, children.length));
   }
 
   function moveOutOfParent(row: Row<N>) {
     const parent = rows.find((r) => r.node.id === row.parentId);
     if (!parent) return;
     const others = parent.siblings.filter((s) => s.id !== row.node.id);
-    void props.move(row.node, parent.parentId, positionAt(others, parent.index + 1));
+    void props.move?.(row.node, parent.parentId, positionAt(others, parent.index + 1));
   }
 
   function onKeyDown(event: KeyboardEvent) {
@@ -232,7 +237,7 @@ export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
         return handled(), toggle(focused.node.id);
       case 'Enter':
       case 'F2':
-        return handled(), setEditing({ mode: 'rename', id: focused.node.id });
+        return handled(), startRenaming(focused.node);
     }
   }
 
@@ -295,7 +300,7 @@ export function TreeSidebar<N extends TreeNode>(props: TreeSidebarProps<N>) {
               className="tree-row"
               style={indent(depth)}
               onClick={(event) => onRowClick(event, index)}
-              onDoubleClick={() => setEditing({ mode: 'rename', id: node.id })}
+              onDoubleClick={() => startRenaming(node)}
             >
               <span
                 className={canExpand ? `disclosure ${isCollapsed ? 'closed' : 'open'}` : 'disclosure'}

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { untaggedId } from '@salamifocus/domain';
 import { connect } from '../../server/src/db.ts';
 import { loadScenarios, seed, unseed, type ExpectedPerspective, type Ids } from '../../server/test/behaviour.ts';
 import { databaseUrl } from '../support/env.ts';
@@ -25,6 +26,14 @@ async function shownRows(page: Page) {
       ),
     })),
   );
+}
+
+/** The sidebar's entries, in the fixtures' terms. */
+async function shownSidebar(page: Page, ids: Ids) {
+  const items = await page
+    .locator('[data-region="sidebar"] [role="treeitem"]')
+    .evaluateAll((rows) => rows.map((row) => ({ key: (row as HTMLElement).dataset.key ?? '', level: Number(row.getAttribute('aria-level')) })));
+  return items.map(({ key, level }) => ({ id: ids.name(key) ?? key, depth: level }));
 }
 
 /** What the outline shows, in the fixtures' terms, and the availability each row shows. */
@@ -55,10 +64,11 @@ for (const { scenario, file, examples } of loadScenarios()) {
           await signIn(page);
           for (const perspective of example.expect.perspectives) {
             const show = perspective.visibility ? `?show=${perspective.visibility}` : '';
-            await page.goto(`/${perspective.perspective}/${perspective.selection.map((id) => ids.uuid(id)).join(',')}${show}`);
+            await page.goto(`/${perspective.perspective}/${perspective.selection.map((id) => (id === untaggedId ? id : ids.uuid(id))).join(',')}${show}`);
             // Flagged lists every flagged task, and other tests share this database, so only the example's own are compared.
             const onlySeeded = perspective.perspective === 'flagged';
             await expect.poll(async () => (await shown(page, ids, onlySeeded)).groups).toEqual(perspective.groups);
+            if (perspective.sidebar) await expect.poll(() => shownSidebar(page, ids)).toEqual(perspective.sidebar);
             const { unavailable } = await shown(page, ids, onlySeeded);
             // Only the listed tasks are checked, and only where this perspective shows them.
             for (const [task, reasons] of Object.entries(example.expect.unavailable)) {

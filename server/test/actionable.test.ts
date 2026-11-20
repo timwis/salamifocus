@@ -27,7 +27,7 @@ const designate = (scope: string, folderId: string | null) => perform(OperationN
 describe('designated folders', () => {
   it('starts with no folder designated, and nothing to show', async () => {
     assert.deepEqual((await h.application.settings()).folders, { personal: null, work: null });
-    assert.deepEqual(await h.application.actionable(FolderScope.work), { folderId: null, groups: [] });
+    assert.deepEqual(await h.application.actionable(FolderScope.work), { folderId: null, sidebar: { tags: [], untagged: false }, groups: [] });
   });
 
   it('keeps each scope’s folder by identity, so renaming or moving it keeps it designated', async () => {

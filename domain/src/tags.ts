@@ -68,7 +68,11 @@ export function placedTags(tree: readonly TagNode[]): PlacedTag[] {
 
 /** A tag and every tag beneath it, in sidebar order, with full paths. Empty if the tag is not in the tree. */
 export function tagBranch(tree: readonly TagNode[], tagId: string): PlacedTag[] {
-  const placed = placedTags(tree);
+  return branchIn(placedTags(tree), tagId);
+}
+
+/** `tagBranch`, from tags already placed (by `placedTags`). */
+export function branchIn(placed: readonly PlacedTag[], tagId: string): PlacedTag[] {
   const start = placed.findIndex((p) => p.tag.id === tagId);
   if (start === -1) return [];
   const depth = placed[start]!.path.length;
@@ -88,7 +92,16 @@ export interface TagGroup<T> extends PlacedTag {
  * same task.
  */
 export function groupByTag<T>(branch: readonly PlacedTag[], tasks: readonly T[], tagsOf: (task: T) => readonly string[]): TagGroup<T>[] {
-  return branch
-    .map((p) => ({ ...p, tasks: tasks.filter((task) => tagsOf(task).includes(p.tag.id)) }))
-    .filter((group) => group.tasks.length > 0);
+  const byTag = new Map<string, T[]>();
+  for (const task of tasks) {
+    for (const id of new Set(tagsOf(task))) {
+      const tagged = byTag.get(id);
+      if (tagged) tagged.push(task);
+      else byTag.set(id, [task]);
+    }
+  }
+  return branch.flatMap((p) => {
+    const tagged = byTag.get(p.tag.id);
+    return tagged ? [{ ...p, tasks: tagged }] : [];
+  });
 }

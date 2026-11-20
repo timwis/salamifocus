@@ -14,6 +14,8 @@ export interface ExpectedPerspective {
   /** Absent means the perspective's default: Remaining, or Available for Flagged. */
   visibility?: Visibility;
   groups: { id: string; tasks: { id: string; depth: number }[] }[];
+  /** For Actionable: the sidebar's entries, top to bottom, with their nesting depth (1 at the top level). */
+  sidebar?: { id: string; depth: number }[];
 }
 
 export interface Example {

@@ -1,5 +1,5 @@
 import {
-  actionableGroups,
+  actionableView,
   buildTagTree,
   buildTree,
   deferredUntilColumn,
@@ -217,13 +217,15 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   /**
    * What Actionable — Personal or Actionable — Work shows: the available tasks in the designated folder and
    * everything inside it, grouped by tag in sidebar order (a task under each of its tags), oldest first within a
-   * group, then those with no tag. Empty when no folder is designated.
+   * group. With no tag selected, every group shows, then the tasks with no tag; selecting a tag shows its branch,
+   * and selecting `untaggedId` only the untagged tasks. The sidebar holds only the tags with available tasks and
+   * their ancestors (and the selected tag). Empty when no folder is designated.
    */
-  async function actionable(scope: FolderScope): Promise<ActionableOutline> {
-    const folderId = (await settings()).folders[scope];
-    const [tree, tagTree] = await Promise.all([organisation(), tags()]);
+  async function actionable(scope: FolderScope, selected: string | null = null): Promise<ActionableOutline> {
+    const [{ folders }, tree, tagTree] = await Promise.all([settings(), organisation(), tags()]);
+    const folderId = folders[scope];
     const projectIds = folderId ? projectsInSelection(tree, [folderId]).map((p) => p.id) : [];
-    if (folderId === null || projectIds.length === 0) return { folderId, groups: [] };
+    if (folderId === null || projectIds.length === 0) return { folderId, sidebar: actionableView(tagTree, selected, [], () => []).sidebar, groups: [] };
     const now = clock();
     const rows = await sql<
       {
@@ -243,14 +245,16 @@ export function createApplication({ sql, clock = () => new Date() }: Application
       SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.defer_until AS "deferUntil", t.due_at AS "dueAt",
              ARRAY(SELECT tt.tag_id FROM task_tags tt WHERE tt.task_id = t.id) AS "tagIds",
              ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
-      FROM tasks t WHERE t.completed_at IS NULL AND t.project_id IN ${sql(projectIds)}
+      FROM tasks t WHERE ${unfinishedUnless(sql, Visibility.available)} AND t.project_id IN ${sql(projectIds)}
       ORDER BY t.created_at, t.id`;
     const available = rows
-      .filter((row) => unavailability({ ...row, completedAt: null }, now).length === 0)
+      .filter((row) => shownUnder(Visibility.available, unavailability({ ...row, completedAt: null }, now)))
       .map(({ unfinishedChildren, deferredUntil, projectStatus, ...task }) => task);
+    const { groups, sidebar } = actionableView(tagTree, selected, available, (task) => task.tagIds);
     return {
       folderId,
-      groups: actionableGroups(placedTags(tagTree), available, (task) => task.tagIds).map(({ tag, tasks }) => ({
+      sidebar,
+      groups: groups.map(({ tag, tasks }) => ({
         tag: tag && { id: tag.tag.id, name: tag.tag.name, path: tag.path },
         tasks,
       })),
