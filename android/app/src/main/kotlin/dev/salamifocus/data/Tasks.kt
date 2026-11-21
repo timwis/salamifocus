@@ -65,9 +65,10 @@ fun operationMetadata(op: String, opId: String = UUID.randomUUID().toString()): 
 
 data class InboxTask(val id: String, val title: String, val waitingToUpload: Boolean)
 
-// Whether a local change to the task with this id has not uploaded yet.
+// Whether a local change to the task with this id has not uploaded yet. The
+// subquery does not depend on the row, so SQLite reads the queue once per query.
 private fun waitingToUploadSql(idExpression: String) =
-    "EXISTS (SELECT 1 FROM ps_crud c WHERE json_extract(c.data, '\$.type') = 'tasks' AND json_extract(c.data, '\$.id') = $idExpression)"
+    "$idExpression IN (SELECT json_extract(data, '\$.id') FROM ps_crud WHERE json_extract(data, '\$.type') = 'tasks')"
 
 class Tasks(private val db: PowerSyncDatabase) {
     /**
