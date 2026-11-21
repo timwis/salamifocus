@@ -23,6 +23,8 @@ Fastest first:
 3. `./gradlew compileDebugKotlin` in `android/`
 4. `pnpm test:e2e:web`, and `pnpm test:e2e:android` if an emulator is running
 
+Each checkout's e2e runs get their own stack (Compose project `salamifocus-e2e-<checkout directory>`) on free ports, so web e2e runs in different checkouts can happen at the same time. Android e2e runs share the one emulator, so only one can happen at a time per machine.
+
 If you can't run a check, say so in your summary.
 
 The TypeScript runs directly on Node with no build step. That rules out parameter properties, enums and namespaces (`erasableSyntaxOnly`), and imports need the `.ts` extension.
@@ -39,5 +41,5 @@ The TypeScript runs directly on Node with no build step. That rules out paramete
 - Create them in `.worktrees/` (gitignored): `git worktree add .worktrees/<name> -b <name>`.
 - Copy `.env` (and `android/local.properties` if it exists), then run `mise trust && mise install && pnpm install`.
 - `.planning/` (tickets) exists only in the main checkout.
-- Worktrees share one dev stack (Compose project `salamifocus`, app server on :3100). The e2e stack uses fixed ports, so only one e2e run can happen at a time per machine. Check `docker compose -p salamifocus-e2e ps` before starting one.
+- Worktrees share one dev stack (Compose project `salamifocus`, app server on :3100).
 - Stop processes you started by PID. Broad `pkill -f` patterns can kill other agents' processes or Docker.

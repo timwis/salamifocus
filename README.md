@@ -50,7 +50,7 @@ pnpm test
 
 The server tests create a throwaway database per test file on the Postgres from `compose.yaml` (`TEST_DATABASE_URL`) and drive the application's public operations and queries, or its HTTP endpoints as a client would. Both the server tests and the web end-to-end tests also run every example in `fixtures/`, so the clients are held to the same expected behaviour.
 
-The end-to-end tests drive the real clients. Each run starts its own throwaway stack (a second Compose project, `salamifocus-e2e`, from `compose.e2e.yaml`) with an in-memory Postgres, its own PowerSync and its own app server on port 3101. It removes the stack afterwards, so development data is never touched. Docker must be running; the development stack need not be.
+The end-to-end tests drive the real clients. Each run starts its own throwaway stack (a Compose project per checkout, `salamifocus-e2e-<checkout directory>`, from `compose.e2e.yaml`) with an in-memory Postgres, its own PowerSync and its own app server, all on free ports picked at the start of the run (`e2e/support/ports.ts`). It removes the stack afterwards, so development data is never touched, and runs in different checkouts don't get in each other's way. Docker must be running; the development stack need not be.
 
 ```sh
 pnpm test:e2e:web       # web client in Chromium; extra arguments go to Playwright

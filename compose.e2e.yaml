@@ -1,10 +1,11 @@
 # Layered over compose.yaml for end-to-end tests (see e2e/support/stack.ts):
-# a separate project whose Postgres keeps nothing on disk, on ports that do
-# not clash with the development stack.
+# a separate project per checkout whose Postgres keeps nothing on disk, on
+# free ports the runner picks so that it does not clash with development or
+# with runs in other checkouts.
 services:
   postgres:
     ports: !override
-      - "54339:5432"
+      - "${E2E_POSTGRES_PORT:?set by e2e/support/stack.ts}:5432"
     volumes: !override
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     tmpfs:
@@ -12,6 +13,6 @@ services:
 
   powersync:
     ports: !override
-      - "8090:8080"
+      - "${E2E_POWERSYNC_PORT:?set by e2e/support/stack.ts}:8080"
     environment:
-      PS_JWKS_URL: http://host.docker.internal:3101/.well-known/jwks.json
+      PS_JWKS_URL: http://host.docker.internal:${E2E_SERVER_PORT:?set by e2e/support/stack.ts}/.well-known/jwks.json

@@ -1,13 +1,25 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { basename } from 'node:path';
 import { generateSigningKeyPem } from '../../server/src/auth/signing.ts';
 import { hashPassword } from '../../server/src/auth/password.ts';
 import { databaseUrl, password, ports, serverUrl } from './env.ts';
 
 const root = new URL('../../', import.meta.url).pathname;
-const compose = ['compose', '-p', 'salamifocus-e2e', '-f', 'compose.yaml', '-f', 'compose.e2e.yaml'];
+// One Compose project per checkout, named after its directory, so a run only
+// ever removes its own checkout's stack (including one left behind by a run
+// that crashed).
+const checkout = basename(root).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+export const project = `salamifocus-e2e-${checkout}`;
+const compose = ['compose', '-p', project, '-f', 'compose.yaml', '-f', 'compose.e2e.yaml'];
+const composeEnv = {
+  ...process.env,
+  E2E_POSTGRES_PORT: String(ports.postgres),
+  E2E_POWERSYNC_PORT: String(ports.powersync),
+  E2E_SERVER_PORT: String(ports.server),
+};
 
 function docker(...args: string[]) {
-  execFileSync('docker', [...compose, ...args], { cwd: root, stdio: 'inherit' });
+  execFileSync('docker', [...compose, ...args], { cwd: root, env: composeEnv, stdio: 'inherit' });
 }
 
 export async function waitFor(url: string, timeoutMs = 60_000) {

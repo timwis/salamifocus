@@ -2,8 +2,12 @@
 // throwaway stack, with a network switch between the emulator and the server
 // so the tests can take the phone offline. Needs JDK 17.
 import { join } from 'node:path';
-import { ports } from './support/env.ts';
-import { run, startProcess, startStack, waitFor } from './support/stack.ts';
+import { allocatePorts } from './support/ports.ts';
+
+// The ports must be chosen before anything reads them from env.ts.
+await allocatePorts();
+const { ports } = await import('./support/env.ts');
+const { run, startProcess, startStack, waitFor } = await import('./support/stack.ts');
 
 const host = 'http://10.0.2.2'; // The development machine, as the emulator sees it.
 const stack = await startStack();

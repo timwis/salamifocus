@@ -1,6 +1,10 @@
 // Runs the web end-to-end tests against a fresh throwaway stack. Extra
 // arguments go to Playwright, e.g. `pnpm test:e2e:web --headed`.
-import { run, startStack } from './support/stack.ts';
+import { allocatePorts } from './support/ports.ts';
+
+// The ports must be chosen before anything reads them from env.ts.
+await allocatePorts();
+const { run, startStack } = await import('./support/stack.ts');
 
 const stack = await startStack();
 process.on('SIGINT', () => void stack.stop().then(() => process.exit(130)));
