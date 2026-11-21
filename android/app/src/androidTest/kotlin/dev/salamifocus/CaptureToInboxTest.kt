@@ -18,7 +18,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.powersync.db.getString
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import dev.salamifocus.data.Session
+import dev.salamifocus.data.UploadWorker
 import dev.salamifocus.ui.CaptureActivity
 import dev.salamifocus.ui.MainActivity
 import kotlinx.coroutines.runBlocking
@@ -27,6 +30,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
@@ -101,6 +105,7 @@ class CaptureToInboxTest {
         waitForTask(second, waitingToUpload = true)
         compose.onNodeWithTag("capture-message").assertTextEquals("Saved on this phone")
         waitForText("1 change waiting to upload", substring = true)
+        assertTrue(uploadJob() in setOf(WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING))
 
         // Meanwhile the web, which is still online, rewords the first capture.
         val web = SimulatedWebClient.signIn(directServerUrl, password)
@@ -110,6 +115,7 @@ class CaptureToInboxTest {
         network("online")
         waitForText("All changes uploaded", substring = true)
         compose.onNodeWithTag("capture-message").assertTextEquals("Uploaded")
+        compose.waitUntil(timeoutMillis = 30_000) { uploadJob() == WorkInfo.State.SUCCEEDED }
         waitForTask(second, waitingToUpload = false)
         waitForTask("Call the garage about the MOT $run")
         assertEquals("applied", web.rename(localTaskId(second), "Renew the parking permit $run"))
@@ -177,6 +183,10 @@ class CaptureToInboxTest {
             throw AssertionError("\"$text\" never appeared", e)
         }
     }
+
+    /** The background job that keeps the app alive to upload. */
+    private fun uploadJob(): WorkInfo.State? =
+        WorkManager.getInstance(app).getWorkInfosForUniqueWork(UploadWorker.NAME).get().lastOrNull()?.state
 
     private fun localTaskId(title: String): String = runBlocking {
         app.database.get("SELECT id FROM tasks WHERE title = ?", listOf(title)) { it.getString("id") }

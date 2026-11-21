@@ -8,9 +8,13 @@ import dev.salamifocus.data.Connector
 import dev.salamifocus.data.ServerApi
 import dev.salamifocus.data.SessionStore
 import dev.salamifocus.data.Tasks
+import dev.salamifocus.data.UploadWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
 class SalamifocusApp : Application() {
@@ -38,6 +42,15 @@ class SalamifocusApp : Application() {
                 if (session == null) database.disconnect()
                 else database.connect(Connector(sessions, api))
             }
+        }
+
+        // Whenever there are changes to upload and a session to upload them
+        // with, queue a job so they still upload if the app closes first.
+        scope.launch {
+            combine(tasks.pendingUploads(), sessions.session) { pending, session -> pending > 0 && session != null }
+                .distinctUntilChanged()
+                .filter { it }
+                .collect { UploadWorker.schedule(this@SalamifocusApp) }
         }
     }
 }
