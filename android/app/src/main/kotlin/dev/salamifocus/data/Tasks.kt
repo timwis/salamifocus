@@ -93,14 +93,15 @@ class Tasks(private val db: PowerSyncDatabase) {
     }
 
     /**
-     * Unfinished tasks still lacking a project or a tag, oldest first. This
-     * repeats the Inbox rule in domain/src/inbox.ts.
+     * Unfinished tasks still lacking a project or a tag, newest first, so
+     * fresh captures and their upload state are in view. This repeats the
+     * Inbox rule in domain/src/inbox.ts.
      */
     fun inbox(): Flow<List<InboxTask>> =
         db.watch(
             "SELECT t.id, t.title, ${waitingToUploadSql("t.id")} AS waiting FROM tasks t WHERE t.completed_at IS NULL " +
                 "AND (t.project_id IS NULL OR NOT EXISTS (SELECT 1 FROM task_tags tt WHERE tt.task_id = t.id)) " +
-                "ORDER BY t.created_at, t.id",
+                "ORDER BY t.created_at DESC, t.id DESC",
         ) { cursor ->
             InboxTask(id = cursor.getString("id"), title = cursor.getString("title"), waitingToUpload = cursor.getLong("waiting") != 0L)
         }
