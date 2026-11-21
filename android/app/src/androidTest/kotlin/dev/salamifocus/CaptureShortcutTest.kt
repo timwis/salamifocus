@@ -10,7 +10,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToLog
 import androidx.core.view.ViewCompat
@@ -68,15 +72,18 @@ class CaptureShortcutTest {
         compose.onNodeWithTag("capture-field").assertTextEquals("Capture", "")
     }
 
+    @OptIn(ExperimentalTestApi::class)
     @Test
     fun severalCapturesInQuickSuccessionAllSave() {
         val texts = (1..5).map { "quick capture $it $run" }
-        for (text in texts) {
+        for ((i, text) in texts.withIndex()) {
             compose.onNodeWithTag("capture-field").performTextInput(text)
-            compose.onNodeWithText("Save").performClick()
+            // Alternate the button with a hardware keyboard's Enter, which should save rather than add a line.
+            if (i % 2 == 0) compose.onNodeWithText("Save").performClick()
+            else compose.onNodeWithTag("capture-field").performKeyInput { pressKey(Key.Enter) }
         }
         waitFor("five saves") { compose.onAllNodesWithText("Saved on this phone", substring = true).fetchSemanticsNodes().size == 5 }
-        assertEquals(5L, count("SELECT count(*) AS n FROM tasks WHERE title LIKE ?", "quick capture % $run"))
+        for (text in texts) assertEquals(1L, count("SELECT count(*) AS n FROM tasks WHERE title = ?", text))
     }
 
     @Test
