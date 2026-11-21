@@ -152,3 +152,13 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
 A debug build of the app is signed with a different key, so remove it first with `adb uninstall dev.salamifocus`. The phone must be connected to the private network to reach the server.
+
+To capture from the home screen, long-press the app icon and drag **Capture** out of its shortcuts. It opens straight to a text field with the keyboard up, and saves to the Inbox even offline or signed out. Captures upload when the phone is next online, even if the app is closed.
+
+To measure how long the shortcut takes to get to a keyboard from a stopped app, with the phone connected:
+
+```sh
+adb shell am force-stop dev.salamifocus && adb logcat -c
+adb shell am start -W -n dev.salamifocus/.ui.CaptureActivity   # TotalTime: first frame
+adb logcat -d | grep "Fully drawn dev.salamifocus"              # keyboard up, ready to type
+```
