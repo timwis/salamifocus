@@ -42,7 +42,7 @@ test('Agendas groups remaining tasks by the people beneath the People tag chosen
   }
 
   await signIn(page);
-  await page.keyboard.press('7');
+  await page.keyboard.press('8');
   await expect(page.getByRole('heading', { name: 'Agendas', level: 2 })).toBeVisible();
   // Another test may have chosen a People tag already.
   await phone.designatePeopleTag(null);
@@ -121,7 +121,7 @@ test('the Agendas sidebar lists the people with tasks shown, and selecting one s
   await phone.designatePeopleTag(people);
 
   await signIn(page);
-  await page.keyboard.press('7');
+  await page.keyboard.press('8');
   // Nobody has no tasks, so is left out.
   await expect.poll(() => shownSidebar(page)).toEqual(['Benedict', 'Clan', '  Granny']);
 

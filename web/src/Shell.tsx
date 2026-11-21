@@ -88,7 +88,7 @@ export function Shell() {
         setSettingsOpen(true);
         return;
       }
-      const perspective = perspectives[Number(event.key) - 1];
+      const perspective = perspectives.find((p) => p.key === event.key);
       if (!perspective) return;
       event.preventDefault();
       switchTo(perspective.id);
@@ -197,7 +197,7 @@ function PerspectiveNav({
   return (
     <nav aria-label="Perspectives" data-region="perspectives">
       <ul ref={roving.ref} onKeyDown={onKeyDown} {...roving.handlers}>
-        {perspectives.map((perspective, index) => (
+        {perspectives.map((perspective) => (
           <li key={perspective.id}>
             <a
               href={perspectivePath(perspective.id)}
@@ -209,7 +209,7 @@ function PerspectiveNav({
               data-key={perspective.id}
               tabIndex={perspective.id === current ? 0 : -1}
               aria-current={perspective.id === current ? 'page' : undefined}
-              aria-keyshortcuts={String(index + 1)}
+              aria-keyshortcuts={perspective.key}
             >
               <span className={`perspective-icon perspective-${perspective.id}`} aria-hidden />
               {perspective.name}

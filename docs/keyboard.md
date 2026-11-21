@@ -21,7 +21,7 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 4 | Go to Actionable — Personal (focus goes to the sidebar) |
 | 5 | Go to Actionable — Work (focus goes to the sidebar) |
 | 6 | Go to Flagged |
-| 7 | Go to Agendas (focus goes to the sidebar) |
+| 8 | Go to Agendas (focus goes to the sidebar) |
 | Tab / Shift+Tab | Next / previous region |
 | V / Shift+V | In Projects, Tags, Flagged and Agendas: show the next / previous of **Available**, **Remaining** and **Everything** (see [Visibility](#visibility)) |
 | C | Capture to the Inbox without leaving where you are. Enter saves and clears the box for the next one; Enter on an empty box or Escape closes it, and focus goes back where it was. The **+ Capture** button does the same |
