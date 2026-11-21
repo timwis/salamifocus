@@ -53,7 +53,11 @@ fun InboxScreen(app: SalamifocusApp) {
         )
         CaptureField(capture, modifier = Modifier.padding(vertical = 12.dp))
         capture.recent.firstOrNull()?.let {
-            CaptureOutcome(app, it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("capture-message"))
+            CaptureOutcome(app, it, named = true, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("capture-message"))
+        }
+        // Earlier failures stay in view, since a later capture replaces the message above.
+        capture.recent.drop(1).filter { it.result is CaptureResult.Failed }.forEach {
+            CaptureOutcome(app, it, named = true)
         }
         LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f).testTag("inbox")) {
             items(inbox, key = { it.id }) { task ->

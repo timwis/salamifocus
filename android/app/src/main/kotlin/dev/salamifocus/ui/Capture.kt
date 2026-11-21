@@ -116,7 +116,7 @@ fun CaptureField(state: CaptureState, modifier: Modifier = Modifier, fieldModifi
  * this phone, and "Uploaded" only once the server has acknowledged it.
  */
 @Composable
-fun CaptureOutcome(app: SalamifocusApp, capture: RecentCapture, modifier: Modifier = Modifier) {
+fun CaptureOutcome(app: SalamifocusApp, capture: RecentCapture, modifier: Modifier = Modifier, named: Boolean = false) {
     when (val result = capture.result) {
         CaptureResult.Saving -> Text("Saving…", modifier = modifier)
         is CaptureResult.Saved -> {
@@ -131,7 +131,7 @@ fun CaptureOutcome(app: SalamifocusApp, capture: RecentCapture, modifier: Modifi
             Text(text, modifier = modifier)
         }
         is CaptureResult.Failed -> Text(
-            "Could not save: ${result.reason}",
+            if (named) "Could not save “${capture.text}”: ${result.reason}" else "Could not save: ${result.reason}",
             color = MaterialTheme.colorScheme.error,
             modifier = modifier,
         )

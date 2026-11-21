@@ -143,6 +143,26 @@ class CaptureToInboxTest {
         waitForTask("Post the birthday card, renamed $run")
     }
 
+    @Test
+    fun aCaptureThatCouldNotBeStoredStaysShownAfterTheNextCapture() {
+        val failed = "this will not save $run"
+        runBlocking {
+            app.database.execute("CREATE TRIGGER fail_local_writes BEFORE INSERT ON ps_crud BEGIN SELECT RAISE(ABORT, 'simulated storage failure'); END")
+        }
+        try {
+            capture(failed)
+            waitForText("Could not save “$failed”", substring = true)
+        } finally {
+            runBlocking { app.database.execute("DROP TRIGGER IF EXISTS fail_local_writes") }
+        }
+
+        val saved = "this one will save $run"
+        compose.onNodeWithTag("capture-field").performTextReplacement(saved)
+        compose.onNodeWithText("Save").performClick()
+        waitForTask(saved)
+        compose.onNodeWithText("Could not save “$failed”", substring = true).assertExists()
+    }
+
     private fun signIn() {
         compose.onNodeWithTag("server-url").performTextReplacement(serverUrl)
         compose.onNodeWithTag("password").performTextInput(password)
