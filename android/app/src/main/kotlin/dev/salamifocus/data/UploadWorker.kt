@@ -30,12 +30,13 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     companion object {
         const val NAME = "upload"
 
-        // Replaces any queued or running job, so a job always starts after the latest change.
+        // Queues a job after any existing one, so a job always starts after the latest change.
+        // Replacing would cancel the job that started the process, since start-up schedules again.
         fun schedule(context: Context) {
             val request = OneTimeWorkRequestBuilder<UploadWorker>()
                 .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))
                 .build()
-            WorkManager.getInstance(context).enqueueUniqueWork(NAME, ExistingWorkPolicy.REPLACE, request)
+            WorkManager.getInstance(context).enqueueUniqueWork(NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
         }
     }
 }

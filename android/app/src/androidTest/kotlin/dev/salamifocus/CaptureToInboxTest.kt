@@ -105,7 +105,7 @@ class CaptureToInboxTest {
         waitForTask(second, waitingToUpload = true)
         compose.onNodeWithTag("capture-message").assertTextEquals("Saved on this phone")
         waitForText("1 change waiting to upload", substring = true)
-        assertTrue(uploadJob() in setOf(WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING))
+        assertTrue("An upload job should be waiting", uploadJobs().any { !it.isFinished })
 
         // Meanwhile the web, which is still online, rewords the first capture.
         val web = SimulatedWebClient.signIn(directServerUrl, password)
@@ -115,7 +115,7 @@ class CaptureToInboxTest {
         network("online")
         waitForText("All changes uploaded", substring = true)
         compose.onNodeWithTag("capture-message").assertTextEquals("Uploaded")
-        compose.waitUntil(timeoutMillis = 30_000) { uploadJob() == WorkInfo.State.SUCCEEDED }
+        compose.waitUntil(timeoutMillis = 30_000) { uploadJobs().all { it == WorkInfo.State.SUCCEEDED } }
         waitForTask(second, waitingToUpload = false)
         waitForTask("Call the garage about the MOT $run")
         assertEquals("applied", web.rename(localTaskId(second), "Renew the parking permit $run"))
@@ -184,9 +184,9 @@ class CaptureToInboxTest {
         }
     }
 
-    /** The background job that keeps the app alive to upload. */
-    private fun uploadJob(): WorkInfo.State? =
-        WorkManager.getInstance(app).getWorkInfosForUniqueWork(UploadWorker.NAME).get().lastOrNull()?.state
+    /** The states of the background jobs that keep the app alive to upload. */
+    private fun uploadJobs(): List<WorkInfo.State> =
+        WorkManager.getInstance(app).getWorkInfosForUniqueWork(UploadWorker.NAME).get().map { it.state }
 
     private fun localTaskId(title: String): String = runBlocking {
         app.database.get("SELECT id FROM tasks WHERE title = ?", listOf(title)) { it.getString("id") }
