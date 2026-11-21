@@ -81,6 +81,7 @@ fun CaptureScreen(app: SalamifocusApp, onOpenInbox: () -> Unit) {
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) {}) {
                     Text(capture.text)
                     CaptureOutcome(
+                        app,
                         capture,
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     )

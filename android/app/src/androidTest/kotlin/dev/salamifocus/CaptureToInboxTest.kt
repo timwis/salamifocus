@@ -4,6 +4,7 @@ import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.printToLog
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performScrollToNode
@@ -17,6 +18,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.powersync.db.getString
+import dev.salamifocus.data.Session
+import dev.salamifocus.ui.CaptureActivity
 import dev.salamifocus.ui.MainActivity
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -95,8 +98,8 @@ class CaptureToInboxTest {
         waitForText("Offline", substring = true)
         val second = "renew parking permit $run"
         capture(second)
-        waitForTask(second)
-        compose.onNodeWithText("Saved on this phone").assertExists()
+        waitForTask(second, waitingToUpload = true)
+        compose.onNodeWithTag("capture-message").assertTextEquals("Saved on this phone")
         waitForText("1 change waiting to upload", substring = true)
 
         // Meanwhile the web, which is still online, rewords the first capture.
@@ -106,9 +109,32 @@ class CaptureToInboxTest {
 
         network("online")
         waitForText("All changes uploaded", substring = true)
+        compose.onNodeWithTag("capture-message").assertTextEquals("Uploaded")
+        waitForTask(second, waitingToUpload = false)
         waitForTask("Call the garage about the MOT $run")
         assertEquals("applied", web.rename(localTaskId(second), "Renew the parking permit $run"))
         waitForTask("Renew the parking permit $run")
+    }
+
+    @Test
+    fun aCaptureFromTheShortcutWithAnExpiredSessionUploadsAfterSigningInAgain() {
+        app.sessions.signedIn(Session(serverUrl, "expired-$run"))
+        waitForText("Sign in")
+        scenario?.close()
+
+        val captured = "post the birthday card $run"
+        ActivityScenario.launch(CaptureActivity::class.java).use {
+            compose.onNodeWithTag("capture-field").performTextInput(captured)
+            compose.onNodeWithText("Save").performClick()
+            waitForText("Saved on this phone · sign in to upload")
+        }
+
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+        signIn()
+        waitForTask(captured, waitingToUpload = false)
+        val web = SimulatedWebClient.signIn(directServerUrl, password)
+        assertEquals("applied", web.rename(localTaskId(captured), "Post the birthday card, renamed $run"))
+        waitForTask("Post the birthday card, renamed $run")
     }
 
     private fun signIn() {
@@ -123,11 +149,17 @@ class CaptureToInboxTest {
         compose.onNodeWithText("Save").performClick()
     }
 
-    /** Waits for a task to be in the Inbox, scrolling the list to it. */
-    private fun waitForTask(title: String) {
+    /** Waits for a task to be in the Inbox, scrolling the list to it, and optionally for its upload state. */
+    private fun waitForTask(title: String, waitingToUpload: Boolean? = null) {
+        val row = when (waitingToUpload) {
+            null -> hasText(title)
+            true -> hasText(title) and hasText("Waiting to upload")
+            false -> hasText(title) and !hasText("Waiting to upload")
+        }
         try {
             compose.waitUntil(timeoutMillis = 30_000) {
-                runCatching { compose.onNodeWithTag("inbox").performScrollToNode(hasText(title)) }.isSuccess
+                runCatching { compose.onNodeWithTag("inbox").performScrollToNode(row) }.isSuccess &&
+                    compose.onAllNodes(row).fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: ComposeTimeoutException) {
             compose.onRoot(useUnmergedTree = true).printToLog("CaptureToInboxTest")

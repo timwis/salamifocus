@@ -61,7 +61,7 @@ class CaptureShortcutTest {
         val text = "book the dentist $run"
         compose.onNodeWithTag("capture-field").performTextInput(text)
         compose.onNodeWithTag("capture-field").performImeAction()
-        waitForText("Saved on this phone")
+        waitForText("Saved on this phone · sign in to upload")
 
         assertEquals(1L, count("SELECT count(*) AS n FROM tasks WHERE title = ? AND project_id IS NULL", text))
         assertEquals(1L, count("SELECT count(*) AS n FROM captures WHERE text = ?", text))
@@ -75,7 +75,7 @@ class CaptureShortcutTest {
             compose.onNodeWithTag("capture-field").performTextInput(text)
             compose.onNodeWithText("Save").performClick()
         }
-        waitFor("five saves") { compose.onAllNodesWithText("Saved on this phone").fetchSemanticsNodes().size == 5 }
+        waitFor("five saves") { compose.onAllNodesWithText("Saved on this phone", substring = true).fetchSemanticsNodes().size == 5 }
         assertEquals(5L, count("SELECT count(*) AS n FROM tasks WHERE title LIKE ?", "quick capture % $run"))
     }
 
@@ -91,7 +91,7 @@ class CaptureShortcutTest {
         compose.onNodeWithText("Save").performClick()
 
         waitForText("Could not save", substring = true)
-        compose.onNodeWithText("Saved on this phone").assertDoesNotExist()
+        compose.onNodeWithText("Saved on this phone", substring = true).assertDoesNotExist()
         compose.onNodeWithTag("capture-field").assertTextEquals("Capture", text)
         assertEquals(0L, count("SELECT count(*) AS n FROM tasks WHERE title = ?", text))
     }

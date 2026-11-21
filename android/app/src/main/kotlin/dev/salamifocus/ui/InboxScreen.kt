@@ -53,11 +53,16 @@ fun InboxScreen(app: SalamifocusApp) {
         )
         CaptureField(capture, modifier = Modifier.padding(vertical = 12.dp))
         capture.recent.firstOrNull()?.let {
-            CaptureOutcome(it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("capture-message"))
+            CaptureOutcome(app, it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("capture-message"))
         }
         LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f).testTag("inbox")) {
             items(inbox, key = { it.id }) { task ->
-                Text(task.title, modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp))
+                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).semantics(mergeDescendants = true) {}) {
+                    Text(task.title)
+                    if (task.waitingToUpload) {
+                        Text("Waiting to upload", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
                 HorizontalDivider()
             }
         }

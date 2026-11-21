@@ -13,6 +13,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -22,6 +23,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.salamifocus.SalamifocusApp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -99,12 +101,25 @@ fun CaptureField(state: CaptureState, modifier: Modifier = Modifier, fieldModifi
     }
 }
 
-/** What happened to a capture. Success is only claimed once it is stored on this phone. */
+/**
+ * What happened to a capture. Success is only claimed once it is stored on
+ * this phone, and "Uploaded" only once the server has acknowledged it.
+ */
 @Composable
-fun CaptureOutcome(capture: RecentCapture, modifier: Modifier = Modifier) {
+fun CaptureOutcome(app: SalamifocusApp, capture: RecentCapture, modifier: Modifier = Modifier) {
     when (val result = capture.result) {
         CaptureResult.Saving -> Text("Saving…", modifier = modifier)
-        is CaptureResult.Saved -> Text("Saved on this phone", modifier = modifier)
+        is CaptureResult.Saved -> {
+            val waiting by remember(result.taskId) { app.tasks.waitingToUpload(result.taskId) }
+                .collectAsStateWithLifecycle(initialValue = null)
+            val session by app.sessions.session.collectAsStateWithLifecycle()
+            val text = when {
+                waiting == false -> "Uploaded"
+                session == null -> "Saved on this phone · sign in to upload"
+                else -> "Saved on this phone"
+            }
+            Text(text, modifier = modifier)
+        }
         is CaptureResult.Failed -> Text(
             "Could not save: ${result.reason}",
             color = MaterialTheme.colorScheme.error,

@@ -63,7 +63,11 @@ fun operationMetadata(op: String, opId: String = UUID.randomUUID().toString()): 
         put("op", op)
     }.toString()
 
-data class InboxTask(val id: String, val title: String)
+data class InboxTask(val id: String, val title: String, val waitingToUpload: Boolean)
+
+// Whether a local change to the task with this id has not uploaded yet.
+private fun waitingToUploadSql(idExpression: String) =
+    "EXISTS (SELECT 1 FROM ps_crud c WHERE json_extract(c.data, '\$.type') = 'tasks' AND json_extract(c.data, '\$.id') = $idExpression)"
 
 class Tasks(private val db: PowerSyncDatabase) {
     /**
@@ -94,12 +98,17 @@ class Tasks(private val db: PowerSyncDatabase) {
      */
     fun inbox(): Flow<List<InboxTask>> =
         db.watch(
-            "SELECT t.id, t.title FROM tasks t WHERE t.completed_at IS NULL " +
+            "SELECT t.id, t.title, ${waitingToUploadSql("t.id")} AS waiting FROM tasks t WHERE t.completed_at IS NULL " +
                 "AND (t.project_id IS NULL OR NOT EXISTS (SELECT 1 FROM task_tags tt WHERE tt.task_id = t.id)) " +
                 "ORDER BY t.created_at, t.id",
         ) { cursor ->
-            InboxTask(id = cursor.getString("id"), title = cursor.getString("title"))
+            InboxTask(id = cursor.getString("id"), title = cursor.getString("title"), waitingToUpload = cursor.getLong("waiting") != 0L)
         }
+
+    /** Whether a task still has changes waiting to upload, starting from the database's current answer. */
+    fun waitingToUpload(taskId: String): Flow<Boolean> =
+        db.watch("SELECT ${waitingToUploadSql("?")} AS waiting", listOf(taskId)) { cursor -> cursor.getLong("waiting") != 0L }
+            .map { rows -> rows.single() }
 
     /** How many local transactions are still waiting to upload. */
     fun pendingUploads(): Flow<Long> =
