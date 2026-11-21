@@ -167,8 +167,14 @@ test('a due date is kept apart from deferral, shown on the row, and never change
   await page.keyboard.press('Enter');
   await expect(row).toContainText('Deferred until Mon 30 Nov');
   await expect(row).toContainText('Due Fri 20 Nov');
+  const dueDate = row.getByText('Due Fri 20 Nov');
+  await expect(dueDate).not.toHaveClass(/overdue/);
 
-  // Past its due date it is still deferred, and no more than that.
+  // Past its due date it is still deferred, and no more than that; the passed due date is highlighted, with the app left open.
+  await advanceTo(page, '2026-11-20T16:59:00.000Z');
+  await expect(dueDate).not.toHaveClass(/overdue/);
+  await page.clock.fastForward('01:01');
+  await expect(dueDate).toHaveClass(/overdue/);
   await advanceTo(page, '2026-11-21T09:00:00.000Z');
   await expect(row).toHaveAttribute('data-unavailable', 'deferred');
 

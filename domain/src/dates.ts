@@ -66,6 +66,11 @@ export function describeDate(value: string | Date, kind: DateKind, now: Date, op
   return usual ? day : `${day} ${timeFormat.format(date)}`;
 }
 
+/** Whether a due date has arrived: a task due at 17:00 is overdue from 17:00, as a deferred one is available from its date. */
+export function isOverdue(due: string | Date, now: Date): boolean {
+  return new Date(due).getTime() <= now.getTime();
+}
+
 /** When something happened, such as a task's completion, always with its time: "Sat 14 Nov 15:30". */
 export function describeMoment(value: string | Date, now: Date): string {
   const date = new Date(value);

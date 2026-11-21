@@ -1,6 +1,7 @@
 import {
   describeDate,
   describeMoment,
+  isOverdue,
   normaliseTitle,
   positionAt,
   positionBetween,
@@ -119,8 +120,8 @@ export function Outline({
   const current = useCurrentRow(rows.map((r) => r.key));
   const [editing, setEditing] = useState<Editing | null>(null);
   const focused = rows[current.index] ?? null;
-  // Rows change when a defer date passes, with nothing in the data changing.
-  const now = useNow(groups.flatMap((g) => [g.project?.deferUntil, ...g.tasks.map((t) => t.deferredUntil)]));
+  // Rows change when a defer or due date passes, with nothing in the data changing.
+  const now = useNow(groups.flatMap((g) => [g.project?.deferUntil, g.project?.dueAt, ...g.tasks.flatMap((t) => [t.deferredUntil, t.dueBy])]));
 
   // The task or project being edited can disappear, for example when another device completes it.
   const editedTaskGone = (editing?.mode === 'task' || editing?.mode === 'project') && !rows.some((r) => r.key === editing.rowKey);
@@ -384,7 +385,10 @@ export function Outline({
                           {paused && <span className="availability">Project paused</span>}
                           {pastDefer && <span className="task-date">Deferred until {describeDate(pastDefer, 'defer', now)}</span>}
                           {task.dueBy && (
-                            <span className="task-date" title={task.dueBy === task.dueAt ? undefined : 'Due with a task it is beneath, or its project'}>
+                            <span
+                              className={!completed && isOverdue(task.dueBy, now) ? 'task-date overdue' : 'task-date'}
+                              title={task.dueBy === task.dueAt ? undefined : 'Due with a task it is beneath, or its project'}
+                            >
                               Due {describeDate(task.dueBy, 'due', now)}
                             </span>
                           )}
@@ -451,7 +455,9 @@ export function Outline({
                       ) : (
                         <span className="task-date">Deferred until {describeDate(project.deferUntil, 'defer', now)}</span>
                       ))}
-                    {project.dueAt && <span className="task-date">Due {describeDate(project.dueAt, 'due', now)}</span>}
+                    {project.dueAt && (
+                      <span className={isOverdue(project.dueAt, now) ? 'task-date overdue' : 'task-date'}>Due {describeDate(project.dueAt, 'due', now)}</span>
+                    )}
                   </span>
                 )}
               </h3>
