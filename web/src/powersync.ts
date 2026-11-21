@@ -48,7 +48,7 @@ export const schema = new Schema({
   // Indexed by task, since the Inbox checks each task for a tag.
   task_tags: new Table({ task_id: column.text, tag_id: column.text }, { ...synced, indexes: { task: ['task_id'] } }),
   // A single row (settingsId), created by the server.
-  settings: new Table({ personal_folder_id: column.text, work_folder_id: column.text }, synced),
+  settings: new Table({ personal_folder_id: column.text, work_folder_id: column.text, people_tag_id: column.text }, synced),
 });
 
 export const db = new PowerSyncDatabase({

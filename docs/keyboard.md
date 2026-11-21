@@ -21,14 +21,15 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 4 | Go to Actionable — Personal (focus goes to the sidebar) |
 | 5 | Go to Actionable — Work (focus goes to the sidebar) |
 | 6 | Go to Flagged |
+| 7 | Go to Agendas |
 | Tab / Shift+Tab | Next / previous region |
-| V / Shift+V | In Projects, Tags and Flagged: show the next / previous of **Available**, **Remaining** and **Everything** (see [Visibility](#visibility)) |
+| V / Shift+V | In Projects, Tags, Flagged and Agendas: show the next / previous of **Available**, **Remaining** and **Everything** (see [Visibility](#visibility)) |
 | C | Capture to the Inbox without leaving where you are. Enter saves and clears the box for the next one; Enter on an empty box or Escape closes it, and focus goes back where it was. The **+ Capture** button does the same |
-| , | Settings: choose the folder Actionable — Personal and Actionable — Work each show. A choice is saved as soon as it is made; Escape or **Done** closes Settings and focus goes back where it was. The **Settings** button does the same |
+| , | Settings: choose the folder Actionable — Personal and Actionable — Work each show, and the People tag for Agendas. A choice is saved as soon as it is made; Escape or **Done** closes Settings and focus goes back where it was. The **Settings** button does the same |
 
 ## Visibility
 
-Projects, Tags and Flagged can show more or less of the system. The choice is shown above the outline, kept in the address (so a reload keeps it), and remembered for each perspective while the app is open. Projects and Tags start at Remaining, Flagged at Available.
+Projects, Tags, Flagged and Agendas can show more or less of the system. The choice is shown above the outline, kept in the address (so a reload keeps it), and remembered for each perspective while the app is open. Flagged starts at Available, the others at Remaining.
 
 - **Available**: only tasks that can be worked on now. Blocked and deferred tasks, and tasks in paused projects, are left out; a deferred task joins when its date arrives. A prerequisite whose parent is left out is shown where the parent was. Since only part of each project is shown, Alt+arrows do nothing here, a new task goes at the end of its project, and a paused or deferred project takes no new tasks (they would not be shown). A task you are editing stays until you stop, even when an edit (such as a defer date) means it is no longer available.
 - **Remaining**: every unfinished task, blocked and deferred ones and those in paused projects included.
@@ -50,6 +51,12 @@ The sidebar shows only the tags that have available tasks here, with the tags ab
 | Cmd+↑ / Cmd+↓ on macOS, Ctrl+↑ / Ctrl+↓ on Linux | Move without changing the selection |
 | Space | Select the entry, or clear the selection (showing every group) if it is already selected |
 | → / ← | Expand or collapse a tag, or go to its first child or its parent |
+
+## Agendas
+
+Agendas shows everything involving each person, for when you meet them. Choose the People tag in Settings (**,**): each tag beneath it is a person, and they can be nested in groups ("Family : Mum"). Like the folders, the People tag is remembered by identity, so renaming or moving it keeps it chosen.
+
+Tasks carrying a person's tag are grouped under that person, with the path below People as the heading, in sidebar order; within a group the oldest task comes first. It starts at **Remaining**, so a deferred or blocked follow-up stays on the person's agenda while it is missing from Actionable and Flagged. A task with two people appears under each, and its other tags (such as @Computer) stay on the row. Tasks are edited and completed as in any outline; new ones are added elsewhere and tagged with the person.
 
 ## Perspective navigation
 

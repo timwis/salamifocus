@@ -4,6 +4,7 @@ import { CaptureBox } from './Capture.tsx';
 import { isTyping, useRovingFocus } from './focus.ts';
 import { Inbox } from './Inbox.tsx';
 import { ActionablePerspective } from './actionable/ActionablePerspective.tsx';
+import { AgendasPerspective } from './agendas/AgendasPerspective.tsx';
 import { FlaggedPerspective } from './flagged/FlaggedPerspective.tsx';
 import { goToPerspective, hasSidebar, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
 import { OrganisationProvider } from './projects/data.tsx';
@@ -143,9 +144,9 @@ export function Shell() {
         </button>
       </header>
       <OrganisationProvider>
-        <div className="regions" data-perspective={place.perspective}>
-          <PerspectiveNav current={place.perspective} onBrowse={goToPerspective} onOpen={switchTo} />
-          <TagsProvider>
+        <TagsProvider>
+          <div className="regions" data-perspective={place.perspective}>
+            <PerspectiveNav current={place.perspective} onBrowse={goToPerspective} onOpen={switchTo} />
             {place.perspective === 'projects' ? (
               <ProjectsPerspective place={place} />
             ) : place.perspective === 'tags' ? (
@@ -154,13 +155,15 @@ export function Shell() {
               <FlaggedPerspective place={place} />
             ) : place.perspective === 'personal' || place.perspective === 'work' ? (
               <ActionablePerspective key={place.perspective} scope={place.perspective} place={place} />
+            ) : place.perspective === 'agendas' ? (
+              <AgendasPerspective place={place} />
             ) : (
               <Inbox />
             )}
-          </TagsProvider>
-        </div>
-        {capturing && <CaptureBox onClose={endCapture} />}
-        {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+          </div>
+          {capturing && <CaptureBox onClose={endCapture} />}
+          {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+        </TagsProvider>
       </OrganisationProvider>
     </div>
   );

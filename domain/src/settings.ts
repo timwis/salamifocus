@@ -26,3 +26,10 @@ export const scopeFolderColumn = {
   [FolderScope.personal]: 'personal_folder_id',
   [FolderScope.work]: 'work_folder_id',
 } as const satisfies Record<FolderScope, string>;
+
+/**
+ * The settings column holding the People tag. Each tag beneath it stands for
+ * a person, and Agendas groups their tasks by them. Held by id, like the
+ * folders.
+ */
+export const peopleTagColumn = 'people_tag_id';

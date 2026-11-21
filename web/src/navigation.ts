@@ -15,6 +15,7 @@ export const perspectives = [
   { id: 'personal', name: 'Personal', visibility: null, sidebar: true },
   { id: 'work', name: 'Work', visibility: null, sidebar: true },
   { id: 'flagged', name: 'Flagged', visibility: Visibility.available, sidebar: false },
+  { id: 'agendas', name: 'Agendas', visibility: Visibility.remaining, sidebar: false },
 ] as const;
 
 export type Perspective = (typeof perspectives)[number]['id'];

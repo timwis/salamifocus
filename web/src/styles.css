@@ -112,6 +112,11 @@ nav a:focus-visible {
   background: radial-gradient(circle at 30% 30%, #2f6fdf 22%, transparent 24%), radial-gradient(circle at 70% 30%, #6c9cf0 22%, transparent 24%),
     radial-gradient(circle at 30% 70%, #6c9cf0 22%, transparent 24%), radial-gradient(circle at 70% 70%, #2f6fdf 22%, transparent 24%);
 }
+/* A head and shoulders. */
+.perspective-agendas {
+  border-radius: 0;
+  background: radial-gradient(circle at 50% 30%, #d9534f 0 24%, transparent 26%), radial-gradient(ellipse 45% 38% at 50% 100%, #d9534f 0 98%, transparent 100%);
+}
 
 /* Contextual sidebar */
 .sidebar {

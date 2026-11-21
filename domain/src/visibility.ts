@@ -1,7 +1,7 @@
 import type { Unavailable } from './availability.ts';
 
-// How much of the system a view shows. Projects, Tags and Flagged let the user
-// choose; Projects and Tags default to Remaining, and Flagged to Available.
+// How much of the system a view shows. Projects, Tags, Flagged and Agendas let
+// the user choose; Flagged defaults to Available and the others to Remaining.
 
 export const Visibility = {
   /** Only tasks that can be worked on now. */

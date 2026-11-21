@@ -5,6 +5,7 @@ import {
   ProjectKind,
   ProjectStatus,
   scopeFolderColumn,
+  peopleTagColumn,
   settingsId,
   titleFromCapture,
   type FolderScope,
@@ -292,4 +293,8 @@ export function untagTask(taskId: string, tagId: string) {
 /** Chooses the folder an Actionable perspective shows, or with null none. */
 export function designateFolder(scope: FolderScope, folderId: string | null) {
   return write(OperationName.designateFolder, `UPDATE settings SET ${scopeFolderColumn[scope]} = ?, _metadata = ? WHERE id = ?`, (m) => [folderId, m, settingsId]);
+}
+
+export function designatePeopleTag(tagId: string | null) {
+  return write(OperationName.designatePeopleTag, `UPDATE settings SET ${peopleTagColumn} = ?, _metadata = ? WHERE id = ?`, (m) => [tagId, m, settingsId]);
 }

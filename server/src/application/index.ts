@@ -1,5 +1,6 @@
 import {
   actionableView,
+  agendasView,
   buildTagTree,
   buildTree,
   deferredUntilColumn,
@@ -8,6 +9,8 @@ import {
   groupByTag,
   inboxCondition,
   outlineTasks,
+  peopleIn,
+  peopleTagColumn,
   placedTags,
   projectStatusColumn,
   projectStatusOf,
@@ -30,6 +33,7 @@ import { findOperation } from './operations.ts';
 import { Rejection } from './rejection.ts';
 import type {
   ActionableOutline,
+  AgendaGroup,
   Actor,
   HistoryEntry,
   InboxEntry,
@@ -207,11 +211,55 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     }));
   }
 
-  /** The user's settings: which folder each Actionable perspective shows. */
+  /** The user's settings: which folder each Actionable perspective shows, and the People tag. */
   async function settings(): Promise<Settings> {
-    const [row] = await sql<{ personal: string | null; work: string | null }[]>`
-      SELECT ${sql(scopeFolderColumn.personal)} AS personal, ${sql(scopeFolderColumn.work)} AS work FROM settings WHERE id = ${settingsId}`;
-    return { folders: { personal: row?.personal ?? null, work: row?.work ?? null } };
+    const [row] = await sql<{ personal: string | null; work: string | null; people: string | null }[]>`
+      SELECT ${sql(scopeFolderColumn.personal)} AS personal, ${sql(scopeFolderColumn.work)} AS work, ${sql(peopleTagColumn)} AS people
+      FROM settings WHERE id = ${settingsId}`;
+    return { folders: { personal: row?.personal ?? null, work: row?.work ?? null }, peopleTagId: row?.people ?? null };
+  }
+
+  /**
+   * What Agendas shows: the tasks the visibility shows (by default every unfinished one) that carry a tag beneath
+   * the People tag, grouped by person in sidebar order with headings below People, oldest first within a group.
+   * A task with two people appears under each. Empty when no People tag is designated.
+   */
+  async function agendas(visibility: Visibility = Visibility.remaining): Promise<AgendaGroup[]> {
+    const [{ peopleTagId }, tagTree] = await Promise.all([settings(), tags()]);
+    const people = peopleIn(tagTree, peopleTagId);
+    const personIds = placedTags(people).map((p) => p.tag.id);
+    if (personIds.length === 0) return [];
+    const now = clock();
+    const rows = await sql<
+      {
+        id: string;
+        title: string;
+        note: string;
+        projectId: string | null;
+        completedAt: string | null;
+        deferUntil: string | null;
+        dueAt: string | null;
+        dueBy: string | null;
+        flagged: boolean;
+        tagIds: string[];
+        unfinishedChildren: number;
+        deferredUntil: string | null;
+        projectStatus: string | null;
+      }[]
+    >`
+      SELECT t.id, t.title, t.note, t.project_id AS "projectId", t.completed_at AS "completedAt", t.defer_until AS "deferUntil", t.due_at AS "dueAt", t.flagged,
+             ARRAY(SELECT tt.tag_id FROM task_tags tt WHERE tt.task_id = t.id) AS "tagIds",
+             ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
+      FROM tasks t
+      WHERE ${unfinishedUnless(sql, visibility)} AND t.id IN (SELECT task_id FROM task_tags WHERE tag_id IN ${sql(personIds)})
+      ORDER BY t.created_at, t.id`;
+    const shown = rows
+      .map(({ unfinishedChildren, deferredUntil, projectStatus, ...task }) => ({
+        ...task,
+        unavailable: unavailability({ completedAt: task.completedAt, unfinishedChildren, deferredUntil, projectStatus }, now),
+      }))
+      .filter((task) => shownUnder(visibility, task.unavailable));
+    return agendasView(people, shown, (task) => task.tagIds).map(({ tag, path, tasks }) => ({ tag: { id: tag.id, name: tag.name, path }, tasks }));
   }
 
   /**
@@ -447,5 +495,5 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     };
   }
 
-  return { execute, inbox, organisation, projects, tags, tagged, flagged, settings, actionable, task, history, operation };
+  return { execute, inbox, organisation, projects, tags, tagged, flagged, settings, actionable, agendas, task, history, operation };
 }

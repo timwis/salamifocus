@@ -1,4 +1,4 @@
-import { FolderScope, OperationName, ProjectStatus, scopeFolderColumn, settingsId } from '@salamifocus/domain';
+import { FolderScope, OperationName, peopleTagColumn, ProjectStatus, scopeFolderColumn, settingsId } from '@salamifocus/domain';
 
 /** One row change from a PowerSync client's upload queue, as the clients send it. */
 export interface CrudEntry {
@@ -304,5 +304,11 @@ const translators: Record<string, (entries: CrudEntry[]) => unknown> = {
     if (scopes.length !== 1) throw new Malformed('A designation chooses the folder for one scope.');
     const [scope] = scopes;
     return { scope, folderId: data[scopeFolderColumn[scope!]] ?? null };
+  },
+
+  [OperationName.designatePeopleTag](entries) {
+    const { id, data } = onlyUpdate(entries, 'settings', [peopleTagColumn]);
+    if (id !== settingsId) throw new Malformed('Settings are kept in a single row.');
+    return { tagId: data[peopleTagColumn] ?? null };
   },
 };

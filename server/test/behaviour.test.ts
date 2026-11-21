@@ -30,6 +30,10 @@ async function shown(expected: ExpectedPerspective, ids: Ids): Promise<Pick<Expe
     );
     return { groups: outline.map(({ project, tasks }) => ({ id: name(project.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: t.depth })) })) };
   }
+  if (expected.perspective === 'agendas') {
+    const groups = await h.application.agendas(expected.visibility);
+    return { groups: groups.map(({ tag, tasks }) => ({ id: name(tag.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) })) };
+  }
   if (expected.perspective === 'flagged') {
     // Every flagged task in the database is listed, so those other examples seeded are left out.
     const tasks = (await h.application.flagged(expected.visibility)).filter((t) => ids.name(t.id) !== undefined);

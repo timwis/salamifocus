@@ -353,6 +353,19 @@ describe('uploading a client transaction', () => {
     assert.deepEqual(rejected.map((r) => r.code), ['malformed_operation', 'malformed_operation']);
   });
 
+  it('designates the People tag, and nothing else in the same change', async () => {
+    const tagId = crypto.randomUUID();
+    await upload([{ op: 'PUT', table: 'tags', id: tagId, data: { name: 'People', parent_id: null, position: 'a0' }, metadata: operationMetadata(OperationName.createTag) }]);
+    const patch = (data: Record<string, unknown>, id = settingsId) => ({ op: 'PATCH', table: 'settings', id, data, metadata: operationMetadata(OperationName.designatePeopleTag) });
+
+    assert.deepEqual((await upload([patch({ people_tag_id: tagId })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.settings()).peopleTagId, tagId);
+    assert.deepEqual((await upload([patch({ people_tag_id: null })])).map((r) => r.outcome), ['applied']);
+    assert.equal((await h.application.settings()).peopleTagId, null);
+    const rejected = await upload([patch({ people_tag_id: tagId, work_folder_id: null }), patch({ people_tag_id: tagId }, crypto.randomUUID())]);
+    assert.deepEqual(rejected.map((r) => r.code), ['malformed_operation', 'malformed_operation']);
+  });
+
   it('moves a task with its children, the client sending its own copy of their move', async () => {
     const [from, to] = [crypto.randomUUID(), crypto.randomUUID()];
     const [parent, child] = [crypto.randomUUID(), crypto.randomUUID()];

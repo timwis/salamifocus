@@ -8,8 +8,8 @@ import type { Sql } from '../src/db.ts';
 type Row = Record<string, unknown> & { id: string };
 
 export interface ExpectedPerspective {
-  perspective: 'projects' | 'tags' | 'flagged' | 'personal' | 'work';
-  /** Flagged has no sidebar, so nothing to select. */
+  perspective: 'projects' | 'tags' | 'flagged' | 'personal' | 'work' | 'agendas';
+  /** Flagged and Agendas have no sidebar, so nothing to select. */
   selection: string[];
   /** Absent means the perspective's default: Remaining, or Available for Flagged. */
   visibility?: Visibility;
@@ -98,7 +98,9 @@ export async function seed(sql: Sql, example: Example): Promise<Ids> {
 export async function unseed(sql: Sql, ids: Ids): Promise<void> {
   const uuids = ids.all;
   await sql.begin(async (tx) => {
-    await tx`UPDATE settings SET personal_folder_id = NULL, work_folder_id = NULL WHERE personal_folder_id IN ${tx(uuids)} OR work_folder_id IN ${tx(uuids)}`;
+    await tx`UPDATE settings SET personal_folder_id = NULL WHERE personal_folder_id IN ${tx(uuids)}`;
+    await tx`UPDATE settings SET work_folder_id = NULL WHERE work_folder_id IN ${tx(uuids)}`;
+    await tx`UPDATE settings SET people_tag_id = NULL WHERE people_tag_id IN ${tx(uuids)}`;
     for (const table of [...tables].reverse()) await tx`DELETE FROM ${tx(table)} WHERE id IN ${tx(uuids)}`;
   });
 }

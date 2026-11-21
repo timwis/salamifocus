@@ -82,7 +82,12 @@ export interface FlaggedTask {
 export interface Settings {
   /** The folder each Actionable perspective shows, or null when none is designated. */
   folders: Record<FolderScope, string | null>;
+  /** The tag whose descendants are people, for Agendas, or null when none is designated. */
+  peopleTagId: string | null;
 }
+
+/** A person's agenda: the tag's path starts below the People tag. */
+export type AgendaGroup = TagOutline;
 
 export interface ActionableOutline {
   folderId: string | null;

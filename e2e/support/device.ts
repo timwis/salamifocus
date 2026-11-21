@@ -1,4 +1,4 @@
-import { operationMetadata, OperationName, scopeFolderColumn, settingsId, type FolderScope } from '@salamifocus/domain';
+import { operationMetadata, OperationName, peopleTagColumn, scopeFolderColumn, settingsId, type FolderScope } from '@salamifocus/domain';
 import { password, serverUrl } from './env.ts';
 
 /**
@@ -136,6 +136,13 @@ export class SimulatedDevice {
   async designateFolder(scope: FolderScope, folderId: string | null): Promise<void> {
     await this.upload([
       { op: 'PATCH', table: 'settings', id: settingsId, data: { [scopeFolderColumn[scope]]: folderId }, metadata: operationMetadata(OperationName.designateFolder) },
+    ]);
+  }
+
+  /** Chooses the People tag, whose descendants Agendas groups by. */
+  async designatePeopleTag(tagId: string | null): Promise<void> {
+    await this.upload([
+      { op: 'PATCH', table: 'settings', id: settingsId, data: { [peopleTagColumn]: tagId }, metadata: operationMetadata(OperationName.designatePeopleTag) },
     ]);
   }
 
