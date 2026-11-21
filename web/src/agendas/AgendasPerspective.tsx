@@ -1,11 +1,12 @@
 import { useQuery } from '@powersync/react';
-import { agendasView, peopleIn, placedTags, shownUnder, tagPathSeparator, visibilityCondition, Visibility } from '@salamifocus/domain';
+import { agendasView, peopleIn, placedTags, shownUnder, tagPathSeparator, visibilityCondition, Visibility, type TagNode } from '@salamifocus/domain';
 import { useState } from 'react';
 import { useNow } from '../clock.ts';
 import { go, type Place } from '../navigation.ts';
 import { Outline, type OutlineGroup } from '../outline/Outline.tsx';
 import { taskStateColumns, taskUnavailability, type TaskState } from '../queries.ts';
 import { useSettings } from '../settings/Settings.tsx';
+import { TreeSidebar } from '../sidebar/TreeSidebar.tsx';
 import { useTags, useTaskTags } from '../tags/data.tsx';
 
 interface TaskRow extends TaskState {
@@ -27,10 +28,12 @@ const empty: Record<Visibility, string> = {
  * Everything involving each person: the tasks the visibility shows that carry
  * a tag beneath the People tag (chosen in Settings), grouped by person, oldest
  * first. A task with two people appears under each, and its other tags stay
- * on the row.
+ * on the row. The sidebar holds only the people with such tasks; selecting
+ * one shows just their agenda.
  */
 export function AgendasPerspective({ place }: { place: Place }) {
   const visibility = place.visibility ?? Visibility.remaining;
+  const selected = place.selection[0] ?? null;
   const settings = useSettings();
   const peopleTagId = settings?.peopleTagId ?? null;
   const tags = useTags();
@@ -49,7 +52,8 @@ export function AgendasPerspective({ place }: { place: Place }) {
   // A task being edited stays until editing stops, even when an edit (a defer date, say) means the visibility hides it.
   const [editedTaskId, setEditedTaskId] = useState<string | null>(null);
   const shown = tasks.filter((task) => task.id === editedTaskId || shownUnder(visibility, taskUnavailability(task, now)));
-  const groups: OutlineGroup[] = agendasView(people, shown, (task) => taskTags.get(task.id) ?? []).map(({ tag, path, tasks }) => ({
+  const view = agendasView(people, selected, shown, (task) => taskTags.get(task.id) ?? []);
+  const groups: OutlineGroup[] = view.groups.map(({ tag, path, tasks }) => ({
     id: tag.id,
     heading: path.join(tagPathSeparator),
     ordered: false,
@@ -57,25 +61,45 @@ export function AgendasPerspective({ place }: { place: Place }) {
   }));
   const count = new Set(groups.flatMap((g) => g.tasks.map((t) => t.id))).size;
   const peopleTag = peopleTagId ? tags.byId.get(peopleTagId) : undefined;
+  const selectedName = selected ? tags.byId.get(selected)?.tag.name : undefined;
+  const unset =
+    peopleTagId === null
+      ? settings === null
+        ? 'Loading…'
+        : 'No People tag chosen. Press , to choose one in Settings.'
+      : !peopleTag
+        ? 'Loading…'
+        : people.length === 0
+          ? `${peopleTag.tag.name} has no tags beneath it. Add one for each person in Tags.`
+          : null;
 
   return (
-    <Outline
-      title="Agendas"
-      summary={peopleTag ? `${count} ${count === 1 ? 'task' : 'tasks'}${visibility === Visibility.everything ? '' : ` ${visibility}`}` : undefined}
-      groups={groups}
-      empty={
-        peopleTagId === null
-          ? settings === null
-            ? 'Loading…'
-            : 'No People tag chosen. Press , to choose one in Settings.'
-          : !peopleTag
-            ? 'Loading…'
-            : people.length === 0
-              ? `${peopleTag.tag.name} has no tags beneath it. Add one for each person in Tags.`
-              : empty[visibility]
-      }
-      visibility={{ value: visibility, choose: (visibility) => go({ ...place, visibility }) }}
-      onEditing={setEditedTaskId}
-    />
+    <>
+      <TreeSidebar<TagNode>
+        label="People"
+        tree={view.sidebar}
+        selection={place.selection.slice(0, 1)}
+        multiple={false}
+        onSelect={(selection) => go({ perspective: 'agendas', selection })}
+        kindOf={() => 'tag'}
+        canContain={() => false}
+        createsInside={() => false}
+        newKinds={[]}
+        hint={unset ?? 'Nobody has anything here.'}
+        collapsedStorageKey="salamifocus.agendas.collapsed"
+      />
+      <Outline
+        title="Agendas"
+        summary={
+          peopleTag
+            ? `${count} ${count === 1 ? 'task' : 'tasks'}${visibility === Visibility.everything ? '' : ` ${visibility}`}${selectedName ? `, for ${selectedName}` : ''}`
+            : undefined
+        }
+        groups={groups}
+        empty={unset ?? (selected ? 'Nothing here. Press Space in the sidebar to show everyone.' : empty[visibility])}
+        visibility={{ value: visibility, choose: (visibility) => go({ ...place, visibility }) }}
+        onEditing={setEditedTaskId}
+      />
+    </>
   );
 }

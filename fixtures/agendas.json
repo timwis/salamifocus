@@ -1,6 +1,6 @@
 {
   "scenario": "Agendas",
-  "description": "Agendas shows the tasks carrying a tag beneath the designated People tag, grouped by person in sidebar order, oldest first within a group, and defaults to Remaining. People are “Steve”, “Priya” and, in a “Family” group, “Mum”. “Quarterly report” has a blocked task for Priya whose prerequisite, “Email Steve”, is deferred and also tagged @Computer; an available task with both Steve and Priya; a completed task for Priya; and tasks tagged with no person, with People itself, or with nothing. “Move house” is paused, with a task for Mum, and an Inbox task is for Steve. See “Agendas” in the spec.",
+  "description": "Agendas shows the tasks carrying a tag beneath the designated People tag, grouped by person in sidebar order, oldest first within a group, and defaults to Remaining. Selecting a person shows their branch; the sidebar keeps only the people with tasks shown, their ancestors and the selected person. People are “Steve”, “Priya” and, in a “Family” group, “Mum”. “Quarterly report” has a blocked task for Priya whose prerequisite, “Email Steve”, is deferred and also tagged @Computer; an available task with both Steve and Priya; a completed task for Priya; and tasks tagged with no person, with People itself, or with nothing. “Move house” is paused, with a task for Mum, and an Inbox task is for Steve. See “Agendas” in the spec.",
   "examples": [
     {
       "name": "Agendas shows remaining tasks by person, deferred, blocked and paused ones included, and a task with two people under each",
@@ -286,6 +286,24 @@
                   }
                 ]
               }
+            ],
+            "sidebar": [
+              {
+                "id": "steve",
+                "depth": 1
+              },
+              {
+                "id": "family",
+                "depth": 1
+              },
+              {
+                "id": "mum",
+                "depth": 2
+              },
+              {
+                "id": "priya",
+                "depth": 1
+              }
             ]
           },
           {
@@ -367,7 +385,7 @@
       }
     },
     {
-      "name": "Under Available, Agendas leaves out blocked, deferred and paused tasks",
+      "name": "Under Available, Agendas leaves out blocked, deferred and paused tasks, and the sidebar the people left with none",
       "clock": "2026-11-20T09:00:00.000Z",
       "records": {
         "folders": [
@@ -633,6 +651,608 @@
                     "depth": 1
                   }
                 ]
+              }
+            ],
+            "sidebar": [
+              {
+                "id": "steve",
+                "depth": 1
+              },
+              {
+                "id": "priya",
+                "depth": 1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Selecting a person shows only their agenda, and selecting a group of people shows each person in it",
+      "clock": "2026-11-20T09:00:00.000Z",
+      "records": {
+        "folders": [
+          {
+            "id": "personal",
+            "name": "Personal",
+            "parent_id": null,
+            "position": "a0"
+          }
+        ],
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": "personal",
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": "personal",
+            "position": "a1",
+            "status": "paused"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          },
+          {
+            "id": "family",
+            "name": "Family",
+            "parent_id": "people",
+            "position": "a1"
+          },
+          {
+            "id": "mum",
+            "name": "Mum",
+            "parent_id": "family",
+            "position": "a0"
+          },
+          {
+            "id": "priya",
+            "name": "Priya",
+            "parent_id": "people",
+            "position": "a2"
+          },
+          {
+            "id": "computer",
+            "name": "@Computer",
+            "parent_id": null,
+            "position": "a1"
+          },
+          {
+            "id": "phone",
+            "name": "@Phone",
+            "parent_id": null,
+            "position": "a2"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-02T09:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-27T09:00:00.000Z",
+            "flagged": true
+          },
+          {
+            "id": "budget",
+            "title": "Agree the budget with Steve and Priya",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-03T09:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          },
+          {
+            "id": "boxes",
+            "title": "Ask Mum for packing boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-04T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "lunch",
+            "title": "Ask Steve about lunch",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-05T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "thank",
+            "title": "Thank Priya for the figures",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-06T09:00:00.000Z",
+            "completed_at": "2026-11-15T17:00:00.000Z"
+          },
+          {
+            "id": "backup",
+            "title": "Back up the laptop",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-07T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "social",
+            "title": "Plan the team social",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a4",
+            "created_at": "2026-11-08T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "print",
+            "title": "Print the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a5",
+            "created_at": "2026-11-09T09:00:00.000Z",
+            "completed_at": null
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "compile-priya",
+            "task_id": "compile",
+            "tag_id": "priya"
+          },
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          },
+          {
+            "id": "email-steve-computer",
+            "task_id": "email-steve",
+            "tag_id": "computer"
+          },
+          {
+            "id": "budget-steve",
+            "task_id": "budget",
+            "tag_id": "steve"
+          },
+          {
+            "id": "budget-priya",
+            "task_id": "budget",
+            "tag_id": "priya"
+          },
+          {
+            "id": "budget-phone",
+            "task_id": "budget",
+            "tag_id": "phone"
+          },
+          {
+            "id": "boxes-mum",
+            "task_id": "boxes",
+            "tag_id": "mum"
+          },
+          {
+            "id": "lunch-steve",
+            "task_id": "lunch",
+            "tag_id": "steve"
+          },
+          {
+            "id": "thank-priya",
+            "task_id": "thank",
+            "tag_id": "priya"
+          },
+          {
+            "id": "backup-computer",
+            "task_id": "backup",
+            "tag_id": "computer"
+          },
+          {
+            "id": "social-people",
+            "task_id": "social",
+            "tag_id": "people"
+          }
+        ],
+        "settings": {
+          "people_tag_id": "people",
+          "personal_folder_id": "personal"
+        }
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [
+            "deferred"
+          ],
+          "budget": [],
+          "boxes": [
+            "paused"
+          ],
+          "lunch": [],
+          "thank": [
+            "completed"
+          ],
+          "backup": [],
+          "social": []
+        },
+        "perspectives": [
+          {
+            "perspective": "agendas",
+            "selection": [
+              "steve"
+            ],
+            "groups": [
+              {
+                "id": "steve",
+                "tasks": [
+                  {
+                    "id": "email-steve",
+                    "depth": 1
+                  },
+                  {
+                    "id": "budget",
+                    "depth": 1
+                  },
+                  {
+                    "id": "lunch",
+                    "depth": 1
+                  }
+                ]
+              }
+            ],
+            "sidebar": [
+              {
+                "id": "steve",
+                "depth": 1
+              },
+              {
+                "id": "family",
+                "depth": 1
+              },
+              {
+                "id": "mum",
+                "depth": 2
+              },
+              {
+                "id": "priya",
+                "depth": 1
+              }
+            ]
+          },
+          {
+            "perspective": "agendas",
+            "selection": [
+              "family"
+            ],
+            "groups": [
+              {
+                "id": "mum",
+                "tasks": [
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  }
+                ]
+              }
+            ],
+            "sidebar": [
+              {
+                "id": "steve",
+                "depth": 1
+              },
+              {
+                "id": "family",
+                "depth": 1
+              },
+              {
+                "id": "mum",
+                "depth": 2
+              },
+              {
+                "id": "priya",
+                "depth": 1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "The selected person stays in the sidebar when the visibility shows nothing of theirs",
+      "clock": "2026-11-20T09:00:00.000Z",
+      "records": {
+        "folders": [
+          {
+            "id": "personal",
+            "name": "Personal",
+            "parent_id": null,
+            "position": "a0"
+          }
+        ],
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": "personal",
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": "personal",
+            "position": "a1",
+            "status": "paused"
+          }
+        ],
+        "tags": [
+          {
+            "id": "people",
+            "name": "People",
+            "parent_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "steve",
+            "name": "Steve",
+            "parent_id": "people",
+            "position": "a0"
+          },
+          {
+            "id": "family",
+            "name": "Family",
+            "parent_id": "people",
+            "position": "a1"
+          },
+          {
+            "id": "mum",
+            "name": "Mum",
+            "parent_id": "family",
+            "position": "a0"
+          },
+          {
+            "id": "priya",
+            "name": "Priya",
+            "parent_id": "people",
+            "position": "a2"
+          },
+          {
+            "id": "computer",
+            "name": "@Computer",
+            "parent_id": null,
+            "position": "a1"
+          },
+          {
+            "id": "phone",
+            "name": "@Phone",
+            "parent_id": null,
+            "position": "a2"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-02T09:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-27T09:00:00.000Z",
+            "flagged": true
+          },
+          {
+            "id": "budget",
+            "title": "Agree the budget with Steve and Priya",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-03T09:00:00.000Z",
+            "completed_at": null,
+            "flagged": true
+          },
+          {
+            "id": "boxes",
+            "title": "Ask Mum for packing boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-04T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "lunch",
+            "title": "Ask Steve about lunch",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-05T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "thank",
+            "title": "Thank Priya for the figures",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-06T09:00:00.000Z",
+            "completed_at": "2026-11-15T17:00:00.000Z"
+          },
+          {
+            "id": "backup",
+            "title": "Back up the laptop",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-07T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "social",
+            "title": "Plan the team social",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a4",
+            "created_at": "2026-11-08T09:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "print",
+            "title": "Print the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a5",
+            "created_at": "2026-11-09T09:00:00.000Z",
+            "completed_at": null
+          }
+        ],
+        "task_tags": [
+          {
+            "id": "compile-priya",
+            "task_id": "compile",
+            "tag_id": "priya"
+          },
+          {
+            "id": "email-steve-steve",
+            "task_id": "email-steve",
+            "tag_id": "steve"
+          },
+          {
+            "id": "email-steve-computer",
+            "task_id": "email-steve",
+            "tag_id": "computer"
+          },
+          {
+            "id": "budget-steve",
+            "task_id": "budget",
+            "tag_id": "steve"
+          },
+          {
+            "id": "budget-priya",
+            "task_id": "budget",
+            "tag_id": "priya"
+          },
+          {
+            "id": "budget-phone",
+            "task_id": "budget",
+            "tag_id": "phone"
+          },
+          {
+            "id": "boxes-mum",
+            "task_id": "boxes",
+            "tag_id": "mum"
+          },
+          {
+            "id": "lunch-steve",
+            "task_id": "lunch",
+            "tag_id": "steve"
+          },
+          {
+            "id": "thank-priya",
+            "task_id": "thank",
+            "tag_id": "priya"
+          },
+          {
+            "id": "backup-computer",
+            "task_id": "backup",
+            "tag_id": "computer"
+          },
+          {
+            "id": "social-people",
+            "task_id": "social",
+            "tag_id": "people"
+          }
+        ],
+        "settings": {
+          "people_tag_id": "people",
+          "personal_folder_id": "personal"
+        }
+      },
+      "expect": {
+        "unavailable": {
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [
+            "deferred"
+          ],
+          "budget": [],
+          "boxes": [
+            "paused"
+          ],
+          "lunch": [],
+          "thank": [
+            "completed"
+          ],
+          "backup": [],
+          "social": []
+        },
+        "perspectives": [
+          {
+            "perspective": "agendas",
+            "selection": [
+              "mum"
+            ],
+            "visibility": "available",
+            "groups": [],
+            "sidebar": [
+              {
+                "id": "steve",
+                "depth": 1
+              },
+              {
+                "id": "family",
+                "depth": 1
+              },
+              {
+                "id": "mum",
+                "depth": 2
+              },
+              {
+                "id": "priya",
+                "depth": 1
               }
             ]
           }
@@ -927,6 +1547,24 @@
                     "depth": 1
                   }
                 ]
+              }
+            ],
+            "sidebar": [
+              {
+                "id": "steve",
+                "depth": 1
+              },
+              {
+                "id": "family",
+                "depth": 1
+              },
+              {
+                "id": "mum",
+                "depth": 2
+              },
+              {
+                "id": "priya",
+                "depth": 1
               }
             ]
           }

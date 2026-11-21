@@ -13,11 +13,11 @@ after(() => h.close());
 /** What the server's queries say a perspective shows, in the fixtures' terms. */
 async function shown(expected: ExpectedPerspective, ids: Ids): Promise<Pick<ExpectedPerspective, 'groups' | 'sidebar'>> {
   const name = (uuid: string) => ids.name(uuid) ?? uuid;
+  const entries = (nodes: TagNode[], depth: number): { id: string; depth: number }[] =>
+    nodes.flatMap((node) => [{ id: name(node.id), depth }, ...entries(node.children, depth + 1)]);
   if (expected.perspective === 'personal' || expected.perspective === 'work') {
     const [selected = null] = expected.selection;
     const { groups, sidebar } = await h.application.actionable(expected.perspective, selected === null || selected === untaggedId ? selected : ids.uuid(selected));
-    const entries = (nodes: TagNode[], depth: number): { id: string; depth: number }[] =>
-      nodes.flatMap((node) => [{ id: name(node.id), depth }, ...entries(node.children, depth + 1)]);
     return {
       groups: groups.map(({ tag, tasks }) => ({ id: tag ? name(tag.id) : untaggedId, tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) })),
       sidebar: [...entries(sidebar.tags, 1), ...(sidebar.untagged ? [{ id: untaggedId, depth: 1 }] : [])],
@@ -31,8 +31,12 @@ async function shown(expected: ExpectedPerspective, ids: Ids): Promise<Pick<Expe
     return { groups: outline.map(({ project, tasks }) => ({ id: name(project.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: t.depth })) })) };
   }
   if (expected.perspective === 'agendas') {
-    const groups = await h.application.agendas(expected.visibility);
-    return { groups: groups.map(({ tag, tasks }) => ({ id: name(tag.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) })) };
+    const [selected] = expected.selection;
+    const { groups, sidebar } = await h.application.agendas(expected.visibility, selected ? ids.uuid(selected) : null);
+    return {
+      groups: groups.map(({ tag, tasks }) => ({ id: name(tag.id), tasks: tasks.map((t) => ({ id: name(t.id), depth: 1 })) })),
+      sidebar: entries(sidebar, 1),
+    };
   }
   if (expected.perspective === 'flagged') {
     // Every flagged task in the database is listed, so those other examples seeded are left out.

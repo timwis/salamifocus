@@ -1,4 +1,4 @@
-import type { ActionableSidebar, FolderScope, ProjectStatus, Unavailable } from '@salamifocus/domain';
+import type { ActionableSidebar, FolderScope, ProjectStatus, TagNode, Unavailable } from '@salamifocus/domain';
 
 export interface Actor {
   type: 'user';
@@ -86,8 +86,13 @@ export interface Settings {
   peopleTagId: string | null;
 }
 
-/** A person's agenda: the tag's path starts below the People tag. */
-export type AgendaGroup = TagOutline;
+export interface AgendasOutline {
+  peopleTagId: string | null;
+  /** The people with tasks shown (and the selected one), with the groups above them, as a tree below the People tag. */
+  sidebar: TagNode[];
+  /** One per person in sidebar order; each tag's path starts below the People tag. */
+  groups: TagOutline[];
+}
 
 export interface ActionableOutline {
   folderId: string | null;

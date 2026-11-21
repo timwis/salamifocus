@@ -46,7 +46,7 @@ test('Agendas groups remaining tasks by the people beneath the People tag chosen
   await expect(page.getByRole('heading', { name: 'Agendas', level: 2 })).toBeVisible();
   // Another test may have chosen a People tag already.
   await phone.designatePeopleTag(null);
-  await expect(page.getByText('No People tag chosen.')).toBeVisible();
+  await expect(page.locator('[data-region="outline"]').getByText('No People tag chosen.')).toBeVisible();
 
   await page.keyboard.press(',');
   const settings = page.getByRole('dialog', { name: 'Settings' });
@@ -90,4 +90,65 @@ test('Agendas groups remaining tasks by the people beneath the People tag chosen
     ['Kin : Mother', 'Ask Mother for packing boxes'],
   ]);
   await expect.poll(async () => (await server.task(tasks['Agree the budget with Stefan and Pria']!))?.completedAt).not.toBeNull();
+});
+
+const sidebarItem = (page: Page, name: string) => page.getByRole('tree', { name: 'People' }).getByRole('treeitem', { name: `${name} (${run})`, exact: true });
+
+/** The sidebar's entries, indented by level, without this run's suffix. */
+async function shownSidebar(page: Page): Promise<string[]> {
+  return page
+    .getByRole('tree', { name: 'People' })
+    .getByRole('treeitem')
+    .evaluateAll(
+      (items, suffix) => items.map((item) => `${'  '.repeat(Number(item.getAttribute('aria-level')) - 1)}${(item.textContent ?? '').replace(` (${suffix})`, '')}`),
+      run,
+    );
+}
+
+test('the Agendas sidebar lists the people with tasks shown, and selecting one shows only their agenda', async ({ page }) => {
+  const phone = await SimulatedDevice.signIn();
+  const { projectId: errands } = await phone.createProject(`Errands (${run}, agendas)`);
+  const { tagId: people } = await phone.createTag(`Crowd (${run})`, { position: 'a8' });
+  const { tagId: ben } = await phone.createTag(`Benedict (${run})`, { parentId: people });
+  const { tagId: family } = await phone.createTag(`Clan (${run})`, { parentId: people, position: 'a1' });
+  const { tagId: gran } = await phone.createTag(`Granny (${run})`, { parentId: family });
+  await phone.createTag(`Nobody (${run})`, { parentId: people, position: 'a2' });
+  const { taskId: lunch } = await phone.createTask(errands, `Ask Benedict about lunch ${run}`);
+  await phone.tagTask(lunch, ben);
+  const { taskId: recipe } = await phone.createTask(errands, `Ask Granny for the recipe ${run}`, 'a1');
+  await phone.tagTask(recipe, gran);
+  await phone.defer(recipe, '2099-01-01T00:00:00.000Z');
+  await phone.designatePeopleTag(people);
+
+  await signIn(page);
+  await page.keyboard.press('7');
+  // Nobody has no tasks, so is left out.
+  await expect.poll(() => shownSidebar(page)).toEqual(['Benedict', 'Clan', '  Granny']);
+
+  // Focus starts in the sidebar, on its first entry. Space selects it; moving to another person selects them.
+  await expect(sidebarItem(page, 'Benedict')).toBeFocused();
+  await page.keyboard.press(' ');
+  await expect.poll(() => shownGroups(page)).toEqual([['Benedict', 'Ask Benedict about lunch']]);
+  await page.keyboard.press('ArrowDown');
+  await expect(page).toHaveURL(new RegExp(`/agendas/${family}$`));
+  await expect.poll(() => shownGroups(page)).toEqual([['Clan : Granny', 'Ask Granny for the recipe']]);
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByText('1 task remaining, for Granny')).toBeVisible();
+
+  // Under Available, Granny's deferred task goes, but she stays listed while selected.
+  await page.keyboard.press('Shift+V');
+  await expect(page.getByText('Nothing here. Press Space in the sidebar to show everyone.')).toBeVisible();
+  await expect.poll(() => shownSidebar(page)).toEqual(['Benedict', 'Clan', '  Granny']);
+  await page.keyboard.press('Home');
+  await expect.poll(() => shownSidebar(page)).toEqual(['Benedict']);
+
+  // Her task comes back by itself when it is no longer deferred; Space clears the selection to show everyone.
+  await phone.defer(recipe, null);
+  await expect.poll(() => shownSidebar(page)).toEqual(['Benedict', 'Clan', '  Granny']);
+  await page.keyboard.press(' ');
+  await expect(page).toHaveURL(/\/agendas\?show=available$/);
+  await expect.poll(() => shownGroups(page)).toEqual([
+    ['Benedict', 'Ask Benedict about lunch'],
+    ['Clan : Granny', 'Ask Granny for the recipe'],
+  ]);
 });

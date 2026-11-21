@@ -33,7 +33,7 @@ import { findOperation } from './operations.ts';
 import { Rejection } from './rejection.ts';
 import type {
   ActionableOutline,
-  AgendaGroup,
+  AgendasOutline,
   Actor,
   HistoryEntry,
   InboxEntry,
@@ -222,13 +222,14 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   /**
    * What Agendas shows: the tasks the visibility shows (by default every unfinished one) that carry a tag beneath
    * the People tag, grouped by person in sidebar order with headings below People, oldest first within a group.
-   * A task with two people appears under each. Empty when no People tag is designated.
+   * A task with two people appears under each. Selecting a person shows only their branch. The sidebar holds
+   * only the people with tasks shown, their ancestors and the selected person. Empty when no People tag is designated.
    */
-  async function agendas(visibility: Visibility = Visibility.remaining): Promise<AgendaGroup[]> {
+  async function agendas(visibility: Visibility = Visibility.remaining, selected: string | null = null): Promise<AgendasOutline> {
     const [{ peopleTagId }, tagTree] = await Promise.all([settings(), tags()]);
     const people = peopleIn(tagTree, peopleTagId);
     const personIds = placedTags(people).map((p) => p.tag.id);
-    if (personIds.length === 0) return [];
+    if (personIds.length === 0) return { peopleTagId, sidebar: [], groups: [] };
     const now = clock();
     const rows = await sql<
       {
@@ -259,7 +260,8 @@ export function createApplication({ sql, clock = () => new Date() }: Application
         unavailable: unavailability({ completedAt: task.completedAt, unfinishedChildren, deferredUntil, projectStatus }, now),
       }))
       .filter((task) => shownUnder(visibility, task.unavailable));
-    return agendasView(people, shown, (task) => task.tagIds).map(({ tag, path, tasks }) => ({ tag: { id: tag.id, name: tag.name, path }, tasks }));
+    const { groups, sidebar } = agendasView(people, selected, shown, (task) => task.tagIds);
+    return { peopleTagId, sidebar, groups: groups.map(({ tag, path, tasks }) => ({ tag: { id: tag.id, name: tag.name, path }, tasks })) };
   }
 
   /**

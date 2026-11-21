@@ -21,7 +21,7 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 4 | Go to Actionable — Personal (focus goes to the sidebar) |
 | 5 | Go to Actionable — Work (focus goes to the sidebar) |
 | 6 | Go to Flagged |
-| 7 | Go to Agendas |
+| 7 | Go to Agendas (focus goes to the sidebar) |
 | Tab / Shift+Tab | Next / previous region |
 | V / Shift+V | In Projects, Tags, Flagged and Agendas: show the next / previous of **Available**, **Remaining** and **Everything** (see [Visibility](#visibility)) |
 | C | Capture to the Inbox without leaving where you are. Enter saves and clears the box for the next one; Enter on an empty box or Escape closes it, and focus goes back where it was. The **+ Capture** button does the same |
@@ -57,6 +57,15 @@ The sidebar shows only the tags that have available tasks here, with the tags ab
 Agendas shows everything involving each person, for when you meet them. Choose the People tag in Settings (**,**): each tag beneath it is a person, and they can be nested in groups ("Family : Mum"). Like the folders, the People tag is remembered by identity, so renaming or moving it keeps it chosen.
 
 Tasks carrying a person's tag are grouped under that person, with the path below People as the heading, in sidebar order; within a group the oldest task comes first. It starts at **Remaining**, so a deferred or blocked follow-up stays on the person's agenda while it is missing from Actionable and Flagged. A task with two people appears under each, and its other tags (such as @Computer) stay on the row. Tasks are edited and completed as in any outline; new ones are added elsewhere and tagged with the person.
+
+The sidebar shows only the people with tasks shown here, with the groups above them needed to reach them, so someone with nothing left to discuss drops out of it. The selected person stays until you move off them. With nobody selected, every person's agenda shows; selecting a person shows only theirs, and selecting a group shows each person in it. People are created, renamed and moved in the Tags perspective.
+
+| Key | Action |
+|---|---|
+| ↑ / ↓, Home / End | Move and select that person |
+| Cmd+↑ / Cmd+↓ on macOS, Ctrl+↑ / Ctrl+↓ on Linux | Move without changing the selection |
+| Space | Select the person, or clear the selection (showing everyone) if they are already selected |
+| → / ← | Expand or collapse a group, or go to its first person or its parent |
 
 ## Perspective navigation
 

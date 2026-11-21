@@ -9,12 +9,12 @@ type Row = Record<string, unknown> & { id: string };
 
 export interface ExpectedPerspective {
   perspective: 'projects' | 'tags' | 'flagged' | 'personal' | 'work' | 'agendas';
-  /** Flagged and Agendas have no sidebar, so nothing to select. */
+  /** Flagged has no sidebar, so nothing to select. */
   selection: string[];
   /** Absent means the perspective's default: Remaining, or Available for Flagged. */
   visibility?: Visibility;
   groups: { id: string; tasks: { id: string; depth: number }[] }[];
-  /** For Actionable: the sidebar's entries, top to bottom, with their nesting depth (1 at the top level). */
+  /** For Actionable and Agendas: the sidebar's entries, top to bottom, with their nesting depth (1 at the top level). */
   sidebar?: { id: string; depth: number }[];
 }
 

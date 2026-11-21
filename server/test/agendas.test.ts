@@ -32,10 +32,10 @@ describe('the People tag', () => {
     assert.equal(await perform(OperationName.createTask, { taskId, projectId: null, title: 'Ask Steve about lunch', position: null, tags: [{ taskTagId: crypto.randomUUID(), tagId: steve }] }), 'applied');
 
     assert.equal((await h.application.settings()).peopleTagId, null);
-    assert.deepEqual(await h.application.agendas(), []);
+    assert.deepEqual(await h.application.agendas(), { peopleTagId: null, sidebar: [], groups: [] });
     assert.equal(await designate(people), 'applied');
     assert.deepEqual(
-      (await h.application.agendas()).map(({ tag, tasks }) => [tag.path, tasks.map((t) => t.id)]),
+      (await h.application.agendas()).groups.map(({ tag, tasks }) => [tag.path, tasks.map((t) => t.id)]),
       [[['Steve'], [taskId]]],
     );
   });
