@@ -79,6 +79,22 @@ export interface FlaggedTask {
   unavailable: Unavailable[];
 }
 
+/** A task in the Forecast perspective, with the project it is in. */
+export interface ForecastTask extends Omit<FlaggedTask, 'completedAt'> {
+  flagged: boolean;
+  /** The latest defer date among the task, the unfinished tasks it is beneath and its project, which placed it under Deferred. */
+  deferredUntil: string | null;
+}
+
+/** A Forecast heading: Past, Today, one of the next days, or Future. */
+export interface ForecastSectionView {
+  /** `past`, `today`, `future`, or the day's date (YYYY-MM-DD). */
+  id: string;
+  day: string | null;
+  due: ForecastTask[];
+  deferred: ForecastTask[];
+}
+
 export interface Settings {
   /** The folder each Actionable perspective shows, or null when none is designated. */
   folders: Record<FolderScope, string | null>;

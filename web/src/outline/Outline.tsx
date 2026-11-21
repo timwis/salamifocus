@@ -1,6 +1,7 @@
 import {
   describeDate,
   describeMoment,
+  describeTime,
   isOverdue,
   normaliseTitle,
   positionAt,
@@ -48,7 +49,17 @@ export interface OutlineGroup {
   ordered: boolean;
   /** The project the group is, whose dates can be edited from its heading. */
   project?: DatedProject & { paused: boolean };
+  /**
+   * A heading over this and the following groups that share it, such as a day in Forecast. In a section, the
+   * group's own heading is a label rather than a row, and a group with no tasks is left out.
+   */
+  section?: { id: string; heading: string; empty?: string };
+  /** The tasks were placed on the section's day by this date, which is shown as just its time. */
+  datedBy?: 'defer' | 'due';
 }
+
+/** Where focus goes when the current task leaves its group: the group it is now shown in, if any. */
+export type Relocate = (task: { taskId: string; groupId: string }, groups: readonly OutlineGroup[]) => string | null;
 
 type Row = { key: string; group: OutlineGroup } & ({ kind: 'heading' } | { kind: 'task'; task: OutlineTask; index: number });
 
@@ -60,6 +71,7 @@ type Editing =
 const EMPTY = 'empty';
 const headingKey = (group: OutlineGroup) => `group:${group.id}`;
 const taskKey = (group: OutlineGroup, taskId: string) => `${group.id}/${taskId}`;
+const hasHeadingRow = (group: OutlineGroup) => group.heading !== null && !group.section;
 
 const parentOf = (task: OutlineTask) => task.parentId ?? null;
 
@@ -101,6 +113,7 @@ export function Outline({
   empty,
   visibility,
   onEditing,
+  relocate,
 }: {
   title: string;
   summary?: ReactNode;
@@ -110,14 +123,26 @@ export function Outline({
   visibility?: { value: Visibility; choose: (visibility: Visibility) => void };
   /** Told which task is being edited (null when none), so the perspective can keep it shown while an edit hides it. */
   onEditing?: (taskId: string | null) => void;
+  /** Lets focus follow the current task when it moves to another group, rather than stay at its old place. */
+  relocate?: Relocate;
 }) {
   const rows: Row[] = groups.flatMap((group) => [
-    ...(group.heading !== null ? [{ key: headingKey(group), group, kind: 'heading' as const }] : []),
+    ...(hasHeadingRow(group) ? [{ key: headingKey(group), group, kind: 'heading' as const }] : []),
     ...group.tasks.map((task, index) => ({ key: taskKey(group, task.id), group, kind: 'task' as const, task, index })),
   ]);
   const tags = useTags();
   const taskTags = useTaskTags();
-  const current = useCurrentRow(rows.map((r) => r.key));
+  const current = useCurrentRow(
+    rows.map((r) => r.key),
+    null,
+    relocate &&
+      ((missing) => {
+        const at = missing.lastIndexOf('/');
+        const task = { groupId: missing.slice(0, at), taskId: missing.slice(at + 1) };
+        const group = groups.find((g) => g.id === relocate(task, groups));
+        return group ? taskKey(group, task.taskId) : null;
+      }),
+  );
   const [editing, setEditing] = useState<Editing | null>(null);
   const focused = rows[current.index] ?? null;
   // Rows change when a defer or due date passes, with nothing in the data changing.
@@ -310,8 +335,8 @@ export function Outline({
         onKeyDown={onKeyDown}
         {...roving.handlers}
       >
-        {rows.length === 0 && editing === null && <p className="empty">{empty}</p>}
-        {groups.map((group) => {
+        {rows.length === 0 && editing === null && empty != null && <p className="empty">{empty}</p>}
+        {withSections(groups, groups.map((group) => {
           const draftAt = editing?.mode === 'draft' && editing.groupId === group.id ? draftIndex(group, editing.parentId, editing.after) : -1;
           const items = group.tasks.map((task) => {
             const key = taskKey(group, task.id);
@@ -324,8 +349,10 @@ export function Outline({
             // Under a project's own heading, that heading says it is paused.
             const paused = unavailable.includes(Unavailable.paused) && !group.project;
             const deferred = unavailable.includes(Unavailable.deferred) && task.deferredUntil ? task.deferredUntil : null;
-            // A defer date that has passed is still worth seeing; a future one shows as the deferral itself.
-            const pastDefer = !deferred && task.deferUntil ? task.deferUntil : null;
+            // A defer date that has passed is still worth seeing (the inherited one, where it placed the task on a day); a future one shows as the deferral itself.
+            const pastDefer = deferred ? null : ((group.datedBy === 'defer' ? task.deferredUntil : task.deferUntil) ?? null);
+            const dateOf = (kind: 'defer' | 'due', value: string) =>
+              group.datedBy === kind ? describeTime(value) : describeDate(value, kind, now);
             return (
               <li
                 key={key}
@@ -379,17 +406,17 @@ export function Outline({
                               className="availability"
                               title={deferred === task.deferUntil ? undefined : 'Deferred with a task it is beneath, or its project'}
                             >
-                              Deferred until {describeDate(deferred, 'defer', now)}
+                              Deferred until {dateOf('defer', deferred)}
                             </span>
                           )}
                           {paused && <span className="availability">Project paused</span>}
-                          {pastDefer && <span className="task-date">Deferred until {describeDate(pastDefer, 'defer', now)}</span>}
+                          {pastDefer && <span className="task-date">Deferred until {dateOf('defer', pastDefer)}</span>}
                           {task.dueBy && (
                             <span
                               className={!completed && isOverdue(task.dueBy, now) ? 'task-date overdue' : 'task-date'}
                               title={task.dueBy === task.dueAt ? undefined : 'Due with a task it is beneath, or its project'}
                             >
-                              Due {describeDate(task.dueBy, 'due', now)}
+                              Due {dateOf('due', task.dueBy)}
                             </span>
                           )}
                           {task.projectName && <span className="task-project">{task.projectName}</span>}
@@ -422,10 +449,19 @@ export function Outline({
           });
           if (draftAt !== -1 && draftRow) items.splice(draftAt, 0, draftRow);
           const list = (
-            <ul className="tasks" aria-label={group.heading ?? title} data-group={group.id}>
+            <ul className="tasks" aria-label={group.section ? [group.section.heading, group.heading].filter(Boolean).join(': ') : (group.heading ?? title)} data-group={group.id}>
               {items}
             </ul>
           );
+          if (group.section) {
+            if (group.tasks.length === 0) return null;
+            return (
+              <div key={group.id}>
+                {group.heading !== null && <h4 className="group-label">{group.heading}</h4>}
+                {list}
+              </div>
+            );
+          }
           if (group.heading === null) return <div key={group.id}>{list}</div>;
           const key = headingKey(group);
           const { project } = group;
@@ -472,10 +508,35 @@ export function Outline({
               )}
             </section>
           );
-        })}
+        }))}
       </div>
     </main>
   );
+}
+
+/** Puts each run of groups sharing a section under that section's heading, with its hint when all are empty. */
+function withSections(groups: readonly OutlineGroup[], rendered: readonly ReactNode[]): ReactNode[] {
+  const out: ReactNode[] = [];
+  for (let i = 0; i < groups.length; ) {
+    const section = groups[i]!.section;
+    if (!section) {
+      out.push(rendered[i++]);
+      continue;
+    }
+    const start = i;
+    while (i < groups.length && groups[i]!.section?.id === section.id) i++;
+    const id = `section-${section.id}`;
+    out.push(
+      <section key={id} className="outline-section" data-section={section.id} aria-labelledby={id}>
+        <h3 id={id} className="section-heading">
+          {section.heading}
+        </h3>
+        {rendered.slice(start, i)}
+        {section.empty && groups.slice(start, i).every((g) => g.tasks.length === 0) && <p className="hint">{section.empty}</p>}
+      </section>,
+    );
+  }
+  return out;
 }
 
 const indentBy = (depth: number) => (depth > 1 ? { paddingLeft: `${0.5 + (depth - 1) * 1.5}rem` } : undefined);

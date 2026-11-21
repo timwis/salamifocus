@@ -102,6 +102,10 @@ export class SimulatedDevice {
     ]);
   }
 
+  async setDue(taskId: string, dueAt: string | null): Promise<void> {
+    await this.upload([{ op: 'PATCH', table: 'tasks', id: taskId, data: { due_at: dueAt }, metadata: operationMetadata(OperationName.setTaskDue) }]);
+  }
+
   async flag(taskId: string): Promise<void> {
     await this.upload([{ op: 'PATCH', table: 'tasks', id: taskId, data: { flagged: 1 }, metadata: operationMetadata(OperationName.flagTask) }]);
   }

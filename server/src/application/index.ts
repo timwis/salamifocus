@@ -6,6 +6,7 @@ import {
   deferredUntilColumn,
   dueByColumn,
   flaggedCondition,
+  forecastView,
   groupByTag,
   inboxCondition,
   outlineTasks,
@@ -41,6 +42,8 @@ import type {
   OperationRequest,
   OperationResult,
   FlaggedTask,
+  ForecastSectionView,
+  ForecastTask,
   ProjectOutline,
   Settings,
   TagOutline,
@@ -349,6 +352,46 @@ export function createApplication({ sql, clock = () => new Date() }: Application
   }
 
   /**
+   * What the Forecast perspective shows in a time zone: the unfinished tasks placed on days by their effective
+   * defer and due dates (see `forecastView`). The server keeps no record of the user's zone, so it is given one.
+   */
+  async function forecast(timeZone: string): Promise<ForecastSectionView[]> {
+    const now = clock();
+    const rows = await sql<
+      {
+        id: string;
+        title: string;
+        note: string;
+        projectId: string | null;
+        projectName: string | null;
+        createdAt: string;
+        deferUntil: string | null;
+        dueAt: string | null;
+        dueBy: string | null;
+        flagged: boolean;
+        tagIds: string[];
+        unfinishedChildren: number;
+        deferredUntil: string | null;
+        projectStatus: string | null;
+      }[]
+    >`
+      SELECT * FROM (
+        SELECT t.id, t.title, t.note, t.project_id AS "projectId", p.name AS "projectName", t.created_at AS "createdAt",
+               t.defer_until AS "deferUntil", t.due_at AS "dueAt", t.flagged, ARRAY(SELECT tt.tag_id::text FROM task_tags tt WHERE tt.task_id = t.id ORDER BY tt.tag_id) AS "tagIds",
+               ${unfinishedChildren(sql)}, ${deferredUntil(sql)}, ${dueBy(sql)}, ${projectStatus(sql)}
+        FROM tasks t LEFT JOIN projects p ON p.id = t.project_id
+        WHERE t.completed_at IS NULL
+      ) dated
+      WHERE "deferredUntil" IS NOT NULL OR "dueBy" IS NOT NULL
+      ORDER BY "createdAt", id`;
+    const tasks: ForecastTask[] = rows.map(({ unfinishedChildren, projectStatus, createdAt, ...task }) => ({
+      ...task,
+      unavailable: unavailability({ completedAt: null, unfinishedChildren, deferredUntil: task.deferredUntil, projectStatus }, now),
+    }));
+    return forecastView(tasks, (task) => task, now, timeZone);
+  }
+
+  /**
    * What the Projects perspective shows for a sidebar selection: each selected
    * project (every project inside a selected folder), in sidebar order, with
    * the tasks the visibility shows in outline order, each followed by its
@@ -497,5 +540,5 @@ export function createApplication({ sql, clock = () => new Date() }: Application
     };
   }
 
-  return { execute, inbox, organisation, projects, tags, tagged, flagged, settings, actionable, agendas, task, history, operation };
+  return { execute, inbox, organisation, projects, tags, tagged, flagged, forecast, settings, actionable, agendas, task, history, operation };
 }

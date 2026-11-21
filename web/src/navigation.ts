@@ -7,7 +7,7 @@ import { useSyncExternalStore } from 'react';
 // reload comes back to the same place. The app server answers any page path
 // with the app, so these paths load directly too.
 
-// Each has a fixed digit key, following the spec's order of perspectives (7 is for Forecast).
+// Each has a fixed digit key, following the spec's order of perspectives.
 export const perspectives = [
   { id: 'inbox', key: '1', name: 'Inbox', visibility: null, sidebar: false },
   { id: 'projects', key: '2', name: 'Projects', visibility: Visibility.remaining, sidebar: true },
@@ -16,6 +16,8 @@ export const perspectives = [
   { id: 'personal', key: '4', name: 'Personal', visibility: null, sidebar: true },
   { id: 'work', key: '5', name: 'Work', visibility: null, sidebar: true },
   { id: 'flagged', key: '6', name: 'Flagged', visibility: Visibility.available, sidebar: false },
+  // Forecast shows unfinished tasks only, muted where they cannot be worked on yet.
+  { id: 'forecast', key: '7', name: 'Forecast', visibility: null, sidebar: false },
   { id: 'agendas', key: '8', name: 'Agendas', visibility: Visibility.remaining, sidebar: true },
 ] as const;
 

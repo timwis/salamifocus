@@ -21,6 +21,7 @@ The web client is meant to be used from the keyboard. This is the reference for 
 | 4 | Go to Actionable — Personal (focus goes to the sidebar) |
 | 5 | Go to Actionable — Work (focus goes to the sidebar) |
 | 6 | Go to Flagged |
+| 7 | Go to Forecast |
 | 8 | Go to Agendas (focus goes to the sidebar) |
 | Tab / Shift+Tab | Next / previous region |
 | V / Shift+V | In Projects, Tags, Flagged and Agendas: show the next / previous of **Available**, **Remaining** and **Everything** (see [Visibility](#visibility)) |
@@ -51,6 +52,14 @@ The sidebar shows only the tags that have available tasks here, with the tags ab
 | Cmd+↑ / Cmd+↓ on macOS, Ctrl+↑ / Ctrl+↓ on Linux | Move without changing the selection |
 | Space | Select the entry, or clear the selection (showing every group) if it is already selected |
 | → / ← | Expand or collapse a tag, or go to its first child or its parent |
+
+## Forecast
+
+Forecast shows, in one list, what is overdue, what is due and what is deferred until each of the coming days. Its headings are **Past** (unfinished tasks whose due date is before today), **Today** (always shown, even with nothing on it), a heading for each of the next 14 days that has a task due or a defer date falling on it, and **Future** for everything later. Under each, **Due** lists the tasks due then and **Deferred** those deferred until then, earliest first, so a deadline is never mistaken for a defer date.
+
+Tasks are placed by the dates they have in effect, including those of a task they are beneath or their project. A task appears on each day one of its dates falls on, and once, under Due, when both fall on the same day. A defer date before today places nothing, since the task is no longer deferred. Completed tasks are not shown, and there is no visibility choice: blocked tasks, tasks still deferred and those in paused projects are shown muted, with the reason. Under a day's heading, the date that placed a task there shows as just its time; under Past and Future it shows in full.
+
+Days are those of the device's time zone, and the list moves on by itself at midnight. ↑ and ↓ move between tasks, passing over the headings. Rows are edited as in any outline: F flags, Space completes, P and T change the project and tags, and Enter opens the editor, where the defer and due dates can be changed. A task you are editing stays where it is until you stop, even past midnight; it then moves to wherever its new dates place it, and stays current there. Tasks are not added in Forecast.
 
 ## Agendas
 

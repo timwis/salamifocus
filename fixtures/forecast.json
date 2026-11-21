@@ -1,0 +1,604 @@
+{
+  "scenario": "Forecast",
+  "description": "Forecast places unfinished tasks on days by their effective defer and due dates, in the device's time zone: Past (due before today), Today (always), each of the next 14 days with a date falling on it, then Future. Each heading splits into Due and Deferred, earliest first. A task appears on each day one of its dates falls on, once under Due when both fall on the same day. Completed tasks and defer dates before today place nothing. “Quarterly report” has a blocked task due on Thursday with a prerequisite beneath it; “Move house” is paused, deferred and due, which its task inherits. See “Forecast” in the spec.",
+  "examples": [
+    {
+      "name": "Overdue tasks are under Past, Today always shows, then each of the next 14 days with a date on it, then Future; each splits into Due and Deferred by effective date",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "timeZone": "Europe/London",
+      "records": {
+        "projects": [
+          {
+            "id": "report",
+            "name": "Quarterly report",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a0"
+          },
+          {
+            "id": "move",
+            "name": "Move house",
+            "kind": "project",
+            "folder_id": null,
+            "position": "a1",
+            "status": "paused",
+            "defer_until": "2026-11-23T00:00:00.000Z",
+            "due_at": "2026-11-27T17:00:00.000Z"
+          }
+        ],
+        "tasks": [
+          {
+            "id": "invoice",
+            "title": "Send the invoice",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-13T17:00:00.000Z"
+          },
+          {
+            "id": "passport",
+            "title": "Renew the passport",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T10:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-10T17:00:00.000Z"
+          },
+          {
+            "id": "book-room",
+            "title": "Book the meeting room",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a1",
+            "created_at": "2026-11-01T11:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-16T17:00:00.000Z"
+          },
+          {
+            "id": "chase",
+            "title": "Chase the figures from finance",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a2",
+            "created_at": "2026-11-01T12:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-16T00:00:00.000Z"
+          },
+          {
+            "id": "plumber",
+            "title": "Call the plumber",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T13:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-16T14:00:00.000Z"
+          },
+          {
+            "id": "deposit",
+            "title": "Pay the deposit",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T14:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-18T00:00:00.000Z",
+            "due_at": "2026-11-18T17:00:00.000Z"
+          },
+          {
+            "id": "speech",
+            "title": "Draft the speech",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T15:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-20T00:00:00.000Z",
+            "due_at": "2026-11-25T17:00:00.000Z"
+          },
+          {
+            "id": "agenda",
+            "title": "Prepare the agenda",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T16:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-30T17:00:00.000Z"
+          },
+          {
+            "id": "tax",
+            "title": "File the tax return",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T17:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2027-01-31T17:00:00.000Z"
+          },
+          {
+            "id": "trip",
+            "title": "Plan the trip",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-02T08:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-12-01T17:00:00.000Z"
+          },
+          {
+            "id": "pension",
+            "title": "Review the pension",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-02T09:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2027-01-04T00:00:00.000Z"
+          },
+          {
+            "id": "cake",
+            "title": "Order the cake",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-02T10:00:00.000Z",
+            "completed_at": "2026-11-15T10:00:00.000Z",
+            "due_at": "2026-11-17T17:00:00.000Z"
+          },
+          {
+            "id": "plants",
+            "title": "Water the plants",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-02T11:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "post",
+            "title": "Sort the post",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-02T12:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-12T00:00:00.000Z"
+          },
+          {
+            "id": "compile",
+            "title": "Compile the report",
+            "project_id": "report",
+            "parent_id": null,
+            "position": "a3",
+            "created_at": "2026-11-02T13:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-19T17:00:00.000Z"
+          },
+          {
+            "id": "email-steve",
+            "title": "Email Steve to request the document",
+            "project_id": "report",
+            "parent_id": "compile",
+            "position": "a0",
+            "created_at": "2026-11-02T14:00:00.000Z",
+            "completed_at": null
+          },
+          {
+            "id": "boxes",
+            "title": "Order boxes",
+            "project_id": "move",
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-02T15:00:00.000Z",
+            "completed_at": null
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "invoice": [],
+          "passport": [],
+          "book-room": [],
+          "chase": [],
+          "plumber": [
+            "deferred"
+          ],
+          "deposit": [
+            "deferred"
+          ],
+          "speech": [
+            "deferred"
+          ],
+          "agenda": [],
+          "tax": [],
+          "trip": [],
+          "pension": [
+            "deferred"
+          ],
+          "compile": [
+            "blocked"
+          ],
+          "email-steve": [],
+          "boxes": [
+            "deferred",
+            "paused"
+          ]
+        },
+        "perspectives": [
+          {
+            "perspective": "forecast",
+            "selection": [],
+            "sections": [
+              "past",
+              "today",
+              "2026-11-18",
+              "2026-11-19",
+              "2026-11-20",
+              "2026-11-23",
+              "2026-11-25",
+              "2026-11-27",
+              "2026-11-30",
+              "future"
+            ],
+            "groups": [
+              {
+                "id": "past/due",
+                "tasks": [
+                  {
+                    "id": "passport",
+                    "depth": 1
+                  },
+                  {
+                    "id": "invoice",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "today/due",
+                "tasks": [
+                  {
+                    "id": "book-room",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "today/deferred",
+                "tasks": [
+                  {
+                    "id": "chase",
+                    "depth": 1
+                  },
+                  {
+                    "id": "plumber",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-11-18/due",
+                "tasks": [
+                  {
+                    "id": "deposit",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-11-19/due",
+                "tasks": [
+                  {
+                    "id": "compile",
+                    "depth": 1
+                  },
+                  {
+                    "id": "email-steve",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-11-20/deferred",
+                "tasks": [
+                  {
+                    "id": "speech",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-11-23/deferred",
+                "tasks": [
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-11-25/due",
+                "tasks": [
+                  {
+                    "id": "speech",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-11-27/due",
+                "tasks": [
+                  {
+                    "id": "boxes",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-11-30/due",
+                "tasks": [
+                  {
+                    "id": "agenda",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "future/due",
+                "tasks": [
+                  {
+                    "id": "trip",
+                    "depth": 1
+                  },
+                  {
+                    "id": "tax",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "future/deferred",
+                "tasks": [
+                  {
+                    "id": "pension",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Today is shown even with nothing on it, and nothing else is",
+      "clock": "2026-11-16T09:00:00.000Z",
+      "timeZone": "Europe/London",
+      "records": {
+        "tasks": [
+          {
+            "id": "bulbs",
+            "title": "Plant the bulbs",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-12T00:00:00.000Z"
+          },
+          {
+            "id": "plants",
+            "title": "Water the plants",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T10:00:00.000Z",
+            "completed_at": null
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "bulbs": [],
+          "plants": []
+        },
+        "perspectives": [
+          {
+            "perspective": "forecast",
+            "selection": [],
+            "sections": [
+              "today"
+            ],
+            "groups": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "Days follow the device's time zone: at 22:00 on Monday in New York, a time later that evening is today there, and 01:00 is tomorrow",
+      "clock": "2026-11-17T03:00:00.000Z",
+      "timeZone": "America/New_York",
+      "records": {
+        "tasks": [
+          {
+            "id": "timesheet",
+            "title": "Submit the timesheet",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-17T04:30:00.000Z"
+          },
+          {
+            "id": "parcel",
+            "title": "Collect the parcel",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T10:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-17T06:00:00.000Z"
+          },
+          {
+            "id": "contract",
+            "title": "Read the contract",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T11:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-16T05:00:00.000Z"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "timesheet": [],
+          "parcel": [],
+          "contract": []
+        },
+        "perspectives": [
+          {
+            "perspective": "forecast",
+            "selection": [],
+            "sections": [
+              "today",
+              "2026-11-17"
+            ],
+            "groups": [
+              {
+                "id": "today/due",
+                "tasks": [
+                  {
+                    "id": "timesheet",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "today/deferred",
+                "tasks": [
+                  {
+                    "id": "contract",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-11-17/due",
+                "tasks": [
+                  {
+                    "id": "parcel",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "The view moves on at midnight: what was due today is in Past, and tomorrow becomes Today",
+      "clock": "2026-11-17T00:00:00.000Z",
+      "timeZone": "Europe/London",
+      "records": {
+        "tasks": [
+          {
+            "id": "book-room",
+            "title": "Book the meeting room",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T09:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-16T17:00:00.000Z"
+          },
+          {
+            "id": "cake",
+            "title": "Order the cake",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T10:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-11-17T17:00:00.000Z"
+          },
+          {
+            "id": "chase",
+            "title": "Chase the figures from finance",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T11:00:00.000Z",
+            "completed_at": null,
+            "defer_until": "2026-11-16T00:00:00.000Z"
+          },
+          {
+            "id": "agenda",
+            "title": "Prepare the agenda",
+            "project_id": null,
+            "parent_id": null,
+            "position": "a0",
+            "created_at": "2026-11-01T12:00:00.000Z",
+            "completed_at": null,
+            "due_at": "2026-12-01T17:00:00.000Z"
+          }
+        ]
+      },
+      "expect": {
+        "unavailable": {
+          "book-room": [],
+          "cake": [],
+          "chase": [],
+          "agenda": []
+        },
+        "perspectives": [
+          {
+            "perspective": "forecast",
+            "selection": [],
+            "sections": [
+              "past",
+              "today",
+              "2026-12-01"
+            ],
+            "groups": [
+              {
+                "id": "past/due",
+                "tasks": [
+                  {
+                    "id": "book-room",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "today/due",
+                "tasks": [
+                  {
+                    "id": "cake",
+                    "depth": 1
+                  }
+                ]
+              },
+              {
+                "id": "2026-12-01/due",
+                "tasks": [
+                  {
+                    "id": "agenda",
+                    "depth": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

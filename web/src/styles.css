@@ -40,7 +40,8 @@ h1 {
   min-height: 0;
 }
 .regions[data-perspective='inbox'],
-.regions[data-perspective='flagged'] {
+.regions[data-perspective='flagged'],
+.regions[data-perspective='forecast'] {
   grid-template-columns: 6rem 1fr;
 }
 .regions > * {
@@ -91,6 +92,9 @@ nav a:focus-visible {
   background: #f0932b;
   clip-path: polygon(15% 5%, 95% 5%, 75% 32%, 95% 60%, 27% 60%, 27% 100%, 15% 100%);
   border-radius: 0;
+}
+.perspective-forecast {
+  background: #2e9e5b;
 }
 .perspective-tags {
   background: #8a4fd8;
@@ -298,6 +302,23 @@ button.check:hover {
   padding: 0.25rem 0.5rem;
   border-radius: 0.4rem;
   outline: none;
+}
+/* Forecast's day headings, with Due and Deferred beneath each */
+.section-heading {
+  font-size: 1rem;
+  margin: 1rem 0 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+.outline-section .hint {
+  padding: 0 0.5rem;
+}
+.group-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0.4rem 0 0.1rem;
+  padding: 0 0.5rem;
 }
 .project-heading .task-meta {
   padding: 0;

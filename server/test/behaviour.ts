@@ -8,21 +8,48 @@ import type { Sql } from '../src/db.ts';
 type Row = Record<string, unknown> & { id: string };
 
 export interface ExpectedPerspective {
-  perspective: 'projects' | 'tags' | 'flagged' | 'personal' | 'work' | 'agendas';
-  /** Flagged has no sidebar, so nothing to select. */
+  perspective: 'projects' | 'tags' | 'flagged' | 'personal' | 'work' | 'agendas' | 'forecast';
+  /** Flagged and Forecast have no sidebar, so nothing to select. */
   selection: string[];
   /** Absent means the perspective's default: Remaining, or Available for Flagged. */
   visibility?: Visibility;
   groups: { id: string; tasks: { id: string; depth: number }[] }[];
   /** For Actionable and Agendas: the sidebar's entries, top to bottom, with their nesting depth (1 at the top level). */
   sidebar?: { id: string; depth: number }[];
+  /** For Forecast: its headings, top to bottom (`past`, `today`, a day's date, or `future`). */
+  sections?: string[];
 }
 
 export interface Example {
   name: string;
   clock: string;
+  /** The device's time zone (an IANA name), where what is expected depends on it. */
+  timeZone?: string;
   records: Partial<Record<(typeof tables)[number], Row[]>> & { settings?: Record<string, string | null> };
   expect: { unavailable: Record<string, Unavailable[]>; perspectives: ExpectedPerspective[] };
+}
+
+/**
+ * Forecast in the fixtures' terms, keeping only the tasks an example seeded (Forecast lists every dated task in
+ * the database, and examples share one), and the headings those keep. Today is always shown.
+ */
+export function ownForecast(
+  sections: { id: string; due: string[]; deferred: string[] }[],
+  ids: Ids,
+): Required<Pick<ExpectedPerspective, 'sections' | 'groups'>> {
+  const own = (tasks: string[]) => tasks.flatMap((uuid) => {
+    const id = ids.name(uuid);
+    return id === undefined ? [] : [{ id, depth: 1 }];
+  });
+  const kept = sections.flatMap(({ id, due, deferred }) => {
+    const groups = [
+      { id: `${id}/due`, tasks: own(due) },
+      { id: `${id}/deferred`, tasks: own(deferred) },
+    ].filter((group) => group.tasks.length > 0);
+    const emptied = groups.length === 0 && due.length + deferred.length > 0;
+    return emptied && id !== 'today' ? [] : [{ id, groups }];
+  });
+  return { sections: kept.map((section) => section.id), groups: kept.flatMap((section) => section.groups) };
 }
 
 export interface Scenario {

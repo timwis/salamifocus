@@ -6,6 +6,7 @@ import { Inbox } from './Inbox.tsx';
 import { ActionablePerspective } from './actionable/ActionablePerspective.tsx';
 import { AgendasPerspective } from './agendas/AgendasPerspective.tsx';
 import { FlaggedPerspective } from './flagged/FlaggedPerspective.tsx';
+import { ForecastPerspective } from './forecast/ForecastPerspective.tsx';
 import { goToPerspective, hasSidebar, perspectivePath, perspectives, usePlace, type Perspective } from './navigation.ts';
 import { OrganisationProvider } from './projects/data.tsx';
 import { ProjectsPerspective } from './projects/ProjectsPerspective.tsx';
@@ -153,6 +154,8 @@ export function Shell() {
               <TagsPerspective place={place} />
             ) : place.perspective === 'flagged' ? (
               <FlaggedPerspective place={place} />
+            ) : place.perspective === 'forecast' ? (
+              <ForecastPerspective />
             ) : place.perspective === 'personal' || place.perspective === 'work' ? (
               <ActionablePerspective key={place.perspective} scope={place.perspective} place={place} />
             ) : place.perspective === 'agendas' ? (

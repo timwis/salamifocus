@@ -292,7 +292,7 @@ test('the mouse works too: clicking a perspective or empty space leaves the keys
   const phone = await SimulatedDevice.signIn();
   const { folderId } = await phone.createFolder(`Garage ${run}`, { position: 'a6' });
   // Leaves empty space below the sidebar's items, which earlier tests in the run add to.
-  await page.setViewportSize({ width: 1280, height: 1200 });
+  await page.setViewportSize({ width: 1280, height: 1600 });
   await signIn(page);
 
   // Clicking Projects puts focus in the sidebar, so N works straight away.

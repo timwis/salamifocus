@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { untaggedId, type TagNode } from '@salamifocus/domain';
-import { loadScenarios, seed, type ExpectedPerspective, type Ids } from './behaviour.ts';
+import { loadScenarios, ownForecast, seed, type Example, type ExpectedPerspective, type Ids } from './behaviour.ts';
 import { createHarness, type Harness } from './harness.ts';
 
 let h: Harness;
@@ -11,10 +11,18 @@ before(async () => {
 after(() => h.close());
 
 /** What the server's queries say a perspective shows, in the fixtures' terms. */
-async function shown(expected: ExpectedPerspective, ids: Ids): Promise<Pick<ExpectedPerspective, 'groups' | 'sidebar'>> {
+async function shown(expected: ExpectedPerspective, ids: Ids, example: Example): Promise<Pick<ExpectedPerspective, 'groups' | 'sidebar' | 'sections'>> {
   const name = (uuid: string) => ids.name(uuid) ?? uuid;
   const entries = (nodes: TagNode[], depth: number): { id: string; depth: number }[] =>
     nodes.flatMap((node) => [{ id: name(node.id), depth }, ...entries(node.children, depth + 1)]);
+  if (expected.perspective === 'forecast') {
+    if (!example.timeZone) throw new Error('A Forecast example needs a time zone.');
+    const sections = await h.application.forecast(example.timeZone);
+    return ownForecast(
+      sections.map(({ id, due, deferred }) => ({ id, due: due.map((t) => t.id), deferred: deferred.map((t) => t.id) })),
+      ids,
+    );
+  }
   if (expected.perspective === 'personal' || expected.perspective === 'work') {
     const [selected = null] = expected.selection;
     const { groups, sidebar } = await h.application.actionable(expected.perspective, selected === null || selected === untaggedId ? selected : ids.uuid(selected));
@@ -59,10 +67,11 @@ for (const { scenario, file, examples } of loadScenarios()) {
           assert.deepEqual((await h.application.task(ids.uuid(task)))?.unavailable, reasons, `availability of ${task}`);
         }
         for (const perspective of example.expect.perspectives) {
-          const { groups, sidebar } = await shown(perspective, ids);
+          const { groups, sidebar, sections } = await shown(perspective, ids, example);
           const described = `${perspective.perspective} with ${perspective.selection.join(', ')} selected, showing ${perspective.visibility ?? 'the default'}`;
           assert.deepEqual(groups, perspective.groups, described);
           if (perspective.sidebar) assert.deepEqual(sidebar, perspective.sidebar, `sidebar of ${described}`);
+          if (perspective.sections) assert.deepEqual(sections, perspective.sections, `headings of ${described}`);
         }
       });
     }

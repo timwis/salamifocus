@@ -46,8 +46,10 @@ export function useRovingFocus<T extends HTMLElement>(focusedKey: string | null)
  * added above it. The row that disappeared is still remembered, and is
  * current again if it comes back (on selecting its project again, say). A
  * row just created locally can be awaited until the write shows up.
+ * `relocate` can name where the row went instead (the same task, moved to
+ * another group), for focus to follow it there.
  */
-export function useCurrentRow(keys: readonly string[], initial: string | null = null) {
+export function useCurrentRow(keys: readonly string[], initial: string | null = null, relocate?: (missing: string) => string | null) {
   const [chosen, setChosen] = useState<string | null>(initial);
   const lastIndex = useRef(0);
   const awaiting = useRef<string | null>(null);
@@ -60,7 +62,8 @@ export function useCurrentRow(keys: readonly string[], initial: string | null = 
   if (index !== -1 || waiting) standIn.current = null;
   else if (keys.length > 0) {
     const followed = standIn.current === null ? -1 : keys.indexOf(standIn.current);
-    index = followed !== -1 ? followed : Math.min(lastIndex.current, keys.length - 1);
+    const moved = followed === -1 && chosen !== null && relocate ? keys.indexOf(relocate(chosen) ?? '') : -1;
+    index = followed !== -1 ? followed : moved !== -1 ? moved : Math.min(lastIndex.current, keys.length - 1);
     standIn.current = keys[index]!;
   }
   if (index !== -1) lastIndex.current = index;
