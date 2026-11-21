@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 // Rows carry their operation in _metadata, and updates send the values they
@@ -63,6 +65,9 @@ fun operationMetadata(op: String, opId: String = UUID.randomUUID().toString()): 
         put("op", op)
     }.toString()
 
+// Always three fraction digits, like JavaScript's toISOString(), so stored times sort as text.
+private val timestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
+
 data class InboxTask(val id: String, val title: String, val waitingToUpload: Boolean)
 
 // Whether a local change to the task with this id has not uploaded yet. The
@@ -78,7 +83,7 @@ class Tasks(private val db: PowerSyncDatabase) {
     suspend fun captureText(text: String): String {
         require(text.isNotBlank()) { "There is nothing to capture." }
         val taskId = UUID.randomUUID().toString()
-        val now = Instant.now().toString()
+        val now = timestamp.format(Instant.now())
         val metadata = operationMetadata(OperationName.CAPTURE_TEXT)
         db.writeTransaction { tx ->
             tx.execute(
