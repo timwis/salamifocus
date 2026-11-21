@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">salamifocus</string>
+    <string name="capture_shortcut_short">Capture</string>
+    <string name="capture_shortcut_long">Capture to Inbox</string>
 </resources>

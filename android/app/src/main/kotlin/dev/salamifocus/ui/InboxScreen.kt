@@ -1,6 +1,5 @@
 package dev.salamifocus.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,18 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -39,8 +34,7 @@ fun InboxScreen(app: SalamifocusApp) {
     val inbox by remember { app.tasks.inbox() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val pending by remember { app.tasks.pendingUploads() }.collectAsStateWithLifecycle(initialValue = 0L)
     val status by remember { app.database.currentStatus.asFlow() }.collectAsStateWithLifecycle(initialValue = null)
-    var text by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf<String?>(null) }
+    val capture = rememberCaptureState(app)
     val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(16.dp)) {
@@ -57,38 +51,9 @@ fun InboxScreen(app: SalamifocusApp) {
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.testTag("sync-status"),
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(vertical = 12.dp),
-        ) {
-            OutlinedTextField(
-                value = text,
-                onValueChange = {
-                    text = it
-                    message = null
-                },
-                label = { Text("Capture") },
-                modifier = Modifier.weight(1f).testTag("capture-field"),
-            )
-            Button(
-                enabled = text.isNotBlank(),
-                onClick = {
-                    val captured = text
-                    scope.launch {
-                        message = try {
-                            app.tasks.captureText(captured)
-                            text = ""
-                            "Saved on this phone"
-                        } catch (e: Exception) {
-                            "Could not save: ${e.message}"
-                        }
-                    }
-                },
-            ) { Text("Save") }
-        }
-        message?.let {
-            Text(it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("capture-message"))
+        CaptureField(capture, modifier = Modifier.padding(vertical = 12.dp))
+        capture.recent.firstOrNull()?.let {
+            CaptureOutcome(it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("capture-message"))
         }
         LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f).testTag("inbox")) {
             items(inbox, key = { it.id }) { task ->

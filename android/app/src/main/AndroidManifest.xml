@@ -17,6 +17,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
+        <!-- Its own task, so opening the shortcut (which clears its task) leaves the Inbox alone. -->
+        <activity
+            android:name=".ui.CaptureActivity"
+            android:exported="true"
+            android:label="@string/capture_shortcut_long"
+            android:taskAffinity="dev.salamifocus.capture"
+            android:windowSoftInputMode="stateAlwaysVisible|adjustResize" />
     </application>
 </manifest>
